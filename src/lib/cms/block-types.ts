@@ -28,7 +28,14 @@ export type BlockGroup = (typeof BLOCK_GROUPS)[number];
  * written before the blog builder existed means — so nothing had to be
  * annotated to keep the page picker exactly as it was.
  */
-export const BLOCK_SURFACES = ['page', 'blogListing', 'blogArticle', 'blogSidebar'] as const;
+export const BLOCK_SURFACES = [
+  'page',
+  'blogListing',
+  'blogArticle',
+  'blogSidebar',
+  'productDetail',
+  'productSidebar',
+] as const;
 export type BlockSurface = (typeof BLOCK_SURFACES)[number];
 
 export const BLOCK_SURFACE_LABELS: Record<BlockSurface, string> = {
@@ -36,7 +43,20 @@ export const BLOCK_SURFACE_LABELS: Record<BlockSurface, string> = {
   blogListing: 'Blog listing page',
   blogArticle: 'Blog article',
   blogSidebar: 'Blog sidebar',
+  productDetail: 'Product page',
+  productSidebar: 'Product sidebar',
 };
+
+/**
+ * Surfaces that offer every page block as well as their own.
+ *
+ * A product page is a page with a product attached, so everything that can be
+ * built on a page — a hero, a FAQ, a testimonial rail, a slider — can be built
+ * on one, including blocks written after this list. The sidebar is not on it:
+ * a narrow column is a different shape, so it offers only the blocks that
+ * opted into it by name.
+ */
+export const PAGE_BLOCK_SURFACES: readonly BlockSurface[] = ['productDetail'];
 
 export type BlockDefinition = {
   type: string;

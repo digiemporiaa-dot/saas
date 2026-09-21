@@ -100,6 +100,12 @@ export function ProductCard({
   const labelled = groups > 1;
 
   return (
+    /*
+     * Every design value is a CSS variable with the card's original value as
+     * its fallback, and the variables are set by Products → Design on an
+     * ancestor. A site that has never opened that screen therefore renders
+     * exactly the card this component always rendered.
+     */
     <article
       className={cn(
         'flex flex-col rounded-2xl border bg-surface p-6 transition-shadow',
@@ -108,6 +114,17 @@ export function ProductCard({
           : 'border-hairline shadow-sm hover:shadow-md',
         className,
       )}
+      style={{
+        background: 'var(--product-card-bg, rgb(var(--brand-background)))',
+        borderWidth: 'var(--product-card-border-width, 1px)',
+        borderColor: highlight
+          ? undefined
+          : 'var(--product-card-border-color, rgb(var(--brand-border)))',
+        borderRadius: 'var(--product-card-radius, 1rem)',
+        padding: 'var(--product-card-padding, 1.5rem)',
+        boxShadow: highlight ? undefined : 'var(--product-card-shadow)',
+        textAlign: 'var(--product-card-align, left)' as React.CSSProperties['textAlign'],
+      }}
     >
       {highlight ? (
         <span className="mb-4 self-start rounded-full bg-brand/10 px-2.5 py-1 text-xs font-semibold text-brand">
@@ -122,12 +139,26 @@ export function ProductCard({
           width={56}
           height={56}
           loading="lazy"
-          className="mb-4 h-14 w-14 rounded-lg object-cover"
+          className="mb-4 rounded-lg"
+          style={{
+            width: 'var(--product-card-image-width, 3.5rem)',
+            height: 'var(--product-card-image-height, 3.5rem)',
+            aspectRatio: 'var(--product-card-image-ratio)',
+            objectFit: 'var(--product-card-image-fit, cover)' as React.CSSProperties['objectFit'],
+            borderRadius: 'var(--product-card-image-radius, 0.5rem)',
+          }}
         />
       ) : null}
 
       {showName ? (
-        <h3 className="font-heading text-lg font-bold text-content">
+        <h3
+          className="font-heading text-lg font-bold text-content"
+          style={{
+            fontSize: 'var(--product-card-title-size)',
+            fontWeight: 'var(--product-card-title-weight)' as React.CSSProperties['fontWeight'],
+            color: 'var(--product-card-title-color)',
+          }}
+        >
           {linkName ? (
             <Link href={product.href} className="hover:text-brand">
               {product.name}
@@ -139,7 +170,12 @@ export function ProductCard({
       ) : null}
 
       {showDescription && product.shortDescription ? (
-        <p className="mt-2 text-sm leading-relaxed text-muted">{product.shortDescription}</p>
+        <p
+          className="mt-2 text-sm leading-relaxed text-muted"
+          style={{ color: 'var(--product-card-description-color)' }}
+        >
+          {product.shortDescription}
+        </p>
       ) : null}
 
       {showPrice ? (
@@ -147,7 +183,13 @@ export function ProductCard({
           {price ? (
             <>
               <p className="flex items-baseline gap-1.5">
-                <span className="font-heading text-3xl font-bold tracking-tight text-content">
+                <span
+                  className="font-heading text-3xl font-bold tracking-tight text-content"
+                  style={{
+                    fontSize: 'var(--product-card-price-size)',
+                    color: 'var(--product-card-price-color)',
+                  }}
+                >
                   {formatMoney(price, product.currency)}
                 </span>
                 <span className="text-sm text-muted">{period}</span>
@@ -183,8 +225,16 @@ export function ProductCard({
               {labelled ? <GroupLabel>Features</GroupLabel> : null}
               <ul className="space-y-2.5">
                 {features.map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                  <li
+                    key={index}
+                    className="flex items-start gap-2.5 text-sm text-muted"
+                    style={{ color: 'var(--product-card-feature-color)' }}
+                  >
+                    <Check
+                      className="mt-0.5 h-4 w-4 shrink-0 text-brand"
+                      style={{ color: 'var(--product-card-icon-color)' }}
+                      aria-hidden="true"
+                    />
                     <span>{feature}</span>
                   </li>
                 ))}
@@ -197,8 +247,16 @@ export function ProductCard({
               {labelled ? <GroupLabel>Benefits</GroupLabel> : null}
               <ul className="space-y-2.5">
                 {benefits.map((benefit, index) => (
-                  <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
-                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                  <li
+                    key={index}
+                    className="flex items-start gap-2.5 text-sm text-muted"
+                    style={{ color: 'var(--product-card-feature-color)' }}
+                  >
+                    <Sparkles
+                      className="mt-0.5 h-4 w-4 shrink-0 text-brand"
+                      style={{ color: 'var(--product-card-icon-color)' }}
+                      aria-hidden="true"
+                    />
                     <span>{benefit}</span>
                   </li>
                 ))}

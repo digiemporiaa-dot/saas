@@ -931,6 +931,8 @@ model Product {
   forms            Form[]            @relation("FormProduct")
   customerProducts CustomerProduct[]
   navigationItems  NavigationItem[]
+  /// This product's own page sections — its detail layout and its sidebar.
+  sections         ProductSection[]
 
   @@index([slug])
   @@index([status, publishedAt])
@@ -1318,6 +1320,64 @@ model BlogPostRelation {
 
   @@id([sourceId, targetId])
   @@index([targetId])
+}
+
+/// Where a product section lives.
+///
+/// Both belong to one product: this application has no global product layout,
+/// so every row carries a `productId` and a product with no rows falls back to
+/// the built-in arrangement in code.
+enum ProductSurface {
+  /// The body of a single product page, top to bottom.
+  DETAIL
+  /// The column beside it, where the price box and its companions sit.
+  SIDEBAR
+}
+
+/// One reorderable part of a product page.
+///
+/// Deliberately the same shape as `PageSection` and `BlogSection` — a
+/// block-registry key, a validated `content` payload and a universal
+/// `settings` design record — so products reuse the page builder's registry,
+/// design panel and renderer rather than growing a third one.
+model ProductSection {
+  id        String         @id @default(cuid())
+  surface   ProductSurface
+  productId String
+  blockType String
+  name      String?
+  sortOrder Int            @default(0)
+  isVisible Boolean        @default(true)
+
+  content  Json @default("{}")
+  settings Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, surface, sortOrder])
+}
+
+/// Product-wide design: cards, images, layout and typography (singleton).
+///
+/// Presentation groups are stored as validated JSON rather than as columns so
+/// the controls can grow without a migration per control — the same approach
+/// `BlogSettings`, `PageSection.settings` and `Form.design` already use.
+model ProductSettings {
+  id String @id @default("singleton")
+
+  /// Product card appearance and per-item visibility, everywhere cards appear.
+  cardSettings   Json @default("{}")
+  /// Image sizes, ratios and fit for the card, the main image and the gallery.
+  imageSettings  Json @default("{}")
+  /// Detail/sidebar widths, gaps, sticky behaviour and colour overrides.
+  layoutSettings Json @default("{}")
+  /// Product-page typography overrides layered on the global font settings.
+  typography     Json @default("{}")
+
+  updatedAt DateTime @updatedAt
 }
 
 // ---------------------------------------------------------------------------

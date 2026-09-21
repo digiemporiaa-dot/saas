@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import type { Metadata } from 'next';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, LayoutTemplate } from 'lucide-react';
 import { prisma } from '@/lib/db/prisma';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { AdminPageHeader } from '@/components/admin/page-header';
@@ -166,6 +166,14 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
         actions={
           <>
             <ContentStatusBadge status={product.status} />
+            {/* This product's own page layout: its sections, in its order. */}
+            <Link
+              href={`/admin/products/${product.id}/layout`}
+              className={buttonClasses('outline', 'sm')}
+            >
+              <LayoutTemplate className="h-4 w-4" aria-hidden="true" />
+              Page layout
+            </Link>
             {liveIn ? (
               <Link
                 href={countryPath(liveIn, `products/${product.slug}`)}

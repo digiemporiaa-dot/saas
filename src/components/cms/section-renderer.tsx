@@ -62,6 +62,16 @@ import type {
   ArticlePrevNextContent,
 } from '@/lib/cms/blog-blocks';
 import type { BlogRenderContext } from '@/lib/cms/blog-render';
+import type {
+  ProductHeaderContent,
+  ProductMediaContent,
+  ProductDescriptionContent,
+  ProductFeaturesContent,
+  ProductSpecsContent,
+  ProductRelatedContent,
+  ProductPriceBoxContent,
+} from '@/lib/cms/product-blocks';
+import type { ProductRenderContext } from '@/lib/cms/product-render';
 import { localiseContent } from '@/lib/country/routing';
 import { getRequestCountry } from '@/lib/country/request';
 import type { CountryContext } from '@/lib/country/types';
@@ -120,6 +130,15 @@ import {
   ArticleRelatedBlock,
   ArticlePrevNextBlock,
 } from './blocks/blog-blocks';
+import {
+  ProductHeaderBlock,
+  ProductMediaBlock,
+  ProductDescriptionBlock,
+  ProductFeaturesBlock,
+  ProductSpecsBlock,
+  ProductRelatedBlock,
+  ProductPriceBoxBlock,
+} from './blocks/product-detail-blocks';
 
 /**
  * The minimum a row needs to be rendered.
@@ -265,6 +284,22 @@ async function BlockBody({ section, ctx }: { section: RenderableSection; ctx: Bl
     case 'articlePrevNext':
       return <ArticlePrevNextBlock content={parse<ArticlePrevNextContent>()} ctx={ctx} />;
 
+    // --- product pages ---
+    case 'productHeader':
+      return <ProductHeaderBlock content={parse<ProductHeaderContent>()} ctx={ctx} />;
+    case 'productMedia':
+      return <ProductMediaBlock content={parse<ProductMediaContent>()} ctx={ctx} />;
+    case 'productDescription':
+      return <ProductDescriptionBlock content={parse<ProductDescriptionContent>()} ctx={ctx} />;
+    case 'productFeatures':
+      return <ProductFeaturesBlock content={parse<ProductFeaturesContent>()} ctx={ctx} />;
+    case 'productSpecs':
+      return <ProductSpecsBlock content={parse<ProductSpecsContent>()} ctx={ctx} />;
+    case 'productRelated':
+      return <ProductRelatedBlock content={parse<ProductRelatedContent>()} ctx={ctx} />;
+    case 'productPriceBox':
+      return <ProductPriceBoxBlock content={parse<ProductPriceBoxContent>()} ctx={ctx} />;
+
     default:
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`[cms] no renderer registered for block type "${blockType}"`);
@@ -286,6 +321,7 @@ export async function SectionRenderer({
   anchorId,
   design: providedDesign,
   blog,
+  product,
   country: providedCountry,
   container = true,
 }: {
@@ -297,6 +333,8 @@ export async function SectionRenderer({
   country?: CountryContext;
   /** Blog surfaces pass their resolved context down to every block. */
   blog?: BlogRenderContext;
+  /** Product surfaces do the same with the product being rendered. */
+  product?: ProductRenderContext;
   /**
    * Wrap the block in the standard centred container. The article column has
    * its own width, so its sections opt out and fill the column instead.
@@ -304,7 +342,7 @@ export async function SectionRenderer({
   container?: boolean;
 }) {
   const design = providedDesign ?? parseSectionDesign(section.settings);
-  const country = providedCountry ?? blog?.country ?? (await getRequestCountry());
+  const country = providedCountry ?? blog?.country ?? product?.country ?? (await getRequestCountry());
 
   const backgroundMedia =
     design.background.type === 'image' && design.background.imageId
@@ -312,7 +350,7 @@ export async function SectionRenderer({
       : null;
 
   const styles = buildSectionStyles(design, section.id, backgroundMedia?.url ?? null);
-  const ctx: BlockContext = { country, inverted: styles.inverted, isFirst, design, blog };
+  const ctx: BlockContext = { country, inverted: styles.inverted, isFirst, design, blog, product };
 
   /*
    * A section that paints a background inside a column — the article's CTA, say
@@ -371,12 +409,15 @@ export async function SectionRenderer({
 export async function SectionList({
   sections,
   blog,
+  product,
   country: providedCountry,
   container = true,
   allowFirst = true,
 }: {
   sections: RenderableSection[];
   blog?: BlogRenderContext;
+  /** Product surfaces pass their resolved context down to every section. */
+  product?: ProductRenderContext;
   /** The market to render for. Resolved from the request when not supplied. */
   country?: CountryContext;
   container?: boolean;
@@ -392,7 +433,7 @@ export async function SectionList({
   const visible = sections.filter((s) => s.isVisible).sort((a, b) => a.sortOrder - b.sortOrder);
   const anchors = resolveAnchors(visible);
   // Resolved once for the whole list rather than per section.
-  const country = providedCountry ?? blog?.country ?? (await getRequestCountry());
+  const country = providedCountry ?? blog?.country ?? product?.country ?? (await getRequestCountry());
 
   return (
     <>
@@ -403,6 +444,7 @@ export async function SectionList({
           isFirst={allowFirst && index === 0}
           anchorId={anchors.get(section.id)}
           blog={blog}
+          product={product}
           country={country}
           container={container}
         />

@@ -8,6 +8,7 @@ import type { ResolvedMedia } from '@/lib/services/media';
 import type { SectionDesign } from '@/lib/cms/design';
 import { resolveColumns, gridStyle } from '@/lib/cms/design';
 import type { BlogRenderContext } from '@/lib/cms/blog-render';
+import type { ProductRenderContext } from '@/lib/cms/product-render';
 import type { CountryContext } from '@/lib/country/types';
 
 /**
@@ -37,6 +38,12 @@ export type BlockContext = {
    * the page it happens to be on.
    */
   blog?: BlogRenderContext;
+  /**
+   * Present only on product surfaces. It carries the product being rendered,
+   * its gallery and the catalogue's design settings, so a product block never
+   * has to query for the product it happens to be on.
+   */
+  product?: ProductRenderContext;
 };
 
 /** CSS variables for a responsive card grid, design panel taking precedence. */

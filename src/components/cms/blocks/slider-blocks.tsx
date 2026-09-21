@@ -16,6 +16,8 @@ import { resolvePostSource } from '@/lib/services/blog';
 import { getBlogSettings } from '@/lib/services/blog-cms';
 import { resolveCard } from '@/lib/cms/blog-render';
 import { ProductCard } from '@/components/products/product-card';
+import { getProductSettings } from '@/lib/services/product-cms';
+import { productCardVars, productImageVars } from '@/lib/cms/product-settings';
 import { PostCard } from '@/components/blog/post-card';
 import { safeUrl } from '@/lib/utils/sanitize';
 import { cn } from '@/lib/utils/cn';
@@ -566,8 +568,23 @@ export async function ProductSliderBlock({
 
   if (products.length === 0) return null;
 
+  /*
+   * The catalogue's card and image settings travel with the slides, the same
+   * way they do for a product grid — every variable falls back to the card's
+   * original value, so an untouched site is unchanged.
+   */
+  const design = await getProductSettings();
+
   return (
-    <div className="space-y-8">
+    <div
+      className="space-y-8"
+      style={
+        {
+          ...productCardVars(design.card),
+          ...productImageVars(design.image),
+        } as React.CSSProperties
+      }
+    >
       <SectionHeading
         eyebrow={content.eyebrow}
         heading={content.heading}

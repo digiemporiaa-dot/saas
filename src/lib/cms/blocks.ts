@@ -9,8 +9,10 @@ import {
   type BlockDefinition,
   type BlockGroup,
   type BlockSurface,
+  PAGE_BLOCK_SURFACES,
 } from './block-types';
 import { BLOG_BLOCKS } from './blog-blocks';
+import { PRODUCT_BLOCKS } from './product-blocks';
 import { SLIDER_BLOCKS } from './slider-blocks';
 import { productSourceFields } from './product-source';
 
@@ -1777,6 +1779,7 @@ export const BLOCKS: Record<string, BlockDefinition> = {
   ...PAGE_BLOCKS,
   ...SLIDER_BLOCKS,
   ...BLOG_BLOCKS,
+  ...PRODUCT_BLOCKS,
 };
 
 export type BlockType = keyof typeof BLOCKS;
@@ -1794,10 +1797,37 @@ export const BLOCK_PICKER_LIST = BLOCK_LIST.filter(
  * The page picker is unchanged — a block without `surfaces` is a page block —
  * and each blog surface gets exactly the blocks written for it plus the generic
  * ones that opted in.
+ *
+ * A product page is the exception: it offers its own blocks *and* every page
+ * block, without either having to list the other. That is what makes "the
+ * sections I built for pages" available on a product, and it keeps being true
+ * for blocks added later — neither list has to be maintained for the two to
+ * stay in step.
  */
 export function blocksForSurface(surface: BlockSurface): BlockDefinition[] {
-  return BLOCK_LIST.filter(
-    (block) => !block.deprecated && (block.surfaces ?? ['page']).includes(surface),
+  const inheritsPage = PAGE_BLOCK_SURFACES.includes(surface);
+  return BLOCK_LIST.filter((block) => {
+    if (block.deprecated) return false;
+    const declared = block.surfaces ?? ['page'];
+    return declared.includes(surface) || (inheritsPage && declared.includes('page'));
+  });
+}
+
+/**
+ * True when `blockType` may be placed on `surface`. Used by the actions.
+ *
+ * Deliberately the same answer the picker gives, superseded blocks included:
+ * one that is hidden from the picker must not be addable by a hand-made
+ * request either. An existing section of that type stays editable — that goes
+ * through the block's schema, not through here.
+ */
+export function blockAllowedOnSurface(blockType: string, surface: BlockSurface): boolean {
+  const block = BLOCKS[blockType];
+  if (!block || block.deprecated) return false;
+  const declared = block.surfaces ?? ['page'];
+  return (
+    declared.includes(surface) ||
+    (PAGE_BLOCK_SURFACES.includes(surface) && declared.includes('page'))
   );
 }
 

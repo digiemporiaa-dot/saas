@@ -10,8 +10,29 @@ import { selectProducts } from '@/lib/services/products';
 import { formatMoney } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
 import { ProductCard } from '@/components/products/product-card';
+import { getProductSettings } from '@/lib/services/product-cms';
+import { productCardVars, productImageVars } from '@/lib/cms/product-settings';
 import { ProductCta } from '@/components/products/product-cta';
 import { SectionHeading, columnVars, type BlockContext } from './shared';
+
+
+/**
+ * The card design variables, as a style object.
+ *
+ * Product cards appear on any page, not only on product pages, so each block
+ * that renders them carries the catalogue's card and image settings down. The
+ * variables all have the card's original value as their fallback, so a site
+ * that has never opened Products → Design renders exactly what it did before.
+ */
+async function cardStyle(): Promise<React.CSSProperties> {
+  const settings = await getProductSettings();
+  return {
+    ...productCardVars(settings.card),
+    ...productImageVars(settings.image),
+    gap: 'var(--product-grid-gap)',
+    rowGap: 'var(--product-grid-row-gap)',
+  } as React.CSSProperties;
+}
 
 export async function ProductCardsBlock({
   content,
@@ -46,7 +67,10 @@ export async function ProductCardsBlock({
         inverted={inverted}
         className="mb-12"
       />
-      <div className="cms-grid items-stretch" style={columnVars(ctx.design, content.columns)}>
+      <div
+        className="cms-grid items-stretch"
+        style={{ ...columnVars(ctx.design, content.columns), ...(await cardStyle()) }}
+      >
         {products.map((product) => (
           <ProductCard
             key={product.id}
@@ -564,7 +588,10 @@ export async function ProductGridBlock({
   return (
     <>
       {heading}
-      <div className="cms-grid items-stretch" style={columnVars(ctx.design, content.columns || 3)}>
+      <div
+        className="cms-grid items-stretch"
+        style={{ ...columnVars(ctx.design, content.columns || 3), ...(await cardStyle()) }}
+      >
         {products.map((product) => (
           <ProductCard
             key={product.id}

@@ -114,6 +114,7 @@ export const ADMIN_NAV: AdminNavModule[] = [
           '/admin/products/categories',
           '/admin/products/brands',
           '/admin/products/order',
+          '/admin/products/design',
         ],
       },
       {
@@ -133,6 +134,12 @@ export const ADMIN_NAV: AdminNavModule[] = [
         href: '/admin/products/order',
         permission: 'products.view',
         description: 'Choose the order products appear in',
+      },
+      {
+        label: 'Product Design',
+        href: '/admin/products/design',
+        permission: 'products.view',
+        description: 'Card style, image sizes, page layout and type',
       },
     ],
   },

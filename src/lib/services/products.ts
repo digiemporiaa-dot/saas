@@ -51,8 +51,11 @@ export type PublicProduct = {
   galleryIds: string[];
   categoryName: string | null;
   categorySlug: string | null;
+  /** Carried so a block can ask for "other products in this category". */
+  categoryId: string | null;
   brandName: string | null;
   brandSlug: string | null;
+  brandId: string | null;
 };
 
 const productSelect = {
@@ -80,8 +83,8 @@ const productSelect = {
   ctaForm: { select: { slug: true, isActive: true } },
   image: { select: { url: true, altText: true } },
   galleryIds: true,
-  category: { select: { name: true, slug: true } },
-  brand: { select: { name: true, slug: true } },
+  category: { select: { id: true, name: true, slug: true } },
+  brand: { select: { id: true, name: true, slug: true } },
 } satisfies Prisma.ProductSelect;
 
 const countrySelect = {
@@ -181,8 +184,10 @@ export function toPublicProduct(row: ProductCountryRow, country: CountryContext)
     galleryIds: toStringArray(product.galleryIds),
     categoryName: product.category?.name ?? null,
     categorySlug: product.category?.slug ?? null,
+    categoryId: product.category?.id ?? null,
     brandName: product.brand?.name ?? null,
     brandSlug: product.brand?.slug ?? null,
+    brandId: product.brand?.id ?? null,
   };
 }
 
