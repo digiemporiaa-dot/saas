@@ -52,7 +52,15 @@ export function ConsentBlock({
 
   return (
     <div className="fd-consent mt-4 space-y-3 text-sm">
-      <p className="fd-help leading-relaxed">{notice.purposeText}</p>
+      {/*
+        * An empty purpose renders nothing, not an empty paragraph: a notice
+        * published without one must not leave a gap above the tick boxes. The
+        * same rule the marketing line already follows — a cleared value is a
+        * decision, not a hole to paper over.
+        */}
+      {notice.purposeText.trim() ? (
+        <p className="fd-help leading-relaxed">{notice.purposeText}</p>
+      ) : null}
 
       {hasBox ? (
         <div>

@@ -84,7 +84,7 @@ export function NoticeEditor({
             <Field
               label="Purpose"
               htmlFor="purposeText"
-              hint="Be specific. A notice that does not say what the details are used for cannot support consent as a lawful basis, whatever the tick box says."
+              hint="Optional, but strongly recommended: a notice that does not say what the details are used for cannot support consent as a lawful basis, whatever the tick box says. Left empty, no purpose paragraph is shown."
               error={errors.purposeText?.[0]}
             >
               <Textarea

@@ -62,7 +62,17 @@ export function hasMarketingWording(label: string | null | undefined): boolean {
 
 /** The shape of a notice, shared by the CMS editor and the renderer. */
 export const consentNoticeSchema = z.object({
-  purposeText: z.string().trim().min(1).max(2000),
+  /**
+   * May be published empty, and then no purpose paragraph is shown at all.
+   *
+   * Not because a purpose is optional in law — a notice that does not say what
+   * the details are used for cannot support consent as a lawful basis — but
+   * because refusing to publish is the wrong place to enforce that. It stops
+   * an administrator fixing the rest of a live notice, and it cannot make the
+   * wording any good; only the business reviewing it can. The editor says so,
+   * and the decision is recorded in the audit log like any other.
+   */
+  purposeText: z.string().trim().max(2000).default(''),
   enquiryLabel: z.string().trim().min(1).max(1000),
   /**
    * Optional on purpose. A site that does not do email marketing has nothing
