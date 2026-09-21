@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { Check } from 'lucide-react';
+import { Check, Sparkles } from 'lucide-react';
 import type { PublicProduct } from '@/lib/services/products';
 import { formatMoney } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
@@ -16,12 +16,20 @@ import { ProductCta } from './product-cta';
  * `showActions` is the master switch over the two action controls: when it is
  * off neither the primary CTA nor the details link renders, whatever their own
  * toggles say.
+ *
+ * The detail section under the price lists everything the product carries —
+ * features, benefits and specifications — in full. Lists are never truncated
+ * unless a section asks for it through `featureLimit`, so four features, seven
+ * or ten all reach the visitor.
  */
 export function ProductCard({
   product,
   billing = 'monthly',
   showPrice = true,
   showFeatures = true,
+  showBenefits = true,
+  showSpecs = true,
+  featureLimit = 0,
   showImage = true,
   showDescription = true,
   showName = true,
@@ -38,6 +46,16 @@ export function ProductCard({
   billing?: 'monthly' | 'annual';
   showPrice?: boolean;
   showFeatures?: boolean;
+  /** The product's benefit list, under the features. */
+  showBenefits?: boolean;
+  /** The product's specifications, as label/value rows. */
+  showSpecs?: boolean;
+  /**
+   * Caps how many features, benefits and specifications a card lists.
+   * `0` — the default — lists every one an administrator entered, so a product
+   * with ten features shows ten.
+   */
+  featureLimit?: number;
   showImage?: boolean;
   showDescription?: boolean;
   /** Off hides the product name entirely. */
@@ -60,6 +78,26 @@ export function ProductCard({
 
   const withCta = showActions && showCta;
   const withDetails = showActions && showDetailsLink;
+
+  /*
+   * Nothing is truncated by default: a product with four features shows four
+   * and one with ten shows ten, because the card is the only place a visitor
+   * sees what an administrator entered. `featureLimit` exists for a section
+   * that deliberately wants short cards; 0 — the default — means "all".
+   */
+  const cap = <T,>(list: T[]): T[] => (featureLimit > 0 ? list.slice(0, featureLimit) : list);
+
+  const features = showFeatures ? cap(product.features) : [];
+  const benefits = showBenefits ? cap(product.benefits) : [];
+  const specs = showSpecs ? cap(product.specs) : [];
+  const groups = [features.length, benefits.length, specs.length].filter(Boolean).length;
+  const hasDetails = groups > 0;
+  /*
+   * With features alone the card reads as it always has — an unlabelled tick
+   * list. Once a second group joins it, the headings are what tells a benefit
+   * apart from a feature.
+   */
+  const labelled = groups > 1;
 
   return (
     <article
@@ -138,15 +176,50 @@ export function ProductCard({
         </div>
       ) : null}
 
-      {showFeatures && product.features.length > 0 ? (
-        <ul className="mt-6 space-y-2.5 border-t border-hairline pt-5">
-          {product.features.slice(0, 6).map((feature, index) => (
-            <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
+      {hasDetails ? (
+        <div className="mt-6 space-y-5 border-t border-hairline pt-5">
+          {features.length > 0 ? (
+            <div>
+              {labelled ? <GroupLabel>Features</GroupLabel> : null}
+              <ul className="space-y-2.5">
+                {features.map((feature, index) => (
+                  <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {benefits.length > 0 ? (
+            <div>
+              {labelled ? <GroupLabel>Benefits</GroupLabel> : null}
+              <ul className="space-y-2.5">
+                {benefits.map((benefit, index) => (
+                  <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+                    <span>{benefit}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {specs.length > 0 ? (
+            <div>
+              {labelled ? <GroupLabel>Specifications</GroupLabel> : null}
+              <dl className="divide-y divide-hairline border-y border-hairline text-sm">
+                {specs.map((spec, index) => (
+                  <div key={index} className="flex items-start justify-between gap-4 py-2">
+                    <dt className="text-muted">{spec.label}</dt>
+                    <dd className="text-right font-medium text-content">{spec.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
+        </div>
       ) : null}
 
       {/* Dropped entirely when neither action shows, so the card does not end
@@ -175,5 +248,12 @@ export function ProductCard({
         </div>
       ) : null}
     </article>
+  );
+}
+
+/** The small heading over a group of product details inside the card. */
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-2.5 text-xs font-semibold uppercase tracking-wide text-muted/80">{children}</p>
   );
 }

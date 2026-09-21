@@ -185,6 +185,11 @@ const productSliderSchema = z.object({
   showDescription: z.coerce.boolean().catch(true).default(true),
   showPrice: z.coerce.boolean().catch(true).default(true),
   showFeatures: z.coerce.boolean().catch(true).default(true),
+  /** Benefits and specifications, alongside the features, both on by default. */
+  showBenefits: z.coerce.boolean().catch(true).default(true),
+  showSpecs: z.coerce.boolean().catch(true).default(true),
+  /** 0 — the default — lists every feature, benefit and specification. */
+  featureLimit: z.coerce.number().int().min(0).max(40).catch(0).default(0),
   showName: z.coerce.boolean().catch(true).default(true),
   linkName: z.coerce.boolean().catch(true).default(true),
   showActions: z.coerce.boolean().catch(true).default(true),
@@ -566,6 +571,17 @@ export const SLIDER_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'boolean', name: 'showDescription', label: 'Show description', width: 'half' },
       { kind: 'boolean', name: 'showPrice', label: 'Show pricing', width: 'half' },
       { kind: 'boolean', name: 'showFeatures', label: 'Show feature list', width: 'half' },
+      { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
+      { kind: 'boolean', name: 'showSpecs', label: 'Show specifications', width: 'half' },
+      {
+        kind: 'number',
+        name: 'featureLimit',
+        label: 'Maximum list items',
+        width: 'half',
+        min: 0,
+        max: 40,
+        help: 'Applies to features, benefits and specifications. 0 shows every one.',
+      },
       { kind: 'boolean', name: 'showName', label: 'Show product name', width: 'half' },
       {
         kind: 'boolean',

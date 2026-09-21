@@ -590,6 +590,9 @@ export async function ProductSliderBlock({
             showDescription={content.showDescription}
             showPrice={content.showPrice}
             showFeatures={content.showFeatures}
+            showBenefits={content.showBenefits}
+            showSpecs={content.showSpecs}
+            featureLimit={content.featureLimit}
             showName={content.showName}
             linkName={content.linkName}
             showActions={content.showActions}

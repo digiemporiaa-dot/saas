@@ -56,6 +56,9 @@ export async function ProductCardsBlock({
             showDescription={content.showDescription}
             showPrice={content.showPrice}
             showFeatures={content.showFeatures}
+            showBenefits={content.showBenefits}
+            showSpecs={content.showSpecs}
+            featureLimit={content.featureLimit}
             showName={content.showName}
             linkName={content.linkName}
             showCta={content.showCta}
@@ -149,6 +152,24 @@ export async function ProductTableBlock({
     });
   }
 
+  /*
+   * Features and benefits are listed in full: `featureLimit` — 0 unless an
+   * editor sets it — is the only thing that shortens them, so a plan with ten
+   * features compares on all ten.
+   */
+  const cap = <T,>(list: T[]): T[] =>
+    content.featureLimit > 0 ? list.slice(0, content.featureLimit) : list;
+
+  const listRows: Array<{
+    label: string;
+    items: (p: (typeof products)[number]) => string[];
+  }> = [];
+  if (content.showFeatures) listRows.push({ label: 'Features', items: (p) => cap(p.features) });
+  if (content.showBenefits) listRows.push({ label: 'Benefits', items: (p) => cap(p.benefits) });
+  // A row no product fills is an empty band across the table, so it is dropped.
+  const filledListRows = listRows.filter((row) => products.some((p) => row.items(p).length > 0));
+  const withSpecs = content.showSpecs && products.some((p) => p.specs.length > 0);
+
   return (
     <>
       <SectionHeading
@@ -210,13 +231,13 @@ export async function ProductTableBlock({
               </tr>
             ))}
 
-            {content.showFeatures ? (
-              <tr>
+            {filledListRows.map((row) => (
+              <tr key={row.label}>
                 <th
                   scope="row"
                   className="border-b border-hairline px-5 py-4 text-left align-top font-medium text-muted"
                 >
-                  Features
+                  {row.label}
                 </th>
                 {products.map((product) => (
                   <td
@@ -224,16 +245,42 @@ export async function ProductTableBlock({
                     className="border-b border-l border-hairline px-5 py-4 align-top"
                   >
                     <ul className="space-y-2">
-                      {product.features.slice(0, 6).map((feature, index) => (
+                      {row.items(product).map((item, index) => (
                         <li key={index} className="flex items-start gap-2 text-xs text-muted">
                           <Check
                             className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand"
                             aria-hidden="true"
                           />
-                          <span>{feature}</span>
+                          <span>{item}</span>
                         </li>
                       ))}
                     </ul>
+                  </td>
+                ))}
+              </tr>
+            ))}
+
+            {withSpecs ? (
+              <tr>
+                <th
+                  scope="row"
+                  className="border-b border-hairline px-5 py-4 text-left align-top font-medium text-muted"
+                >
+                  Specifications
+                </th>
+                {products.map((product) => (
+                  <td
+                    key={product.id}
+                    className="border-b border-l border-hairline px-5 py-4 align-top"
+                  >
+                    <dl className="space-y-1.5 text-xs">
+                      {cap(product.specs).map((spec, index) => (
+                        <div key={index} className="flex items-start justify-between gap-3">
+                          <dt className="text-muted">{spec.label}</dt>
+                          <dd className="text-right font-medium text-content">{spec.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </td>
                 ))}
               </tr>
@@ -282,15 +329,41 @@ export async function ProductTableBlock({
               ))}
             </dl>
 
-            {content.showFeatures && product.features.length > 0 ? (
-              <ul className="mt-4 space-y-2">
-                {product.features.slice(0, 5).map((feature, index) => (
-                  <li key={index} className="flex items-start gap-2 text-xs text-muted">
-                    <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
+            {filledListRows.map((row) =>
+              row.items(product).length > 0 ? (
+                <div key={row.label} className="mt-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted/80">
+                    {row.label}
+                  </p>
+                  <ul className="mt-2 space-y-2">
+                    {row.items(product).map((item, index) => (
+                      <li key={index} className="flex items-start gap-2 text-xs text-muted">
+                        <Check
+                          className="mt-0.5 h-3.5 w-3.5 shrink-0 text-brand"
+                          aria-hidden="true"
+                        />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null,
+            )}
+
+            {content.showSpecs && product.specs.length > 0 ? (
+              <div className="mt-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted/80">
+                  Specifications
+                </p>
+                <dl className="mt-2 divide-y divide-hairline border-y border-hairline text-xs">
+                  {cap(product.specs).map((spec, index) => (
+                    <div key={index} className="flex items-start justify-between gap-3 py-2">
+                      <dt className="text-muted">{spec.label}</dt>
+                      <dd className="text-right font-medium text-content">{spec.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
             ) : null}
 
             <ProductCta
@@ -354,6 +427,19 @@ export async function ProductGridBlock({
     );
   }
 
+  /*
+   * Lists are shown whole — 0 means "every one" — so a product with ten
+   * features does not silently lose six of them to the row it sits in.
+   */
+  const cap = <T,>(list: T[]): T[] =>
+    content.featureLimit > 0 ? list.slice(0, content.featureLimit) : list;
+
+  /** The list layout runs features and benefits together as one line of chips. */
+  const listItems = (product: (typeof products)[number]): string[] => [
+    ...(content.showFeatures ? cap(product.features) : []),
+    ...(content.showBenefits ? cap(product.benefits) : []),
+  ];
+
   if (content.layout === 'list') {
     return (
       <>
@@ -405,9 +491,9 @@ export async function ProductGridBlock({
                     {product.shortDescription}
                   </p>
                 ) : null}
-                {content.showFeatures && product.features.length > 0 ? (
+                {listItems(product).length > 0 ? (
                   <ul className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5">
-                    {product.features.slice(0, 4).map((feature, index) => (
+                    {listItems(product).map((item, index) => (
                       <li
                         key={index}
                         className={cn(
@@ -416,10 +502,30 @@ export async function ProductGridBlock({
                         )}
                       >
                         <Check className="h-3 w-3 shrink-0 cms-accent" aria-hidden="true" />
-                        {feature}
+                        {item}
                       </li>
                     ))}
                   </ul>
+                ) : null}
+
+                {content.showSpecs && product.specs.length > 0 ? (
+                  <dl className="mt-2.5 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+                    {cap(product.specs).map((spec, index) => (
+                      <div key={index} className="flex items-center gap-1.5">
+                        <dt className={ctx.inverted ? 'text-white/60' : 'text-muted'}>
+                          {spec.label}:
+                        </dt>
+                        <dd
+                          className={cn(
+                            'font-medium',
+                            ctx.inverted ? 'text-white' : 'text-content',
+                          )}
+                        >
+                          {spec.value}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
                 ) : null}
               </div>
 
@@ -466,6 +572,9 @@ export async function ProductGridBlock({
             billing={content.billing}
             showPrice={content.showPrice}
             showFeatures={content.showFeatures}
+            showBenefits={content.showBenefits}
+            showSpecs={content.showSpecs}
+            featureLimit={content.featureLimit}
             showImage={content.showImage}
             showDescription={content.showDescription}
             showName={content.showName}

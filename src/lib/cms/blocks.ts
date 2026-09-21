@@ -155,6 +155,14 @@ const productCardsSchema = z.object({
   showDescription: z.boolean().default(true),
   showPrice: z.boolean().default(true),
   showFeatures: z.boolean().default(true),
+  /**
+   * The product's benefits and specifications, alongside the features. Both
+   * default on so everything an administrator entered reaches the visitor.
+   */
+  showBenefits: z.boolean().default(true),
+  showSpecs: z.boolean().default(true),
+  /** 0 — the default — lists every feature, benefit and specification. */
+  featureLimit: z.coerce.number().int().min(0).max(40).catch(0).default(0),
   showCta: z.boolean().default(true),
   /**
    * Card appearance and action toggles. Every one defaults to true, which is
@@ -181,6 +189,14 @@ const productTableSchema = z.object({
   showMonthly: z.boolean().default(true),
   showAnnual: z.boolean().default(true),
   showFeatures: z.boolean().default(true),
+  /**
+   * The product's benefits and specifications, alongside the features. Both
+   * default on so everything an administrator entered reaches the visitor.
+   */
+  showBenefits: z.boolean().default(true),
+  showSpecs: z.boolean().default(true),
+  /** 0 — the default — lists every feature, benefit and specification. */
+  featureLimit: z.coerce.number().int().min(0).max(40).catch(0).default(0),
   ctaLabel: z.string().max(60).default('Get a quote'),
 });
 
@@ -504,6 +520,14 @@ const productGridSchema = z.object({
   showDescription: z.boolean().default(true),
   showPrice: z.boolean().default(true),
   showFeatures: z.boolean().default(true),
+  /**
+   * The product's benefits and specifications, alongside the features. Both
+   * default on so everything an administrator entered reaches the visitor.
+   */
+  showBenefits: z.boolean().default(true),
+  showSpecs: z.boolean().default(true),
+  /** 0 — the default — lists every feature, benefit and specification. */
+  featureLimit: z.coerce.number().int().min(0).max(40).catch(0).default(0),
   showCta: z.boolean().default(true),
   /**
    * Card appearance and action toggles. Every one defaults to true, which is
@@ -775,6 +799,17 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'boolean', name: 'showDescription', label: 'Show description', width: 'half' },
       { kind: 'boolean', name: 'showPrice', label: 'Show pricing', width: 'half' },
       { kind: 'boolean', name: 'showFeatures', label: 'Show feature list', width: 'half' },
+      { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
+      { kind: 'boolean', name: 'showSpecs', label: 'Show specifications', width: 'half' },
+      {
+        kind: 'number',
+        name: 'featureLimit',
+        label: 'Maximum list items',
+        width: 'half',
+        min: 0,
+        max: 40,
+        help: 'Applies to features, benefits and specifications. 0 shows every one.',
+      },
       { kind: 'boolean', name: 'showName', label: 'Show product name', width: 'half' },
       {
         kind: 'boolean',
@@ -817,6 +852,17 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'boolean', name: 'showMonthly', label: 'Show monthly price', width: 'half' },
       { kind: 'boolean', name: 'showAnnual', label: 'Show annual price', width: 'half' },
       { kind: 'boolean', name: 'showFeatures', label: 'Show features', width: 'half' },
+      { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
+      { kind: 'boolean', name: 'showSpecs', label: 'Show specifications', width: 'half' },
+      {
+        kind: 'number',
+        name: 'featureLimit',
+        label: 'Maximum list items',
+        width: 'half',
+        min: 0,
+        max: 40,
+        help: 'Applies to features, benefits and specifications. 0 shows every one.',
+      },
     ],
   },
 
@@ -1690,6 +1736,17 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'boolean', name: 'showDescription', label: 'Show description', width: 'half' },
       { kind: 'boolean', name: 'showPrice', label: 'Show pricing', width: 'half' },
       { kind: 'boolean', name: 'showFeatures', label: 'Show feature list', width: 'half' },
+      { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
+      { kind: 'boolean', name: 'showSpecs', label: 'Show specifications', width: 'half' },
+      {
+        kind: 'number',
+        name: 'featureLimit',
+        label: 'Maximum list items',
+        width: 'half',
+        min: 0,
+        max: 40,
+        help: 'Applies to features, benefits and specifications. 0 shows every one.',
+      },
       { kind: 'boolean', name: 'showName', label: 'Show product name', width: 'half' },
       {
         kind: 'boolean',

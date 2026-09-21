@@ -15,6 +15,8 @@ const TOGGLES = [
   'showDescription',
   'showPrice',
   'showFeatures',
+  'showBenefits',
+  'showSpecs',
   'showCta',
   'showDetailsLink',
   'showActions',
@@ -88,5 +90,36 @@ describe('product card toggles', () => {
     // Zod defaults win, so a corrupt settings blob still renders.
     expect(typeof content.showActions).toBe('boolean');
     expect(typeof content.linkName).toBe('boolean');
+  });
+
+  /**
+   * A card that truncated its lists told the visitor less than the
+   * administrator entered, so nothing is capped unless a section asks for it.
+   */
+  it('lists every feature, benefit and specification by default', () => {
+    for (const type of [...CARD_BLOCKS, 'productTable'] as const) {
+      const content = parseBlockContent(type, {}) as Record<string, unknown>;
+      expect(content.featureLimit, `${type}.featureLimit`).toBe(0);
+      expect(content.showBenefits, `${type}.showBenefits`).toBe(true);
+      expect(content.showSpecs, `${type}.showSpecs`).toBe(true);
+    }
+  });
+
+  it('accepts a deliberate cap and rejects a nonsensical one', () => {
+    expect((parseBlockContent('productGrid', { featureLimit: 4 }) as Record<string, unknown>).featureLimit).toBe(4);
+    // Out of range or corrupt falls back to "show everything".
+    expect((parseBlockContent('productGrid', { featureLimit: -3 }) as Record<string, unknown>).featureLimit).toBe(0);
+    expect((parseBlockContent('productGrid', { featureLimit: 'lots' }) as Record<string, unknown>).featureLimit).toBe(0);
+  });
+
+  it('offers the list controls in the CMS content panel', () => {
+    for (const type of [...CARD_BLOCKS, 'productTable'] as const) {
+      const fields = BLOCKS[type].fields;
+      const names = fields.map((field) => field.name);
+      for (const name of ['showBenefits', 'showSpecs', 'featureLimit']) {
+        expect(names, `${type} should offer ${name}`).toContain(name);
+      }
+      expect(fields.find((f) => f.name === 'featureLimit')?.kind).toBe('number');
+    }
   });
 });
