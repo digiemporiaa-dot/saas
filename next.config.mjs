@@ -98,6 +98,13 @@ const nextConfig = {
   },
   experimental: {
     serverActions: { bodySizeLimit: '12mb' },
+    /*
+     * Enables `forbidden()` from next/navigation, which is what lets a Server
+     * Component answer 403 instead of rendering a page that merely says so.
+     * Used by the super-admin guard in src/lib/auth/guards.ts; the response
+     * body is src/app/forbidden.tsx.
+     */
+    authInterrupts: true,
   },
 
   async headers() {

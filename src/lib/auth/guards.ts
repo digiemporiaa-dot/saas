@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { notFound, redirect } from 'next/navigation';
+import { forbidden, notFound, redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db/prisma';
 import { loadSession, touchSession } from '@/lib/auth/session.service';
@@ -148,6 +148,36 @@ export async function requirePartialUser(): Promise<{
   // Same reasoning as `requireUser`: an anonymous visitor is told nothing.
   if (state.status === 'anonymous') notFound();
   return { user: state.user, status: state.status };
+}
+
+/**
+ * The one role that is not a bag of permissions.
+ *
+ * Super admin is checked by role and never by permission, because a permission
+ * can be granted to any role from the Staff screen — and a capability that is
+ * meant to be reachable by exactly one role must not be one an administrator
+ * can hand out by accident.
+ */
+export const SUPER_ADMIN_ROLE = 'super-admin';
+
+export function isSuperAdmin(user: SessionUser | null): boolean {
+  return user?.role === SUPER_ADMIN_ROLE;
+}
+
+/**
+ * Page-level guard for super-admin-only screens.
+ *
+ * Two different answers, deliberately. Anyone who is not signed in gets what
+ * `requireUser` gives them — the site's own 404, which is how every admin
+ * route answers an anonymous request, and which leaves nothing to find for
+ * anything probing for this page. A signed-in user who is simply not a super
+ * admin gets 403: they know the page exists, telling them they may not open it
+ * is the honest answer, and it is the answer they can act on.
+ */
+export async function requireSuperAdmin(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!isSuperAdmin(user)) forbidden();
+  return user;
 }
 
 export function userCan(user: SessionUser | null, permission: PermissionKey): boolean {

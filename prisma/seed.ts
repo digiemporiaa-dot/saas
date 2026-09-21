@@ -5,8 +5,14 @@ import { PERMISSIONS, SYSTEM_ROLES, ALL_PERMISSIONS } from '../src/lib/auth/perm
 import { DEFAULT_EMAIL_TEMPLATES } from '../src/lib/email/templates';
 import { demoHome, demoPricing, demoContact, demoAbout } from './seed-blocks';
 import { collectSeedProblems } from '../src/lib/env-validation';
+import { isDirectRun } from './seed/_shared';
 
-const prisma = new PrismaClient();
+/**
+ * Exported so each file in `prisma/seed/` — one runnable step apiece — closes
+ * the same connection it opened. Importing this module runs no seed: `main()`
+ * below only executes when this file is the entry point.
+ */
+export const prisma = new PrismaClient();
 
 /**
  * The markets the platform ships with.
@@ -48,7 +54,7 @@ const COUNTRIES = [
   },
 ];
 
-async function seedCountries() {
+export async function seedCountries() {
   for (const country of COUNTRIES) {
     await prisma.country.upsert({
       where: { code: country.code },
@@ -70,7 +76,7 @@ async function defaultCountryId(): Promise<string> {
   return row.id;
 }
 
-async function seedPermissions() {
+export async function seedPermissions() {
   for (const [key, meta] of Object.entries(PERMISSIONS)) {
     await prisma.permission.upsert({
       where: { key },
@@ -81,7 +87,7 @@ async function seedPermissions() {
   console.log(`  permissions: ${ALL_PERMISSIONS.length}`);
 }
 
-async function seedRoles() {
+export async function seedRoles() {
   const all = await prisma.permission.findMany();
   const byKey = new Map(all.map((p) => [p.key, p.id]));
 
@@ -123,7 +129,7 @@ async function seedRoles() {
  * The password is never logged, and the weakness check reports what is missing
  * rather than echoing the value.
  */
-async function seedAdmin() {
+export async function seedAdmin() {
   const email = (process.env.SEED_ADMIN_EMAIL || '').toLowerCase().trim();
   const password = process.env.SEED_ADMIN_PASSWORD || '';
   const name = (process.env.SEED_ADMIN_NAME || 'Super Admin').trim() || 'Super Admin';
@@ -183,7 +189,7 @@ async function seedAdmin() {
   console.log('  NOTE: set RUN_SEED=false and clear SEED_ADMIN_PASSWORD now that the admin exists.');
 }
 
-async function seedSettings() {
+export async function seedSettings() {
   await prisma.websiteSettings.upsert({
     where: { id: 'singleton' },
     update: {},
@@ -392,7 +398,7 @@ const PRODUCTS = [
   },
 ];
 
-async function seedProducts() {
+export async function seedProducts() {
   const category = await prisma.productCategory.upsert({
     where: { slug: 'dropbox-plans' },
     update: {},
@@ -506,7 +512,7 @@ async function upsertSharedForm(slug: string, create: Prisma.FormUncheckedCreate
   return prisma.form.create({ data: create });
 }
 
-async function seedForms() {
+export async function seedForms() {
   const advanced = await prisma.product.findUnique({ where: { slug: 'dropbox-business-advanced' } });
 
   /*
@@ -589,7 +595,7 @@ async function seedForms() {
   console.log('  forms: contact-sales, request-quote');
 }
 
-async function seedPages() {
+export async function seedPages() {
   const pages = [
     { slug: '', title: 'Home', isHomepage: true, sections: demoHome, seoTitle: 'Authorised Dropbox Reseller — licences, migration and support' },
     { slug: 'pricing', title: 'Pricing', isHomepage: false, sections: demoPricing, seoTitle: 'Dropbox pricing and plan comparison' },
@@ -675,7 +681,7 @@ const POSTS = [
   },
 ];
 
-async function seedBlog() {
+export async function seedBlog() {
   const admin = await prisma.user.findFirst({ where: { roles: { slug: 'super-admin' } } });
   const countryId = await defaultCountryId();
 
@@ -726,7 +732,7 @@ async function seedBlog() {
   console.log(`  blog posts: ${POSTS.length}`);
 }
 
-async function seedNavigation() {
+export async function seedNavigation() {
   const countryId = await defaultCountryId();
   const menu = (slug: string, name: string, location: 'HEADER' | 'FOOTER' | 'LEGAL') =>
     prisma.navigation.upsert({
@@ -788,7 +794,7 @@ async function seedNavigation() {
   console.log('  navigation: header, footer, legal');
 }
 
-async function seedLeads() {
+export async function seedLeads() {
   const count = await prisma.lead.count();
   if (count > 0) {
     console.log('  leads: already present');
@@ -858,7 +864,7 @@ async function seedLeads() {
   console.log(`  leads: ${samples.length}`);
 }
 
-async function seedCustomers() {
+export async function seedCustomers() {
   const count = await prisma.customer.count();
   if (count > 0) return;
   const staff = await prisma.user.findFirst({ where: { roles: { slug: 'super-admin' } } });
@@ -922,14 +928,24 @@ async function main() {
   console.log('Seed complete.');
 }
 
-main()
-  .then(async () => {
-    await prisma.$disconnect();
-  })
-  .catch(async (error) => {
-    // The message, not the stack: a seed failure is a configuration problem and
-    // the stack tells an operator nothing useful while risking echoing input.
-    console.error(`Seed failed: ${error instanceof Error ? error.message : String(error)}`);
-    await prisma.$disconnect().catch(() => undefined);
-    process.exit(1);
-  });
+/*
+ * Only when this file is what was run.
+ *
+ * The steps above are imported by `prisma/seed/*.ts`, one runnable file each,
+ * so that an operator — or the Seed files screen in the admin — can re-run a
+ * single part of the seed. Without this guard, importing one step would run
+ * every one of them.
+ */
+if (isDirectRun('seed')) {
+  main()
+    .then(async () => {
+      await prisma.$disconnect();
+    })
+    .catch(async (error) => {
+      // The message, not the stack: a seed failure is a configuration problem and
+      // the stack tells an operator nothing useful while risking echoing input.
+      console.error(`Seed failed: ${error instanceof Error ? error.message : String(error)}`);
+      await prisma.$disconnect().catch(() => undefined);
+      process.exit(1);
+    });
+}

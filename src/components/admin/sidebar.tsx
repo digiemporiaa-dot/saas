@@ -57,7 +57,7 @@ export function AdminSidebar({
     [isSuperAdmin, permissions],
   );
 
-  const modules = React.useMemo(() => visibleModules(can), [can]);
+  const modules = React.useMemo(() => visibleModules(can, isSuperAdmin), [can, isSuperAdmin]);
 
   // The rail is dark, so the dark-surface logo from Website settings is the
   // right one here — the same preference the public footer already makes.

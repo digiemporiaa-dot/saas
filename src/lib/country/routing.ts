@@ -1,5 +1,6 @@
 import type { CountryContext } from './types';
 import { LOGIN_PATH_SEGMENT } from '@/lib/auth/routes';
+import { SEED_FILES_SEGMENT } from '@/lib/seed-files/routes';
 
 /**
  * The country routing engine.
@@ -34,6 +35,8 @@ export const RESERVED_SEGMENTS: ReadonlySet<string> = new Set([
   // The sign-in screen lives under its own segment; read from the one module
   // that defines it so moving the screen cannot leave a stale entry here.
   LOGIN_PATH_SEGMENT,
+  // The seed-file screen is a system route of its own, outside /admin.
+  SEED_FILES_SEGMENT,
   'login',
   'logout',
   'preview',

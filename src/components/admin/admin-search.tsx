@@ -141,7 +141,7 @@ export function AdminSearch({
     }));
 
     const destinations: Command[] = [];
-    for (const group of visibleModules(can)) {
+    for (const group of visibleModules(can, isSuperAdmin)) {
       if (group.href && matches(group.label)) {
         destinations.push({
           id: `nav-${group.id}`,
@@ -177,7 +177,7 @@ export function AdminSearch({
     return term.length >= 2
       ? [...results, ...actions, ...destinations]
       : [...actions, ...destinations];
-  }, [query, hits, can]);
+  }, [query, hits, can, isSuperAdmin]);
 
   React.useEffect(() => {
     setHighlight((current) => Math.min(current, Math.max(commands.length - 1, 0)));

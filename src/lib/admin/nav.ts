@@ -1,4 +1,5 @@
 import type { PermissionKey } from '@/lib/auth/permissions';
+import { SEED_FILES_PATH } from '@/lib/seed-files/routes';
 
 /**
  * Admin information architecture.
@@ -24,6 +25,15 @@ export type AdminNavItem = {
   alsoMatches?: string[];
   /** Sibling routes that must NOT mark this item active. */
   notMatches?: string[];
+  /**
+   * Hidden from everyone but a super admin, whatever their permissions say.
+   *
+   * For the few destinations that are not permission-gated at all, because the
+   * permission could be granted to any role from the Staff screen and the
+   * destination must not be delegable. `permission` stays required, and is
+   * what a super admin's blanket access satisfies.
+   */
+  superAdminOnly?: boolean;
 };
 
 export type AdminNavModule = {
@@ -331,6 +341,14 @@ export const ADMIN_NAV: AdminNavModule[] = [
         permission: 'backup.view',
         description: 'Download, schedule and restore site backups',
       },
+      {
+        label: 'Seed Files',
+        href: SEED_FILES_PATH,
+        permission: 'settings.manage',
+        description: 'Run individual database seed files',
+        superAdminOnly: true,
+        exact: true,
+      },
     ],
   },
 ];
@@ -378,9 +396,17 @@ export function isItemActive(
 
 export type VisibleModule = AdminNavModule & { items: AdminNavItem[] };
 
-/** Filters the tree down to what this user may actually reach. */
+/**
+ * Filters the tree down to what this user may actually reach.
+ *
+ * `isSuperAdmin` is passed separately from `can` rather than inferred from it.
+ * A super admin's `can` returns true for everything, so it cannot tell a super
+ * admin apart from a role that simply holds the permission — and a
+ * `superAdminOnly` entry has to make exactly that distinction.
+ */
 export function visibleModules(
   can: (permission: PermissionKey) => boolean,
+  isSuperAdmin = false,
 ): Array<AdminNavModule & { items: AdminNavItem[] }> {
   const allowed = (permission: AdminNavItem['permission'] | undefined) => {
     if (!permission) return true;
@@ -389,7 +415,9 @@ export function visibleModules(
 
   return ADMIN_NAV.map((group) => ({
     ...group,
-    items: (group.items ?? []).filter((item) => allowed(item.permission)),
+    items: (group.items ?? []).filter(
+      (item) => (!item.superAdminOnly || isSuperAdmin) && allowed(item.permission),
+    ),
   })).filter((group) => (group.href ? allowed(group.permission) : group.items.length > 0));
 }
 

@@ -116,6 +116,21 @@ describe('admin navigation', () => {
   it('exposes every module to a super admin', () => {
     expect(visibleModules(allowAll).length).toBe(ADMIN_NAV.length);
   });
+
+  /**
+   * Seed Files is reachable by role, not by permission: `settings.manage` can
+   * be granted to any role from the Staff screen, and running seed files
+   * against the live database must not become delegable by ticking a box.
+   */
+  it('hides a super-admin-only item from everyone else, whatever they may do', () => {
+    const forEveryone = visibleModules(allowAll).flatMap((group) => group.items);
+    const forSuperAdmin = visibleModules(allowAll, true).flatMap((group) => group.items);
+
+    expect(forEveryone.some((item) => item.href === '/seed-files')).toBe(false);
+    expect(forSuperAdmin.some((item) => item.href === '/seed-files')).toBe(true);
+    // And it is the only difference between the two.
+    expect(forSuperAdmin.length).toBe(forEveryone.length + 1);
+  });
 });
 
 describe('list filters', () => {

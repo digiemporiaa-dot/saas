@@ -1,6 +1,6 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
-import { getCurrentUser, userCan, type SessionUser } from '@/lib/auth/guards';
+import { getCurrentUser, isSuperAdmin, userCan, type SessionUser } from '@/lib/auth/guards';
 import type { PermissionKey } from '@/lib/auth/permissions';
 
 /**
@@ -29,6 +29,38 @@ export async function apiAuthorize(permission: PermissionKey): Promise<GuardResu
       ok: false,
       response: NextResponse.json(
         { error: 'You do not have permission to perform this action.' },
+        { status: 403 },
+      ),
+    };
+  }
+
+  return { ok: true, user };
+}
+
+/**
+ * Route-handler guard for the super-admin-only endpoints.
+ *
+ * Same two status codes and the same reasoning as `apiAuthorize`, but the test
+ * is the role itself rather than a permission: a permission can be granted to
+ * any role from the Staff screen, and what this protects — running seed files
+ * against the live database — is not something an administrator should be able
+ * to delegate by ticking a box.
+ */
+export async function apiAuthorizeSuperAdmin(): Promise<GuardResult> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    return {
+      ok: false,
+      response: NextResponse.json({ error: 'Not signed in.' }, { status: 401 }),
+    };
+  }
+
+  if (!isSuperAdmin(user)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
+        { error: 'Forbidden. This action is restricted to super admins.' },
         { status: 403 },
       ),
     };
