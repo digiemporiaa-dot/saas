@@ -146,6 +146,12 @@ const websiteSettingsSchema = z.object({
   headerCtaUrl: optional(300),
   headerSecondaryCtaLabel: optional(60),
   headerSecondaryCtaUrl: optional(300),
+  /*
+   * Where the menu sits in the header. `catch` rather than a hard failure:
+   * an unknown value means the menu goes back where it has always been,
+   * which is never a broken header.
+   */
+  headerMenuAlign: z.enum(['left', 'center', 'right']).catch('left').default('left'),
 
   footerDescription: optional(600),
   footerNewsletterEnabled: z.coerce.boolean().default(false),

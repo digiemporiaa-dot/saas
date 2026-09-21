@@ -2043,6 +2043,9 @@ model WebsiteSettings {
   headerCtaUrl            String? @default("/contact")
   headerSecondaryCtaLabel String?
   headerSecondaryCtaUrl   String?
+  /// Where the main menu sits between the logo and the header buttons:
+  /// "left" (the original), "center" or "right".
+  headerMenuAlign         String  @default("left")
 
   // Footer
   footerDescription       String? @db.Text

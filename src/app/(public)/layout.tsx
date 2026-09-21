@@ -107,6 +107,7 @@ export default async function PublicLayout({
             ctaUrl: countryHref(country, local.headerCtaUrl),
             secondaryCtaLabel: site.headerSecondaryCtaLabel,
             secondaryCtaUrl: countryHref(country, site.headerSecondaryCtaUrl),
+            menuAlign: (site.headerMenuAlign as 'left' | 'center' | 'right') ?? 'left',
             announcement:
               site.announcementEnabled && site.announcementText
                 ? {

@@ -20,6 +20,13 @@ export type HeaderBrand = {
   secondaryCtaLabel: string | null;
   secondaryCtaUrl: string | null;
   announcement: { text: string; url: string | null } | null;
+  /**
+   * Where the menu sits between the logo and the header buttons.
+   *
+   * Defaults to `left`, which is where it has always been, so a site that has
+   * never touched the setting renders the header it already had.
+   */
+  menuAlign?: 'left' | 'center' | 'right';
 };
 
 export function SiteHeader({
@@ -96,7 +103,23 @@ export function SiteHeader({
             )}
           </Link>
 
-          <ul className="hidden flex-1 items-center gap-1 lg:flex">
+          {/*
+            * The menu's own alignment, from Website design → Header.
+            *
+            * "left" and "center" both claim the space between the logo and the
+            * buttons — the difference is only where the items sit inside it.
+            * "right" gives the space up instead and lets `ml-auto` push the
+            * menu against the buttons, which is what makes the three settings
+            * visibly different rather than two of them looking the same.
+            */}
+          <ul
+            className={cn(
+              'hidden items-center gap-1 lg:flex',
+              brand.menuAlign === 'right' ? 'ml-auto' : 'flex-1',
+              brand.menuAlign === 'center' && 'justify-center',
+              brand.menuAlign === 'right' && 'justify-end',
+            )}
+          >
             {nav.map((item) => (
               <li key={item.id} className="relative">
                 {item.children.length > 0 ? (
@@ -161,7 +184,14 @@ export function SiteHeader({
             ))}
           </ul>
 
-          <div className="ml-auto hidden items-center gap-2 lg:flex">
+          <div
+            className={cn(
+              'hidden items-center gap-2 lg:flex',
+              // With a right-aligned menu the menu owns `ml-auto`; a second one
+              // here would push the buttons away from it again.
+              brand.menuAlign === 'right' ? 'ml-4' : 'ml-auto',
+            )}
+          >
             <MarketSwitcher markets={markets} />
             {brand.secondaryCtaLabel && brand.secondaryCtaUrl ? (
               <Link href={brand.secondaryCtaUrl} className={buttonClasses('ghost', 'sm', 'btn-tokens')}>

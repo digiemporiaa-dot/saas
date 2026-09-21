@@ -761,6 +761,25 @@ export function WebsiteSettingsForm({
             {tab === 'header' ? (
               <>
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">Menu</legend>
+                  <Field
+                    label="Menu alignment"
+                    htmlFor="headerMenuAlign"
+                    hint="Where the menu sits between the logo and the header buttons. On phones the menu is a drawer, so this applies from large screens up."
+                  >
+                    <Select
+                      id="headerMenuAlign"
+                      value={str('headerMenuAlign') || 'left'}
+                      onChange={(e) => set('headerMenuAlign', e.target.value)}
+                    >
+                      <option value="left">Left, next to the logo</option>
+                      <option value="center">Centred</option>
+                      <option value="right">Right, beside the buttons</option>
+                    </Select>
+                  </Field>
+                </fieldset>
+
+                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
                   <legend className="px-1 text-sm font-medium text-content">
                     Announcement bar
                   </legend>
