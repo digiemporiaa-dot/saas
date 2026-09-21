@@ -39,12 +39,21 @@ export async function saveConsentNotice(input: unknown): Promise<ActionResult<{ 
      * URL, so a `javascript:` value can never reach the href of a link the
      * consent block renders. A relative path is kept as typed.
      */
-    const privacyUrl = normaliseLink(parsed.privacyUrl);
-    const termsUrl = normaliseLink(parsed.termsUrl);
-    if (!privacyUrl || !termsUrl) {
-      return failure('Enter a valid Privacy Policy and Terms URL.', {
-        ...(privacyUrl ? {} : { privacyUrl: ['Enter a path such as /privacy, or a full URL.'] }),
-        ...(termsUrl ? {} : { termsUrl: ['Enter a path such as /terms, or a full URL.'] }),
+    /*
+     * Empty is allowed and means "no link". A value that is there still has
+     * to survive the guard — a malformed one would be a broken link in front
+     * of every visitor, which is worse than no link at all.
+     */
+    const privacyUrl = parsed.privacyUrl.trim() ? normaliseLink(parsed.privacyUrl) : '';
+    const termsUrl = parsed.termsUrl.trim() ? normaliseLink(parsed.termsUrl) : '';
+    if (privacyUrl === null || termsUrl === null) {
+      return failure('Enter a valid Privacy Policy and Terms URL, or leave them empty.', {
+        ...(privacyUrl === null
+          ? { privacyUrl: ['Enter a path such as /privacy, a full URL, or leave it empty.'] }
+          : {}),
+        ...(termsUrl === null
+          ? { termsUrl: ['Enter a path such as /terms, a full URL, or leave it empty.'] }
+          : {}),
       });
     }
 

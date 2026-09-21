@@ -98,7 +98,7 @@ export function NoticeEditor({
             <Field
               label="How to withdraw"
               htmlFor="withdrawalText"
-              hint="How someone asks what you hold, or tells you to stop. Shown under the tick boxes."
+              hint="Optional. How someone asks what you hold, or tells you to stop. Shown under the tick boxes; left empty, nothing is shown."
               error={errors.withdrawalText?.[0]}
             >
               <Textarea
@@ -122,7 +122,7 @@ export function NoticeEditor({
             <Field
               label="Enquiry processing"
               htmlFor="enquiryLabel"
-              hint="Shown on forms whose lawful basis is Consent, where the tick box is required."
+              hint="Optional. The detail sentence under the tick box on forms whose lawful basis is Consent. The tick box has its own wording either way."
               error={errors.enquiryLabel?.[0]}
             >
               <Textarea
@@ -153,7 +153,7 @@ export function NoticeEditor({
             <Field
               label="Terms acceptance"
               htmlFor="termsLabel"
-              hint="Only shown on forms that ask for it."
+              hint="Optional. Only shown on forms that ask for it."
               error={errors.termsLabel?.[0]}
             >
               <Textarea
@@ -175,7 +175,12 @@ export function NoticeEditor({
         <CardBody className="space-y-4">
           <fieldset disabled={!canEdit || pending} className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <Field label="Privacy Policy URL" htmlFor="privacyUrl" error={errors.privacyUrl?.[0]}>
+              <Field
+                label="Privacy Policy URL"
+                htmlFor="privacyUrl"
+                hint="Optional. Left empty, no Privacy Policy link is rendered."
+                error={errors.privacyUrl?.[0]}
+              >
                 <Input
                   id="privacyUrl"
                   value={values.privacyUrl}
@@ -197,7 +202,12 @@ export function NoticeEditor({
               </Field>
             </div>
             <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-              <Field label="Terms URL" htmlFor="termsUrl" error={errors.termsUrl?.[0]}>
+              <Field
+                label="Terms URL"
+                htmlFor="termsUrl"
+                hint="Optional. Left empty, no Terms link is rendered."
+                error={errors.termsUrl?.[0]}
+              >
                 <Input
                   id="termsUrl"
                   value={values.termsUrl}

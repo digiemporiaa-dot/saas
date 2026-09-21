@@ -28,16 +28,32 @@ describe('consent notice purpose', () => {
     expect(consentNoticeSchema.parse(complete).purposeText).toBe('To answer your enquiry.');
   });
 
-  it('still refuses a notice missing the parts a visitor reads', () => {
-    for (const key of ['enquiryLabel', 'termsLabel', 'withdrawalText', 'privacyUrl', 'termsUrl']) {
-      const result = consentNoticeSchema.safeParse({ ...complete, [key]: '' });
-      expect(result.success, `${key} should still be required`).toBe(false);
+  it('publishes with every wording field empty', () => {
+    const blank = consentNoticeSchema.safeParse({
+      purposeText: '',
+      enquiryLabel: '',
+      marketingLabel: '',
+      termsLabel: '',
+      withdrawalText: '',
+      privacyUrl: '',
+      termsUrl: '',
+    });
+    expect(blank.success, JSON.stringify(blank.success ? {} : blank.error.issues)).toBe(true);
+  });
+
+  it('still caps every field, so a paste cannot fill the column', () => {
+    const tooLong: Array<[string, number]> = [
+      ['purposeText', 2001],
+      ['enquiryLabel', 1001],
+      ['termsLabel', 1001],
+      ['withdrawalText', 1001],
+      ['privacyUrl', 501],
+      ['termsUrl', 501],
+    ];
+    for (const [key, length] of tooLong) {
+      const result = consentNoticeSchema.safeParse({ ...complete, [key]: 'x'.repeat(length) });
+      expect(result.success, `${key} should still be capped`).toBe(false);
     }
   });
 
-  it('still caps the purpose at a sane length', () => {
-    expect(consentNoticeSchema.safeParse({ ...complete, purposeText: 'x'.repeat(2001) }).success).toBe(
-      false,
-    );
-  });
 });

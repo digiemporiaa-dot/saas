@@ -65,6 +65,11 @@ export const consentNoticeSchema = z.object({
   /**
    * May be published empty, and then no purpose paragraph is shown at all.
    *
+   * Every wording field below works the same way: what is empty is simply not
+   * rendered. The tick box itself is never left unlabelled by this, because
+   * its wording is `combinedLabel` — the form's own sentence, or one composed
+   * from the purposes in force — and never one of these.
+   *
    * Not because a purpose is optional in law — a notice that does not say what
    * the details are used for cannot support consent as a lawful basis — but
    * because refusing to publish is the wrong place to enforce that. It stops
@@ -73,18 +78,25 @@ export const consentNoticeSchema = z.object({
    * and the decision is recorded in the audit log like any other.
    */
   purposeText: z.string().trim().max(2000).default(''),
-  enquiryLabel: z.string().trim().min(1).max(1000),
+  enquiryLabel: z.string().trim().max(1000).default(''),
   /**
    * Optional on purpose. A site that does not do email marketing has nothing
    * to say here, and forcing a sentence in would put a marketing tick box in
    * front of every visitor of a business that never sends any.
    */
   marketingLabel: marketingLabelSchema,
-  termsLabel: z.string().trim().min(1).max(1000),
-  withdrawalText: z.string().trim().min(1).max(1000),
-  privacyUrl: z.string().trim().min(1).max(500),
+  termsLabel: z.string().trim().max(1000).default(''),
+  withdrawalText: z.string().trim().max(1000).default(''),
+  /**
+   * Both links may be published empty, and then no link is rendered.
+   *
+   * A value that is present still has to be a real path or URL — an empty
+   * field is a decision an administrator made, a malformed one is a broken
+   * link in front of every visitor.
+   */
+  privacyUrl: z.string().trim().max(500).default(''),
   privacyVersion: z.string().trim().max(40).optional().nullable(),
-  termsUrl: z.string().trim().min(1).max(500),
+  termsUrl: z.string().trim().max(500).default(''),
   termsVersion: z.string().trim().max(40).optional().nullable(),
 });
 

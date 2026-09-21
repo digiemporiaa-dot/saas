@@ -108,16 +108,22 @@ export function ConsentBlock({
         * account for.
         */}
       <div id={detailId} className="fd-consent-detail space-y-1.5">
-        {requirement.presentsEnquiry ? (
+        {requirement.presentsEnquiry && notice.enquiryLabel.trim() ? (
           <p className="fd-help leading-relaxed">{notice.enquiryLabel}</p>
         ) : null}
-        {requirement.presentsMarketing ? (
+        {requirement.presentsMarketing && notice.marketingLabel.trim() ? (
           <p className="fd-help leading-relaxed">{notice.marketingLabel}</p>
         ) : null}
-        {requirement.presentsTerms ? (
+        {requirement.presentsTerms && notice.termsLabel.trim() ? (
           <p className="fd-help leading-relaxed">{notice.termsLabel}</p>
         ) : null}
 
+        {/*
+          * The withdrawal line carries the policy links, so it is dropped only
+          * when there is nothing at all to put in it — otherwise a notice with
+          * links but no withdrawal wording would lose the links with it.
+          */}
+        {notice.withdrawalText.trim() || privacyHref || termsHref ? (
         <p className="fd-help leading-relaxed">
           {notice.withdrawalText}
           {privacyHref ? (
@@ -137,6 +143,7 @@ export function ConsentBlock({
             </>
           ) : null}
         </p>
+        ) : null}
       </div>
 
       {!hasBox && error ? (
