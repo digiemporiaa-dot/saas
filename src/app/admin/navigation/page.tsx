@@ -100,8 +100,8 @@ export default async function NavigationAdmin() {
       />
 
       <Alert tone="info" className="mb-5">
-        The first header menu is used as the main navigation. Every footer menu renders as a column with its
-        name as the heading, and the legal menu appears beside the copyright line.
+        The first header menu is used as the main navigation. Footer menus are placed by the
+        footer itself — Website design → Footer — which decides which of them appear and where.
       </Alert>
 
       <MenuManager

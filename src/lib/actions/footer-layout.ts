@@ -28,7 +28,7 @@ import { success, failure, toActionError, type ActionResult } from '@/lib/utils/
  */
 
 async function revalidateFooter(countryId: string) {
-  revalidatePath('/admin/settings/footer');
+  revalidatePath('/admin/settings/design');
   void countryId;
   // The footer is in the public layout, so every page carries it.
   revalidatePath('/', 'layout');

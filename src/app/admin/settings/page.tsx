@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { DatabaseBackup, Mail, Palette, Globe } from 'lucide-react';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { getWebsiteSettings } from '@/lib/services/settings';
-import { listActiveFormChoices } from '@/lib/services/forms';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { WebsiteSettingsForm } from '@/components/admin/settings/settings-form';
 import { ApplicationInfo } from '@/components/admin/settings/application-info';
@@ -14,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function SettingsAdmin() {
   const user = await requirePermission('settings.manage');
-  const [settings, forms] = await Promise.all([getWebsiteSettings(), listActiveFormChoices()]);
+  const settings = await getWebsiteSettings();
 
   // Send everything except the timestamps; the form owns the whole record.
   const { id, updatedAt, ...rest } = settings;
@@ -29,7 +28,7 @@ export default async function SettingsAdmin() {
     <div className="mx-auto max-w-3xl">
       <AdminPageHeader
         title="Website settings"
-        description="Name, contact details, logos and the site header and footer."
+        description="Name, contact details, logos and the site header. The footer is on Website design."
         crumbs={[{ label: 'Settings' }]}
         actions={
           <>
@@ -57,8 +56,7 @@ export default async function SettingsAdmin() {
       <WebsiteSettingsForm
         initial={initial}
         canEdit={userCan(user, 'settings.manage')}
-        only={['general', 'branding', 'header', 'footer']}
-        forms={forms}
+        only={['general', 'branding', 'header']}
       />
       <ApplicationInfo siteName={settings.siteName} />
     </div>

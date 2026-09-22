@@ -100,12 +100,6 @@ export const ADMIN_NAV: AdminNavModule[] = [
         description: 'Colours, typography, buttons and layout',
       },
       {
-        label: 'Footer',
-        href: '/admin/settings/footer',
-        permission: 'settings.manage',
-        description: 'Arrange the footer in rows and columns',
-      },
-      {
         label: 'Recycle Bin',
         href: '/admin/trash',
         permission: 'pages.view',

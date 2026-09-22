@@ -119,22 +119,19 @@ const buttonVariant = z.enum([
   'link',
 ]);
 
-/** Every "show this part" switch on the header and footer tabs. */
+/**
+ * Every "show this part" switch on the header tab.
+ *
+ * The footer had ten of its own here. They stopped being read when the footer
+ * became a list of blocks — the brand block decides whether it shows a logo,
+ * the bottom row whether it shows a copyright line — so they were ten switches
+ * an administrator could set and watch do nothing.
+ */
 const CHROME_TOGGLES = [
   'headerShowLogo',
   'headerShowSiteName',
   'headerShowMenu',
   'headerShowMarkets',
-  'footerShowLogo',
-  'footerShowSiteName',
-  'footerShowDescription',
-  'footerShowEmail',
-  'footerShowPhone',
-  'footerShowAddress',
-  'footerShowSocials',
-  'footerShowLegal',
-  'footerShowCopyright',
-  'footerShowDivider',
 ] as const;
 
 const websiteSettingsSchema = z.object({
@@ -307,18 +304,6 @@ const websiteSettingsSchema = z.object({
   footerLogoHeight: optionalLength,
   footerSocialSize: optionalLength,
   footerContactColor: optionalColor,
-
-  /* What the footer shows. All default on — the footer as it is. */
-  footerShowLogo: z.coerce.boolean().default(true),
-  footerShowSiteName: z.coerce.boolean().default(true),
-  footerShowDescription: z.coerce.boolean().default(true),
-  footerShowEmail: z.coerce.boolean().default(true),
-  footerShowPhone: z.coerce.boolean().default(true),
-  footerShowAddress: z.coerce.boolean().default(true),
-  footerShowSocials: z.coerce.boolean().default(true),
-  footerShowLegal: z.coerce.boolean().default(true),
-  footerShowCopyright: z.coerce.boolean().default(true),
-  footerShowDivider: z.coerce.boolean().default(true),
 
   defaultCurrency: z.string().trim().length(3),
   maintenanceMode: z.coerce.boolean().default(false),

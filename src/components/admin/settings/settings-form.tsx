@@ -30,19 +30,6 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
-/** Each part of the footer that can be switched off, in the order it appears. */
-const FOOTER_PARTS: ReadonlyArray<{ name: string; label: string; hint?: string }> = [
-  { name: 'footerShowLogo', label: 'Logo', hint: 'Switched off, the site name stands in.' },
-  { name: 'footerShowSiteName', label: 'Site name', hint: 'Only shown when there is no logo.' },
-  { name: 'footerShowDescription', label: 'Description' },
-  { name: 'footerShowEmail', label: 'Email address' },
-  { name: 'footerShowPhone', label: 'Phone number' },
-  { name: 'footerShowAddress', label: 'Address' },
-  { name: 'footerShowDivider', label: 'Divider line above the bottom row' },
-  { name: 'footerShowCopyright', label: 'Copyright line' },
-  { name: 'footerShowLegal', label: 'Legal menu' },
-  { name: 'footerShowSocials', label: 'Social icons' },
-];
 
 /** The button styles a header button may use. `danger` is deliberately absent. */
 const BUTTON_VARIANTS = [
@@ -67,12 +54,24 @@ export function WebsiteSettingsForm({
   canEdit,
   only,
   forms = [],
+  footerSlot,
 }: {
   initial: WebsiteSettingsValues;
   canEdit: boolean;
   only?: readonly TabId[];
   /** Active forms the footer newsletter can be pointed at. */
   forms?: Array<{ id: string; name: string }>;
+  /**
+   * The footer's structure, rendered above this form while the Footer tab is
+   * open.
+   *
+   * It is a sibling of the form rather than part of it: the builder has its
+   * own buttons and its own Server Actions, and a form inside a form is
+   * neither valid nor something a Save button can be trusted around. Passing
+   * it in is what lets one screen hold the whole footer — what it is made of,
+   * and then what it looks like — instead of two that overlap.
+   */
+  footerSlot?: React.ReactNode;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -117,7 +116,10 @@ export function WebsiteSettingsForm({
   }
 
   return (
-    <form onSubmit={onSubmit}>
+    <div className="space-y-5">
+      {footerSlot && tab === 'footer' ? footerSlot : null}
+
+      <form onSubmit={onSubmit}>
       {bool('maintenanceMode') ? (
         <Alert tone="warning" className="mb-5" title="Maintenance mode is on">
           The public site is still served, but this flag is available for your deployment to act on.
@@ -1250,8 +1252,10 @@ export function WebsiteSettingsForm({
                   </Field>
                 ) : null}
                 <p className="text-sm text-muted">
-                  Footer columns come from Navigation — every menu with a footer location becomes a
-                  column.
+                  Which rows the footer has, what each one holds and which parts it shows are in{' '}
+                  <strong className="font-medium text-content">Footer structure</strong> above. The
+                  menus themselves come from{' '}
+                  <strong className="font-medium text-content">Navigation</strong>.
                 </p>
 
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
@@ -1353,20 +1357,6 @@ export function WebsiteSettingsForm({
                   </div>
                 </fieldset>
 
-                <fieldset className="space-y-3 rounded-lg border border-hairline p-4">
-                  <legend className="px-1 text-sm font-medium text-content">
-                    What the footer shows
-                  </legend>
-                  {FOOTER_PARTS.map((part) => (
-                    <Switch
-                      key={part.name}
-                      checked={str(part.name) !== 'false'}
-                      onChange={(next) => set(part.name, next)}
-                      label={part.label}
-                      hint={part.hint}
-                    />
-                  ))}
-                </fieldset>
               </>
             ) : null}
           </fieldset>
@@ -1387,7 +1377,8 @@ export function WebsiteSettingsForm({
           </div>
         ) : null}
       </Card>
-    </form>
+      </form>
+    </div>
   );
 }
 

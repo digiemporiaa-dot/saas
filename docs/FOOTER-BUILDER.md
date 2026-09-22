@@ -4,7 +4,20 @@ The footer is built the way a page is: a list of sections the market owns, each
 an ordinary CMS block with the same editor, design panel and drag-and-drop
 outline as everything else.
 
-**Settings → Footer** (`/admin/settings/footer`).
+**Settings → Website design → Footer** (`/admin/settings/design`) — everything
+about the footer, structure first and appearance under it.
+
+It used to be three screens: a Footer tab here, the same tab again on Settings,
+and the builder on `/admin/settings/footer`. Three places to change one footer
+is three chances to change the one that does nothing, so the other two are
+gone. Two things about a footer are deliberately elsewhere, because neither is
+about the footer:
+
+- **Settings → Markets** holds each market's contact details, footer
+  description and copyright line. The footer reads them; they are the market's,
+  and the organisation schema uses them too.
+- **Navigation** holds the menus. The footer decides which of them it places
+  and where.
 
 ## Rows and columns
 
