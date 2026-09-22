@@ -13,6 +13,7 @@ import { MediaPicker } from '@/components/admin/media-picker';
 import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/icons';
 import { slugify } from '@/lib/utils/slug';
+import { TaxonomyPageLink } from './taxonomy-page-link';
 
 export type BrandRow = {
   id: string;
@@ -24,6 +25,8 @@ export type BrandRow = {
   logoId: string | null;
   logoUrl: string | null;
   productCount: number;
+  /** Its generated page in this market, where it has one. */
+  pageId: string | null;
 };
 
 const BLANK = {
@@ -124,6 +127,7 @@ export function BrandManager({
                 <tr>
                   <Th>Brand</Th>
                   <Th align="center">Products</Th>
+                  <Th>Page</Th>
                   <Th align="center">Order</Th>
                   <Th align="right">Actions</Th>
                 </tr>
@@ -150,6 +154,15 @@ export function BrandManager({
                     </Td>
                     <Td align="center" className="text-sm text-muted">
                       {row.productCount}
+                    </Td>
+                    <Td>
+                      <TaxonomyPageLink
+                        kind="brand"
+                        id={row.id}
+                        name={row.name}
+                        pageId={row.pageId}
+                        canEdit={canEdit}
+                      />
                     </Td>
                     <Td align="center" className="text-sm text-muted">
                       {row.sortOrder}

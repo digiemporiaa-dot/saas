@@ -13,6 +13,7 @@ import { MediaPicker } from '@/components/admin/media-picker';
 import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/icons';
 import { slugify } from '@/lib/utils/slug';
+import { TaxonomyPageLink } from './taxonomy-page-link';
 
 export type CategoryRow = {
   id: string;
@@ -22,6 +23,8 @@ export type CategoryRow = {
   sortOrder: number;
   imageId: string | null;
   productCount: number;
+  /** Its generated page in this market, where it has one. */
+  pageId: string | null;
 };
 
 const BLANK = { id: '', name: '', slug: '', description: '', sortOrder: '0', imageId: null as string | null };
@@ -106,6 +109,7 @@ export function CategoryManager({ rows, canEdit, canDelete }: {
                 <Th>Name</Th>
                 <Th>URL</Th>
                 <Th align="center">Products</Th>
+                <Th>Page</Th>
                 <Th align="center">Order</Th>
                 <Th align="right">Actions</Th>
               </tr>
@@ -126,6 +130,15 @@ export function CategoryManager({ rows, canEdit, canDelete }: {
                   </Td>
                   <Td align="center" className="text-sm text-muted">
                     {row.productCount}
+                  </Td>
+                  <Td>
+                    <TaxonomyPageLink
+                      kind="category"
+                      id={row.id}
+                      name={row.name}
+                      pageId={row.pageId}
+                      canEdit={canEdit}
+                    />
                   </Td>
                   <Td align="center" className="text-sm text-muted">
                     {row.sortOrder}

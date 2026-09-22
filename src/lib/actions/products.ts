@@ -15,6 +15,8 @@ import { listActiveCountries } from '@/lib/country/registry';
 import { scopeForUser } from '@/lib/country/admin';
 import { offerIn, removeFrom } from '@/lib/country/availability';
 import { sectionCopy } from '@/lib/cms/section-copy';
+import { ensureTaxonomyPage } from '@/lib/services/taxonomy-pages';
+import type { TaxonomyKind } from '@/lib/cms/taxonomy-pages';
 import { countryPath } from '@/lib/country/routing';
 import type { SessionUser } from '@/lib/auth/guards';
 
@@ -840,9 +842,30 @@ export async function saveProductCategory(
      * Only on create: an edit must not silently re-offer a category this market
      * had removed.
      */
+    let generatedPage: string | null = null;
     if (!categoryId) {
       const scope = await scopeForUser(user);
       await offerIn('PRODUCT_CATEGORY', [category.id], scope.country.id);
+
+      /*
+       * And a page to send people to. A category with no page is a filter
+       * nobody can reach; the description that was just typed becomes its
+       * opening, and its products are listed by a block that asks for them at
+       * render time rather than a copy made here.
+       */
+      const page = await ensureTaxonomyPage(
+        {
+          kind: 'category',
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          imageId: category.imageId,
+        },
+        scope.country.id,
+        user.id,
+      );
+      generatedPage = page.created ? page.slug : null;
     }
 
     await recordAudit({
@@ -854,8 +877,71 @@ export async function saveProductCategory(
     });
 
     revalidatePath('/admin/products/categories');
+    revalidatePath('/admin/pages');
     revalidatePath('/', 'layout');
-    return success({ id: category.id }, 'Category saved.');
+    return success(
+      { id: category.id },
+      generatedPage ? `Category saved, with a page at /${generatedPage}.` : 'Category saved.',
+    );
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Gives a category or brand that has no page one now.
+ *
+ * Everything created from here on gets its page on the way in, but the
+ * categories and brands that already existed do not have one — and a category
+ * whose page was deleted on purpose should not have it silently grow back on
+ * the next rename. So this is a button rather than something that happens by
+ * itself, and it does nothing at all where a page is already there.
+ */
+export async function generateTaxonomyPage(
+  kind: TaxonomyKind,
+  id: string,
+): Promise<ActionResult<{ pageId: string; slug: string }>> {
+  try {
+    const user = await authorize('pages.create');
+    const scope = await scopeForUser(user);
+
+    const seed =
+      kind === 'category'
+        ? await prisma.productCategory
+            .findUnique({
+              where: { id },
+              select: { id: true, name: true, slug: true, description: true, imageId: true },
+            })
+            .then((row) => (row ? { kind, ...row } : null))
+        : await prisma.brand
+            .findUnique({
+              where: { id },
+              select: { id: true, name: true, slug: true, description: true, logoId: true },
+            })
+            .then((row) => (row ? { kind, ...row, imageId: row.logoId } : null));
+
+    if (!seed) return failure('That no longer exists.');
+
+    const page = await ensureTaxonomyPage(seed, scope.country.id, user.id);
+
+    if (!page.created) {
+      return failure(`A page already exists at /${page.slug}.`);
+    }
+
+    await recordAudit({
+      actor: user,
+      action: 'created',
+      entity: 'Page',
+      entityId: page.pageId,
+      summary: `Generated the page for “${seed.name}”`,
+      after: { slug: page.slug, from: kind },
+    });
+
+    revalidatePath('/admin/products/categories');
+    revalidatePath('/admin/products/brands');
+    revalidatePath('/admin/pages');
+    revalidatePath('/', 'layout');
+    return success({ pageId: page.pageId, slug: page.slug }, `Page created at /${page.slug}.`);
   } catch (error) {
     return toActionError(error);
   }
@@ -1083,10 +1169,26 @@ export async function saveBrand(
       ? await prisma.brand.update({ where: { id: brandId }, data })
       : await prisma.brand.create({ data });
 
-    // Carried in the market it was created in. See `saveProductCategory`.
+    // Carried in the market it was created in, and given a page to send
+    // people to. See `saveProductCategory`.
+    let generatedPage: string | null = null;
     if (!brandId) {
       const scope = await scopeForUser(user);
       await offerIn('BRAND', [brand.id], scope.country.id);
+
+      const page = await ensureTaxonomyPage(
+        {
+          kind: 'brand',
+          id: brand.id,
+          name: brand.name,
+          slug: brand.slug,
+          description: brand.description,
+          imageId: brand.logoId,
+        },
+        scope.country.id,
+        user.id,
+      );
+      generatedPage = page.created ? page.slug : null;
     }
 
     await recordAudit({
@@ -1099,8 +1201,12 @@ export async function saveBrand(
 
     revalidatePath('/admin/products/brands');
     revalidatePath('/admin/products');
+    revalidatePath('/admin/pages');
     revalidatePath('/', 'layout');
-    return success({ id: brand.id }, 'Brand saved.');
+    return success(
+      { id: brand.id },
+      generatedPage ? `Brand saved, with a page at /${generatedPage}.` : 'Brand saved.',
+    );
   } catch (error) {
     return toActionError(error);
   }
