@@ -17,7 +17,7 @@ usual result was changing the one that did nothing.
 | **Link columns** | Up to four, each a heading and its links. `/pricing` is resolved inside the market being browsed; a full URL is left alone. |
 | **Contact column** | A heading and the phone, email and address, each switchable. Leave one blank and it uses the market's own value. |
 | **Bottom bar** | The line under the rule. `{year}` becomes this year and `{site}` the site name. |
-| **Appearance** | Colours, padding, width, gaps, logo height, social icon size and style, the brand column's width, and the column count per screen size. |
+| **Appearance** | Colours, padding, width, gaps, logo height and width, social icon size and style, the brand column's width, and the column count on tablet and mobile. |
 
 The social links themselves are on **Settings → Branding**; the footer only
 decides whether to show them and what shape to draw them in.
@@ -38,11 +38,15 @@ rule in `globals.css` carries the built-in value as that property's fallback.
 So opening the form on a live site changes nothing until a field is filled in,
 and clearing a field puts it back.
 
-## On a phone
+## How many columns
 
-The row narrows on its own — four columns, then two, then one — unless
-*Columns on tablet* or *Columns on mobile* says otherwise. Zero means "narrow
-it for me".
+The row has as many as the footer has: the brand column, each link column, and
+the contact column. There is deliberately no number to set — one could only
+disagree with what is there, and a stored four against five columns is what put
+the contact column on a row of its own.
+
+On smaller screens the row narrows on its own — two, then one — unless *Columns
+on tablet* or *Columns on mobile* says otherwise. Zero means "narrow it for me".
 
 ## Where the code is
 

@@ -128,6 +128,73 @@ export function resolveCmsIcon(name: string | null | undefined): IconComponent |
 
 export const CMS_ICON_NAMES = Object.keys(CMS_ICONS);
 
+/*
+ * Brand marks, outlined.
+ *
+ * The filled badges below read as solid blocks on a pale surface — a footer's
+ * row of social links wants the same weight as the line icons beside it, not
+ * five dark squares. Drawn on lucide's grid (24px, 1.5 stroke, round caps) so
+ * they sit with the icons the rest of the site uses.
+ */
+const line: SVGProps<SVGSVGElement> = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  strokeWidth: 1.6,
+  strokeLinecap: 'round',
+  strokeLinejoin: 'round',
+};
+
+export function LinkedInLineIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...line} aria-hidden="true" {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7 10.5v6" />
+      <path d="M7 7.6v.01" />
+      <path d="M11 16.5v-6" />
+      <path d="M11 13.2a2.7 2.7 0 0 1 5.4 0v3.3" />
+    </svg>
+  );
+}
+
+export function FacebookLineIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...line} aria-hidden="true" {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M15 8.2h-1.4a1.9 1.9 0 0 0-1.9 1.9V21" />
+      <path d="M9.6 13h4.6" />
+    </svg>
+  );
+}
+
+export function InstagramLineIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...line} aria-hidden="true" {...props}>
+      <rect x="3" y="3" width="18" height="18" rx="5" />
+      <circle cx="12" cy="12" r="3.6" />
+      <path d="M17.2 6.8v.01" />
+    </svg>
+  );
+}
+
+export function YouTubeLineIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...line} aria-hidden="true" {...props}>
+      <rect x="2.5" y="5.5" width="19" height="13" rx="4" />
+      <path d="M10.2 9.4 15 12l-4.8 2.6z" />
+    </svg>
+  );
+}
+
+export function XLineIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg {...line} aria-hidden="true" {...props}>
+      <path d="M4 4l16 16" />
+      <path d="M20 4 4 20" />
+    </svg>
+  );
+}
+
 /** Brand marks — lucide v1 no longer ships these. */
 export function LinkedInIcon(props: SVGProps<SVGSVGElement>) {
   return (

@@ -134,7 +134,16 @@ export const footerDesignSchema = z.object({
    * sentence and a row of icons while the others carry four short links.
    */
   brandWidth: length.default('1.4fr'),
-  columns: count(4),
+  /** How wide the mark may be. Narrower beside the name, where it is a mark. */
+  logoWidth: length,
+  /*
+   * There is deliberately no desktop column count.
+   *
+   * The row has as many columns as the footer has. A number here could only
+   * disagree with that, and it did: a stored four against a brand column,
+   * three link columns and a contact column drew four tracks and dropped the
+   * fifth onto a row of its own.
+   */
   tabletColumns: count(0),
   mobileColumns: count(0),
 
@@ -174,7 +183,7 @@ function put(vars: Vars, name: string, value: string) {
  * in globals.css carry the built-in value as each property's fallback. That is
  * what makes "blank means leave it alone" true rather than a promise.
  */
-export function footerVars(design: FooterDesign): Vars {
+export function footerVars(design: FooterDesign, renderedColumns = 0): Vars {
   const vars: Vars = {};
 
   put(vars, '--footer-bg', design.background);
@@ -191,9 +200,11 @@ export function footerVars(design: FooterDesign): Vars {
   put(vars, '--footer-row-gap', design.rowGap);
   put(vars, '--footer-logo-height', design.logoHeight);
   put(vars, '--footer-social-size', design.socialSize);
+  put(vars, '--footer-logo-width', design.logoWidth);
 
-  vars['--footer-cols'] = columnTracks(design);
-  vars['--footer-cols-tablet'] = even(design.tabletColumns || Math.min(design.columns || 4, 2));
+  const total = renderedColumns || 1;
+  vars['--footer-cols'] = columnTracks(design, total);
+  vars['--footer-cols-tablet'] = even(design.tabletColumns || Math.min(total, 2));
   vars['--footer-cols-mobile'] = even(design.mobileColumns || 1);
 
   return vars;
@@ -208,12 +219,17 @@ function even(n: number): string {
  * The desktop tracks.
  *
  * The brand column is usually wider than the link columns beside it, so it may
- * name its own track; without one every column shares the row equally.
+ * name its own track; without one every column shares the row equally. A row
+ * of one is that one column, not a quarter of the page with three empty
+ * quarters after it.
  */
-function columnTracks(design: FooterDesign): string {
-  const total = Math.min(Math.max(design.columns || 4, 1), 6);
-  if (!design.brandWidth) return even(total);
-  return [`minmax(0, ${design.brandWidth})`, ...Array(Math.max(total - 1, 0)).fill('minmax(0, 1fr)')].join(' ');
+function columnTracks(design: FooterDesign, count: number): string {
+  const total = Math.min(Math.max(count, 1), 6);
+  if (!design.brandWidth || total === 1) return even(total);
+  return [
+    `minmax(0, ${design.brandWidth})`,
+    ...Array(total - 1).fill('minmax(0, 1fr)'),
+  ].join(' ');
 }
 
 /** `{year}` and `{site}` filled in, which is what a copyright line is. */

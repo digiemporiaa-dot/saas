@@ -9,11 +9,11 @@ import { countryHref, countryPath } from '@/lib/country/routing';
 import { safeUrl } from '@/lib/utils/sanitize';
 import { cn } from '@/lib/utils/cn';
 import {
-  LinkedInIcon,
-  XIcon,
-  FacebookIcon,
-  InstagramIcon,
-  YouTubeIcon,
+  LinkedInLineIcon,
+  XLineIcon,
+  FacebookLineIcon,
+  InstagramLineIcon,
+  YouTubeLineIcon,
   type IconComponent,
 } from '@/components/ui/icons';
 import type { CountryContext, CountrySettingsView } from '@/lib/country/types';
@@ -30,12 +30,16 @@ import type { CountryContext, CountrySettingsView } from '@/lib/country/types';
  * into any of those three fields pins it instead.
  */
 
+/*
+ * Outlined rather than the filled badges the blog uses: five solid blocks on a
+ * pale footer read as heavier than everything around them.
+ */
 const SOCIALS: Array<{ key: keyof WebsiteSettings; label: string; Icon: IconComponent }> = [
-  { key: 'instagramUrl', label: 'Instagram', Icon: InstagramIcon },
-  { key: 'facebookUrl', label: 'Facebook', Icon: FacebookIcon },
-  { key: 'youtubeUrl', label: 'YouTube', Icon: YouTubeIcon },
-  { key: 'linkedinUrl', label: 'LinkedIn', Icon: LinkedInIcon },
-  { key: 'twitterUrl', label: 'X', Icon: XIcon },
+  { key: 'instagramUrl', label: 'Instagram', Icon: InstagramLineIcon },
+  { key: 'facebookUrl', label: 'Facebook', Icon: FacebookLineIcon },
+  { key: 'youtubeUrl', label: 'YouTube', Icon: YouTubeLineIcon },
+  { key: 'linkedinUrl', label: 'LinkedIn', Icon: LinkedInLineIcon },
+  { key: 'twitterUrl', label: 'X', Icon: XLineIcon },
 ];
 
 export async function SiteFooter({
@@ -77,8 +81,27 @@ export async function SiteFooter({
     ? renderCopyright(content.bottom.text, settings.siteName).trim()
     : '';
 
+  /*
+   * The row is as wide as the columns it has.
+   *
+   * The count used to be a fixed four, so a footer with a brand column and a
+   * contact column drew two tracks of content and two of nothing — half a row
+   * of empty page. The design's own count still overrides this where somebody
+   * wants a gap on purpose.
+   */
+  const renderedColumns =
+    (content.brand.show ? 1 : 0) + columns.length + (withContact ? 1 : 0);
+
+  const withName =
+    content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'name';
+  const withLogo =
+    Boolean(logoUrl) && (content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'logo');
+
   return (
-    <footer className="site-footer" style={footerVars(design) as React.CSSProperties}>
+    <footer
+      className="site-footer"
+      style={footerVars(design, renderedColumns) as React.CSSProperties}
+    >
       <div className="site-footer__inner">
         <div className="site-footer__grid">
           {content.brand.show ? (
@@ -88,16 +111,21 @@ export async function SiteFooter({
                 className="inline-flex items-center gap-3"
                 aria-label={settings.siteName}
               >
-                {logoUrl && content.brand.logoMode !== 'name' && content.brand.logoMode !== 'none' ? (
+                {withLogo ? (
+                  /*
+                   * Beside the name the logo is a mark, so it is capped much
+                   * narrower: a wide logo with its own wordmark baked in took
+                   * ten rems of the column and pushed the name onto two lines.
+                   */
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
-                    src={logoUrl}
+                    src={logoUrl ?? undefined}
                     alt=""
-                    className="w-auto max-w-[10rem] shrink-0 object-contain"
+                    className={cn('site-footer__logo', withName && 'site-footer__logo--mark')}
                     style={{ height: 'var(--footer-logo-height, 2.5rem)' }}
                   />
                 ) : null}
-                {content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'name' ? (
+                {withName ? (
                   <span className="site-footer__wordmark">
                     {content.brand.title || settings.siteName}
                   </span>
@@ -119,7 +147,7 @@ export async function SiteFooter({
                         aria-label={label}
                         className={cn('site-footer__social', `site-footer__social--${design.socialStyle}`)}
                       >
-                        <Icon className="h-[45%] w-[45%]" aria-hidden="true" />
+                        <Icon className="site-footer__social-glyph" aria-hidden="true" />
                       </a>
                     </li>
                   ))}

@@ -104,7 +104,7 @@ describe('what a footer looks like', () => {
   });
 
   it('gives the brand column a wider track and narrows the row on smaller screens', () => {
-    const vars = footerVars(DEFAULT_FOOTER_DESIGN);
+    const vars = footerVars(DEFAULT_FOOTER_DESIGN, 4);
     expect(vars['--footer-cols']).toBe(
       'minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr)',
     );
@@ -112,9 +112,29 @@ describe('what a footer looks like', () => {
     expect(vars['--footer-cols-mobile']).toBe('repeat(1, minmax(0, 1fr))');
   });
 
-  it('lets each breakpoint be set on its own', () => {
+  /*
+   * The row is as wide as the columns it has. A fixed count is what dropped a
+   * contact column onto a row of its own the moment a third link column was
+   * added, so there is no longer one to disagree with.
+   */
+  it('takes its track count from the columns the footer actually has', () => {
+    for (const count of [2, 3, 4, 5]) {
+      const vars = footerVars(DEFAULT_FOOTER_DESIGN, count);
+      const tracks = vars['--footer-cols']!.match(/minmax\(/g)!.length;
+      expect(tracks, `${count} columns`).toBe(count);
+    }
+  });
+
+  it('gives a single column the whole row rather than a quarter of it', () => {
+    expect(footerVars(DEFAULT_FOOTER_DESIGN, 1)['--footer-cols']).toBe(
+      'repeat(1, minmax(0, 1fr))',
+    );
+  });
+
+  it('lets the smaller screens be set on their own', () => {
     const vars = footerVars(
-      parseFooterDesign({ columns: 4, tabletColumns: 3, mobileColumns: 2, brandWidth: '' }),
+      parseFooterDesign({ tabletColumns: 3, mobileColumns: 2, brandWidth: '' }),
+      4,
     );
     expect(vars['--footer-cols']).toBe('repeat(4, minmax(0, 1fr))');
     expect(vars['--footer-cols-tablet']).toBe('repeat(3, minmax(0, 1fr))');

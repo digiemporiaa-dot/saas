@@ -538,17 +538,7 @@ export function FooterForm({
               </Field>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Columns" htmlFor="footer-cols">
-                <Input
-                  id="footer-cols"
-                  type="number"
-                  min={1}
-                  max={6}
-                  value={design.columns}
-                  onChange={(e) => setDesignValue('columns', Number(e.target.value) || 4)}
-                />
-              </Field>
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Columns on tablet" htmlFor="footer-cols-tablet" hint="0 narrows it.">
                 <Input
                   id="footer-cols-tablet"
