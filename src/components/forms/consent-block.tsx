@@ -50,6 +50,42 @@ export function ConsentBlock({
   const privacyHref = policyHref(notice.privacyUrl);
   const termsHref = requirement.presentsTerms ? policyHref(notice.termsUrl) : null;
 
+  const links =
+    privacyHref || termsHref ? (
+      <PolicyLinks
+        privacyHref={privacyHref}
+        privacyVersion={notice.privacyVersion}
+        termsHref={termsHref}
+        termsVersion={notice.termsVersion}
+      />
+    ) : null;
+
+  /*
+   * Where the policy links go.
+   *
+   * They belong at the end of the withdrawal sentence when there is one. With
+   * no withdrawal wording they would be a line of their own under the tick
+   * box, which reads as a stray link rather than part of what is being agreed
+   * to — so they go at the end of the tick box's own line instead, and wrap
+   * with it.
+   */
+  const inlineLinks = hasBox && !notice.withdrawalText.trim() ? links : null;
+  const detailLinks = inlineLinks ? null : links;
+
+  /*
+   * Whether there is anything left to describe. With the links on the tick
+   * box's own line and no other wording in force, the detail block would be an
+   * empty element that still takes its share of the spacing — a gap under the
+   * consent line with nothing in it.
+   */
+  const detailLines = [
+    requirement.presentsEnquiry ? notice.enquiryLabel : '',
+    requirement.presentsMarketing ? notice.marketingLabel : '',
+    requirement.presentsTerms ? notice.termsLabel : '',
+    notice.withdrawalText,
+  ];
+  const hasDetail = detailLines.some((line) => line.trim()) || Boolean(detailLinks);
+
   return (
     <div className="fd-consent mt-4 space-y-3 text-sm">
       {/*
@@ -65,13 +101,17 @@ export function ConsentBlock({
       {hasBox ? (
         <div>
           {/*
-            * A real <input type="checkbox"> inside its <label>: the whole line
-            * is clickable, Space toggles it, and a screen reader reads the
-            * wording as the control's name. The detail below is attached with
-            * aria-describedby rather than folded into the name, so the name
-            * stays one readable sentence.
+            * A real <input type="checkbox"> with its <label> beside it: the
+            * wording is clickable, Space toggles the box, and a screen reader
+            * reads the wording as the control's name. The detail is attached
+            * with aria-describedby rather than folded into the name, so the
+            * name stays one readable sentence.
+            *
+            * The label wraps the wording rather than the whole row, because a
+            * policy link inside a label would toggle the box on the way to
+            * opening the tab.
             */}
-          <label htmlFor={id} className="flex cursor-pointer items-start gap-2.5 leading-relaxed">
+          <div className="flex items-start gap-2.5 leading-relaxed">
             <input
               id={id}
               type="checkbox"
@@ -79,19 +119,25 @@ export function ConsentBlock({
               onChange={(event) => onChange(event.target.checked)}
               aria-required={requirement.requireCheckbox || undefined}
               aria-invalid={error ? true : undefined}
-              aria-describedby={[detailId, error ? errorId : null].filter(Boolean).join(' ')}
+              aria-describedby={
+                [hasDetail ? detailId : null, error ? errorId : null].filter(Boolean).join(' ') ||
+                undefined
+              }
               className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer"
             />
             <span>
-              {requirement.combinedLabel}
-              {requirement.requireCheckbox ? (
-                <span className="fd-required" aria-hidden="true">
-                  {' '}
-                  *
-                </span>
-              ) : null}
+              <label htmlFor={id} className="cursor-pointer">
+                {requirement.combinedLabel}
+                {requirement.requireCheckbox ? (
+                  <span className="fd-required" aria-hidden="true">
+                    {' '}
+                    *
+                  </span>
+                ) : null}
+              </label>
+              {inlineLinks ? <> {inlineLinks}</> : null}
             </span>
-          </label>
+          </div>
 
           {error ? (
             <p id={errorId} role="alert" className="fd-error mt-1 pl-[1.625rem]">
@@ -105,8 +151,10 @@ export function ConsentBlock({
         * What the box covers, in full. Only the purposes actually in force
         * appear — a form that does not ask for Terms shows no Terms sentence
         * and no Terms link, so there is nothing on screen the record cannot
-        * account for.
+        * account for. With nothing in force at all it is not rendered, rather
+        * than left as an empty block holding its own spacing open.
         */}
+      {hasDetail ? (
       <div id={detailId} className="fd-consent-detail space-y-1.5">
         {requirement.presentsEnquiry && notice.enquiryLabel.trim() ? (
           <p className="fd-help leading-relaxed">{notice.enquiryLabel}</p>
@@ -119,32 +167,19 @@ export function ConsentBlock({
         ) : null}
 
         {/*
-          * The withdrawal line carries the policy links, so it is dropped only
-          * when there is nothing at all to put in it — otherwise a notice with
+          * The withdrawal line, with the policy links after it wherever they
+          * were not put on the consent line itself. It is dropped only when
+          * there is nothing at all to put in it — otherwise a notice with
           * links but no withdrawal wording would lose the links with it.
           */}
-        {notice.withdrawalText.trim() || privacyHref || termsHref ? (
-        <p className="fd-help leading-relaxed">
-          {notice.withdrawalText}
-          {privacyHref ? (
-            <>
-              {' '}
-              <PolicyLink href={privacyHref} version={notice.privacyVersion}>
-                Privacy Policy
-              </PolicyLink>
-            </>
-          ) : null}
-          {termsHref ? (
-            <>
-              {privacyHref ? ' · ' : ' '}
-              <PolicyLink href={termsHref} version={notice.termsVersion}>
-                Terms &amp; Conditions
-              </PolicyLink>
-            </>
-          ) : null}
-        </p>
+        {notice.withdrawalText.trim() || detailLinks ? (
+          <p className="fd-help leading-relaxed">
+            {notice.withdrawalText}
+            {detailLinks ? <> {detailLinks}</> : null}
+          </p>
         ) : null}
       </div>
+      ) : null}
 
       {!hasBox && error ? (
         <p role="alert" className="fd-error">
@@ -168,6 +203,40 @@ function policyHref(raw: string | null | undefined): string | null {
   if (/^https?:\/\/[^\s]+$/i.test(value)) return value;
   if (value.startsWith('/') && !value.startsWith('//')) return value;
   return null;
+}
+
+/**
+ * The policy links, in the order they are agreed to, separated only when both
+ * are there.
+ */
+function PolicyLinks({
+  privacyHref,
+  privacyVersion,
+  termsHref,
+  termsVersion,
+}: {
+  privacyHref: string | null;
+  privacyVersion?: string | null;
+  termsHref: string | null;
+  termsVersion?: string | null;
+}) {
+  return (
+    <>
+      {privacyHref ? (
+        <PolicyLink href={privacyHref} version={privacyVersion}>
+          Privacy Policy
+        </PolicyLink>
+      ) : null}
+      {termsHref ? (
+        <>
+          {privacyHref ? ' · ' : null}
+          <PolicyLink href={termsHref} version={termsVersion}>
+            Terms &amp; Conditions
+          </PolicyLink>
+        </>
+      ) : null}
+    </>
+  );
 }
 
 /**
