@@ -8,6 +8,7 @@ import { authorize, authorizeSelf } from '@/lib/auth/guards';
 import { recordAudit } from '@/lib/services/audit';
 import { sanitizeText } from '@/lib/utils/sanitize';
 import { toDecimal } from '@/lib/utils/money';
+import { uniqueSlug } from '@/lib/utils/slug';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import {
   countrySchema,
@@ -22,6 +23,12 @@ import {
 import { listAccessibleCountries, assertCountryAccess } from '@/lib/country/access';
 import { ADMIN_COUNTRY_COOKIE } from '@/lib/country/admin';
 import { revalidateCountryPage } from '@/lib/country/revalidate';
+import {
+  describeContents,
+  deletionWarning,
+  hasContents,
+  type CountryContents,
+} from '@/lib/country/contents';
 
 /**
  * Market administration.
@@ -225,45 +232,125 @@ export async function setCountryActive(
 }
 
 /**
- * Removes a market that has nothing in it.
+ * What removing a market would destroy, counted once.
  *
- * A market holding pages, articles, menus or leads is never deleted — the
- * relations are Restrict for exactly this reason. Deactivating is the supported
- * way to take a storefront offline without losing its content.
+ * The four relations the database restricts — pages, articles, menus and
+ * leads — plus the market's own pricing rows, which cascade. The same figures
+ * are used for the confirmation and for the audit record, so what somebody is
+ * shown is what is actually deleted.
  */
-export async function deleteCountry(countryId: string): Promise<ActionResult> {
+async function countryContents(countryId: string): Promise<CountryContents> {
+  const [pages, posts, menus, leads, pricing, popups, forms] = await Promise.all([
+    prisma.page.count({ where: { countryId } }),
+    prisma.blogPost.count({ where: { countryId } }),
+    prisma.navigation.count({ where: { countryId } }),
+    prisma.lead.count({ where: { countryId } }),
+    prisma.productCountry.count({ where: { countryId } }),
+    prisma.popup.count({ where: { countryId } }),
+    prisma.form.count({ where: { countryId } }),
+  ]);
+  return { pages, posts, menus, leads, pricing, popups, forms };
+}
+
+/**
+ * Removes a market, and everything that belongs only to it.
+ *
+ * A market is not a container that has to be emptied by hand first. Deleting
+ * one deletes the pages, articles, menus, leads and market pricing that exist
+ * only inside it — nothing else refers to them, so leaving them behind would
+ * only be orphaned rows nobody can reach.
+ *
+ * It is never a single click, though. The first attempt on a market that holds
+ * something refuses and reports exactly what would go, and only a caller that
+ * comes back having confirmed goes ahead. Deactivating remains the way to take
+ * a storefront offline without losing anything, and is still what most people
+ * want — but it is now an option rather than the only way out.
+ *
+ * Products themselves survive: a product is shared across markets and only its
+ * pricing row for this one is removed. The database keeps its `Restrict` rules
+ * so no other code path can delete a market's content by accident; this action
+ * clears it deliberately, in one transaction, and records the counts.
+ */
+export async function deleteCountry(
+  countryId: string,
+  options: { confirmed?: boolean } = {},
+): Promise<ActionResult> {
   try {
     const user = await authorize('settings.manage');
     const country = await prisma.country.findUnique({ where: { id: countryId } });
     if (!country) return failure('That country no longer exists.');
     if (country.isDefault) return failure('The default country cannot be deleted.');
 
-    const [pages, posts, menus, leads] = await Promise.all([
-      prisma.page.count({ where: { countryId } }),
-      prisma.blogPost.count({ where: { countryId } }),
-      prisma.navigation.count({ where: { countryId } }),
-      prisma.lead.count({ where: { countryId } }),
-    ]);
+    const contents = await countryContents(countryId);
 
-    if (pages + posts + menus + leads > 0) {
-      return failure(
-        `${country.name} still has content (${pages} page(s), ${posts} article(s), ${menus} menu(s), ${leads} lead(s)). Deactivate it instead.`,
-      );
+    if (hasContents(contents) && !options.confirmed) {
+      return failure(deletionWarning(country.name, contents), { _confirm: ['content'] });
     }
 
-    await prisma.country.delete({ where: { id: countryId } });
+    /*
+     * Order matters: leads point at pages and articles, so they go first, and
+     * the market itself goes last. Everything else that belongs to a market —
+     * its settings, navigation items, sections, pricing — already cascades.
+     */
+    await prisma.$transaction(async (tx) => {
+      await tx.lead.deleteMany({ where: { countryId } });
+      await tx.navigation.deleteMany({ where: { countryId } });
+      await tx.blogPost.deleteMany({ where: { countryId } });
+      await tx.page.deleteMany({ where: { countryId } });
+
+      /*
+       * A popup belonged to the storefront that showed it and nothing else
+       * points at one, so it goes with the market. A form is the opposite: a
+       * product in another market can name it as its enquiry form, and
+       * deleting one would take its submissions with it. Forms are kept and
+       * switched off instead of quietly becoming site-wide, and the market's
+       * code goes on the slug where a site-wide form already holds it —
+       * `(countryId, slug)` is unique, and the clash would otherwise fail the
+       * whole delete.
+       */
+      await tx.popup.deleteMany({ where: { countryId } });
+
+      const forms = await tx.form.findMany({
+        where: { countryId },
+        select: { id: true, slug: true },
+      });
+      for (const form of forms) {
+        const slug = await uniqueSlug(form.slug, async (candidate) =>
+          Boolean(
+            await tx.form.findFirst({
+              where: { countryId: null, slug: candidate },
+              select: { id: true },
+            }),
+          ),
+        );
+        await tx.form.update({
+          where: { id: form.id },
+          data: { countryId: null, isActive: false, slug },
+        });
+      }
+
+      await tx.country.delete({ where: { id: countryId } });
+    });
 
     await recordAudit({
       actor: user,
       action: 'deleted',
       entity: 'Country',
       entityId: countryId,
-      summary: `Deleted country “${country.name}”`,
-      before: { code: country.code, slug: country.slug },
+      summary:
+        hasContents(contents)
+          ? `Deleted country “${country.name}” and its ${describeContents(contents)}`
+          : `Deleted country “${country.name}”`,
+      before: { code: country.code, slug: country.slug, ...contents },
     });
 
     revalidateMarkets();
-    return success(undefined, 'Country removed.');
+    return success(
+      undefined,
+      hasContents(contents)
+        ? `${country.name} and its content were deleted.`
+        : `${country.name} was deleted.`,
+    );
   } catch (error) {
     return toActionError(error);
   }

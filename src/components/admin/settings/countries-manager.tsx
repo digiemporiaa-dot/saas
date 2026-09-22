@@ -92,6 +92,15 @@ export function CountriesManager({
   const { toast } = useToast();
   const [editing, setEditing] = React.useState<CountryRow | null>(null);
   const [confirmDelete, setConfirmDelete] = React.useState<CountryRow | null>(null);
+  /*
+   * The second step, shown only for a market that still holds something: the
+   * server has counted it and said what would go, and that sentence is what
+   * gets shown rather than anything guessed from the table.
+   */
+  const [confirmWipe, setConfirmWipe] = React.useState<{
+    country: CountryRow;
+    warning: string;
+  } | null>(null);
   const [pending, setPending] = React.useState(false);
   const [errors, setErrors] = React.useState<Record<string, string[]>>({});
 
@@ -105,7 +114,9 @@ export function CountriesManager({
       toast(result.error ?? 'Something went wrong.', 'error');
       return false;
     }
-    toast(result.message ?? 'Saved.');
+    // An empty message means the action handed control to a confirmation
+    // dialog rather than completing, so there is nothing to announce yet.
+    if (result.message !== '') toast(result.message ?? 'Saved.');
     router.refresh();
     return true;
   }
@@ -488,10 +499,33 @@ export function CountriesManager({
           const target = confirmDelete;
           setConfirmDelete(null);
           if (!target) return;
-          await run(() => deleteCountry(target.id));
+          await run(async () => {
+            const result = await deleteCountry(target.id);
+            // It still holds content: say exactly what, and ask again.
+            if (!result.ok && result.fieldErrors?._confirm) {
+              setConfirmWipe({ country: target, warning: result.error });
+              return { ok: true, message: '' };
+            }
+            return result;
+          });
         }}
         title={`Delete ${confirmDelete?.name ?? 'this country'}?`}
-        message="A country that still holds pages, articles, menus or leads cannot be deleted — deactivate it instead, which takes the storefront offline without touching its content."
+        message="The market goes, along with everything that belongs only to it — its pages, articles, menus, leads and product pricing. Deactivating it instead takes the storefront offline and keeps all of that."
+        pending={pending}
+      />
+
+      <ConfirmDialog
+        open={confirmWipe !== null}
+        onClose={() => setConfirmWipe(null)}
+        onConfirm={async () => {
+          const target = confirmWipe?.country;
+          setConfirmWipe(null);
+          if (!target) return;
+          await run(() => deleteCountry(target.id, { confirmed: true }));
+        }}
+        title={`Delete ${confirmWipe?.country.name ?? 'this country'} and its content?`}
+        message={confirmWipe?.warning ?? ''}
+        confirmLabel="Delete everything"
         pending={pending}
       />
 
