@@ -1,4 +1,3 @@
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { after } from 'next/server';
 import {
@@ -9,6 +8,7 @@ import {
   findLivePostCountries,
 } from '@/lib/services/blog';
 import { getBlogSettings } from '@/lib/services/blog-cms';
+import { redirectOrNotFound } from '@/lib/services/redirects';
 import { getSeoSettings, getWebsiteSettings } from '@/lib/services/settings';
 import { buildMetadata, absoluteCountryUrl } from '@/lib/seo/metadata';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -119,7 +119,8 @@ export async function BlogPostSurface({
   slug: string;
 }) {
   const post = await getPublishedPost(country.id, slug);
-  if (!post) notFound();
+  // A retired or renamed article follows a redirect written for its address.
+  if (!post) return redirectOrNotFound(country, `blog/${slug}`);
 
   const [site, seo] = await Promise.all([getWebsiteSettings(), getSeoSettings()]);
 
@@ -218,7 +219,7 @@ export async function BlogCategorySurface({
   searchParams: BlogSearchParams;
 }) {
   const category = await getCategoryBySlug(slug, country.id);
-  if (!category) notFound();
+  if (!category) return redirectOrNotFound(country, `blog/category/${slug}`);
 
   // A hidden category keeps its URL working for anyone who has it bookmarked;
   // it simply stops being advertised in the filters.
@@ -281,7 +282,7 @@ export async function BlogTagSurface({
   searchParams: BlogSearchParams;
 }) {
   const tag = await getTagBySlug(slug);
-  if (!tag) notFound();
+  if (!tag) return redirectOrNotFound(country, `blog/tag/${slug}`);
 
   return (
     <>

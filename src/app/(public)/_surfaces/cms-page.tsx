@@ -1,14 +1,13 @@
-import { notFound, permanentRedirect, redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/db/prisma';
-import { getPublishedPage, findRedirect, findPublishedPageCountries } from '@/lib/services/pages';
+import { getPublishedPage, findPublishedPageCountries } from '@/lib/services/pages';
+import { redirectOrNotFound } from '@/lib/services/redirects';
 import { getWebsiteSettings } from '@/lib/services/settings';
 import { SectionList } from '@/components/cms/section-renderer';
 import { JsonLd } from '@/components/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { countryBreadcrumbSchema, faqSchema } from '@/lib/seo/structured-data';
 import { parseBlockContent, type FaqContent } from '@/lib/cms/blocks';
-import { countryPath } from '@/lib/country/routing';
 import type { CountryContext } from '@/lib/country/types';
 
 /**
@@ -63,21 +62,12 @@ export async function CmsPageSurface({
 }) {
   const page = await getPublishedPage(country.id, slug);
 
-  if (!page) {
-    /*
-     * A redirect is looked up for the full request path first and the
-     * market-relative path second, so a market can own a redirect outright
-     * while a redirect written once still applies wherever it is asked for.
-     * A missing page in one market never falls back to another market's
-     * content — that would serve the wrong prices to the wrong customers.
-     */
-    const target = await findRedirect(countryPath(country, slug), `/${slug}`);
-    if (target) {
-      if (target.permanent) permanentRedirect(target.destination);
-      redirect(target.destination);
-    }
-    notFound();
-  }
+  /*
+   * A missing page in one market never falls back to another market's content
+   * — that would serve the wrong prices to the wrong customers. A redirect
+   * written for this address is followed; otherwise it is a 404.
+   */
+  if (!page) return redirectOrNotFound(country, slug);
 
   const site = await getWebsiteSettings();
 

@@ -1,7 +1,7 @@
-import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getPublicProduct, getProductSeo, findLiveProductCountries } from '@/lib/services/products';
 import { getMediaByIds } from '@/lib/services/media';
+import { redirectOrNotFound } from '@/lib/services/redirects';
 import { getWebsiteSettings } from '@/lib/services/settings';
 import { buildMetadata, absoluteCountryUrl } from '@/lib/seo/metadata';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -59,7 +59,12 @@ export async function ProductSurface({
     getWebsiteSettings(),
     getProductSettings(),
   ]);
-  if (!product) notFound();
+  /*
+   * A product this market does not sell — renamed, retired, or never offered
+   * here — follows a redirect if one was written for its address. A renamed
+   * product's old URL is exactly what the redirect manager is for.
+   */
+  if (!product) return redirectOrNotFound(country, `products/${slug}`);
 
   const [gallery, detail, sidebar] = await Promise.all([
     getMediaByIds(product.galleryIds),

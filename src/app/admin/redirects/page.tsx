@@ -28,7 +28,7 @@ export default async function RedirectsAdmin() {
     <div className="mx-auto max-w-4xl">
       <AdminPageHeader
         title="Redirects"
-        description="Applied when a request would otherwise 404. Loops are rejected when you save."
+        description="Applied to any address that would otherwise 404 — a page, a product, an article, a category. Loops are rejected when you save."
         crumbs={[{ label: 'SEO', href: '/admin/seo' }, { label: 'Redirects' }]}
       />
       <Card className="p-4 sm:p-5">

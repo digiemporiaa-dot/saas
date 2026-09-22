@@ -13,7 +13,7 @@ const {
 } = await import('@/lib/actions/blog');
 const { saveRedirect, deleteRedirect, saveSeoSettings } = await import('@/lib/actions/seo');
 const { getPublishedPost, listPosts } = await import('@/lib/services/blog');
-const { findRedirect } = await import('@/lib/services/pages');
+const { findRedirect } = await import('@/lib/services/redirects');
 
 const suffix = uniqueSuffix();
 const createdPosts: string[] = [];
