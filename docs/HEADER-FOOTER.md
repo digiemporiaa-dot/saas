@@ -19,6 +19,8 @@ in, and clearing a field puts it back.
 | Group | What it holds |
 | --- | --- |
 | Bar | Height (and a separate height for phones), content width, shadow, background, text, link-on-hover, current-page link, border colour, whether the line under it is drawn, whether it sticks while scrolling |
+| Glass | Blur (up to 40px), saturation, and a hairline of light along the top edge |
+| What the header shows | Logo, site name, menu, country switcher — each on or off |
 | Logo | Height, height on phones, maximum width |
 | Menu | Alignment, space between items, text size, weight, capitalisation |
 | Announcement bar | Text, link, background, text colour |
@@ -27,12 +29,33 @@ in, and clearing a field puts it back.
 The drawer on a phone measures itself from the header's own height, so a taller
 header does not leave the drawer overlapping it.
 
+### Glass
+
+Blur is how far the header softens what scrolls under it; saturation is what
+stops a blurred backdrop looking washed out, and is most of the difference
+between glass and frosted plastic. 16–24px of blur at around 140% saturation is
+the usual look.
+
+**Glass only shows through a background that is partly transparent.** Set the
+background colour with an opacity below 100% — the opacity slider under every
+colour — or there is nothing for the blur to work on. Leaving both blur and
+saturation blank keeps the slight fixed blur the header has always had.
+
+The **edge** is the hairline of light along the top that makes glass read as
+glass rather than as a translucent rectangle. It only makes sense over content,
+so it is off unless asked for.
+
 ## Footer
 
-Background, text, headings, links, links on hover, divider line, vertical
-padding, content width, space between columns, logo height and social icon
-size. The columns themselves are still whichever menus have a footer location
-in Navigation.
+Background, text, headings, links, links on hover, contact details, divider
+line, vertical padding, content width, space between columns, logo height and
+social icon size. The columns themselves are still whichever menus have a
+footer location in Navigation.
+
+Each part can be switched off on its own: logo, site name, description, email,
+phone, address, divider, copyright, legal menu and social icons. Switching the
+logo off leaves the site name standing in — a home link with nothing in it is
+not a link.
 
 ## Mega menus
 

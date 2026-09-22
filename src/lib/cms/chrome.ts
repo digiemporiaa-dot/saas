@@ -43,6 +43,39 @@ export function cssTransform(value: string | null | undefined): string | null {
   return TRANSFORMS.has(trimmed) && trimmed !== 'none' ? trimmed : null;
 }
 
+/**
+ * How far the header blurs what scrolls under it.
+ *
+ * A length, and a small one — 40px of blur is the most anybody means by
+ * "glass" and more than that is a smear. Capped rather than refused, because
+ * somebody typing 200px wanted the strongest blur there is.
+ */
+export function cssBlur(value: string | null | undefined): string | null {
+  const match = /^(\d+(?:\.\d+)?)(px|rem)?$/.exec((value ?? '').trim());
+  if (!match) return null;
+
+  // A bare number means pixels, and rem is converted rather than refused — the
+  // one thing that must not happen is "1.5rem" becoming 1.5 pixels.
+  const amount = Number.parseFloat(match[1]) * (match[2] === 'rem' ? 16 : 1);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+  return `${Math.min(amount, 40)}px`;
+}
+
+/**
+ * How much it saturates what shows through, as a percentage.
+ *
+ * Saturating past 100% is what stops a blurred backdrop looking washed out,
+ * and is most of the difference between glass and frosted plastic.
+ */
+export function cssSaturate(value: string | null | undefined): string | null {
+  const raw = (value ?? '').trim().replace(/%$/, '');
+  if (!raw) return null;
+
+  const amount = Number.parseFloat(raw);
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  return `${Math.min(amount, 300)}%`;
+}
+
 /** Named shadows rather than free text: a box-shadow is not a value to trust. */
 const SHADOWS: Record<string, string> = {
   none: 'none',
@@ -69,6 +102,8 @@ export type ChromeSettings = {
   headerLinkActive: string;
   headerBorderColor: string;
   headerShadow: string;
+  headerBlur: string;
+  headerSaturate: string;
   headerMenuGap: string;
   headerMenuSize: string;
   headerMenuWeight: string;
@@ -89,6 +124,7 @@ export type ChromeSettings = {
   footerColumnGap: string;
   footerLogoHeight: string;
   footerSocialSize: string;
+  footerContactColor: string;
 };
 
 type Vars = Record<string, string>;
@@ -114,6 +150,23 @@ export function headerVars(settings: Partial<ChromeSettings>): Vars {
   put(vars, '--header-link-active', cssColor(settings.headerLinkActive));
   put(vars, '--header-border-color', cssColor(settings.headerBorderColor));
   put(vars, '--header-shadow', cssShadow(settings.headerShadow));
+
+  /*
+   * Glass.
+   *
+   * The two filters are emitted as one `backdrop-filter` value, because a
+   * blur without the saturation looks washed out and setting one without the
+   * other is almost never what somebody means. Emitted only when at least one
+   * was set: with neither, the header keeps the slight fixed blur it has
+   * always had.
+   */
+  const blur = cssBlur(settings.headerBlur);
+  const saturate = cssSaturate(settings.headerSaturate);
+  if (blur || saturate) {
+    put(vars, '--header-backdrop', [blur && `blur(${blur})`, saturate && `saturate(${saturate})`]
+      .filter(Boolean)
+      .join(' '));
+  }
   put(vars, '--header-menu-gap', cssLength(settings.headerMenuGap));
   put(vars, '--header-menu-size', cssLength(settings.headerMenuSize));
   put(vars, '--header-menu-weight', cssWeight(settings.headerMenuWeight));
@@ -148,6 +201,7 @@ export function footerVars(settings: Partial<ChromeSettings>): Vars {
   put(vars, '--footer-column-gap', cssLength(settings.footerColumnGap));
   put(vars, '--footer-logo-height', cssLength(settings.footerLogoHeight));
   put(vars, '--footer-social-size', cssLength(settings.footerSocialSize));
+  put(vars, '--footer-contact', cssColor(settings.footerContactColor));
 
   return vars;
 }

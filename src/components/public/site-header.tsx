@@ -43,6 +43,16 @@ export type HeaderBrand = {
   sticky?: boolean;
   /** Whether the hairline under the header is drawn. */
   border?: boolean;
+  /** The hairline of light along the top edge, for the glass look. */
+  glassEdge?: boolean;
+  /**
+   * Which parts of the header render. All default on, so a caller that passes
+   * none of them gets the header it always had.
+   */
+  showLogo?: boolean;
+  showSiteName?: boolean;
+  showMenu?: boolean;
+  showMarkets?: boolean;
 };
 
 /**
@@ -363,17 +373,38 @@ export function SiteHeader({
         </div>
       ) : null}
 
+      {/*
+        * The bar itself.
+        *
+        * `--header-backdrop` is the glass: a blur and a saturation, set
+        * together on the design screen. Its fallback is the slight blur the
+        * header has always had, so a site that sets neither is unchanged, and
+        * `supports-[backdrop-filter]` keeps the translucent surface off
+        * browsers that would render it as plain colour.
+        *
+        * The edge is the hairline of light along the top that makes glass
+        * read as glass rather than as a translucent rectangle. Off unless
+        * asked for, since it only makes sense over content.
+        */}
       <div
         className={cn(
-          'bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75',
+          'relative bg-surface/90 supports-[backdrop-filter]:bg-surface/75',
           brand.border === false ? null : 'border-b',
         )}
         style={{
           background: 'var(--header-bg)',
           borderColor: 'var(--header-border-color)',
           boxShadow: 'var(--header-shadow)',
+          backdropFilter: 'var(--header-backdrop, blur(8px))',
+          WebkitBackdropFilter: 'var(--header-backdrop, blur(8px))',
         }}
       >
+        {brand.glassEdge ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent"
+          />
+        ) : null}
         <nav
           className="mx-auto flex items-center gap-6 px-4 sm:px-6"
           aria-label="Main"
@@ -388,7 +419,7 @@ export function SiteHeader({
             className="flex shrink-0 items-center gap-2"
             aria-label={`${brand.siteName} home`}
           >
-            {brand.logoUrl ? (
+            {brand.logoUrl && brand.showLogo !== false ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={brand.logoUrl}
@@ -400,11 +431,20 @@ export function SiteHeader({
                 }}
               />
             ) : (
+              /*
+               * No logo, or the logo switched off: the wordmark stands in. A
+               * header with neither would be a home link with nothing in it,
+               * so the name is shown whenever the logo is not.
+               */
               <span className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
                   {brand.siteName.charAt(0).toUpperCase()}
                 </span>
-                <span className="font-heading text-base font-bold text-content">{brand.siteName}</span>
+                {brand.showSiteName === false ? null : (
+                  <span className="font-heading text-base font-bold text-content">
+                    {brand.siteName}
+                  </span>
+                )}
               </span>
             )}
           </Link>
@@ -420,7 +460,7 @@ export function SiteHeader({
             */}
           <ul
             className={cn(
-              'hidden items-center lg:flex',
+              brand.showMenu === false ? 'hidden' : 'hidden items-center lg:flex',
               brand.menuAlign === 'right' ? 'ml-auto' : 'flex-1',
               brand.menuAlign === 'center' && 'justify-center',
               brand.menuAlign === 'right' && 'justify-end',
@@ -529,7 +569,7 @@ export function SiteHeader({
               brand.menuAlign === 'right' ? 'ml-4' : 'ml-auto',
             )}
           >
-            <MarketSwitcher markets={markets} />
+            {brand.showMarkets === false ? null : <MarketSwitcher markets={markets} />}
             {brand.secondaryCtaLabel && brand.secondaryCtaUrl ? (
               <HeaderButton
                 label={brand.secondaryCtaLabel}
@@ -571,7 +611,7 @@ export function SiteHeader({
           className="fixed inset-x-0 bottom-0 z-drawer overflow-y-auto border-t border-hairline bg-surface lg:hidden"
           style={{ top: 'var(--header-height, 4rem)' }}
         >
-          <ul className="space-y-1 px-4 py-4">
+          <ul className={cn('space-y-1 px-4 py-4', brand.showMenu === false && 'hidden')}>
             {nav.map((item) => (
               <li key={item.id}>
                 {item.children.length > 0 ? (
@@ -607,7 +647,7 @@ export function SiteHeader({
             ))}
           </ul>
           <div className="space-y-2 border-t border-hairline px-4 py-4">
-            {markets.length > 1 ? (
+            {brand.showMarkets !== false && markets.length > 1 ? (
               <nav aria-label="Country" className="pb-2">
                 <ul className="flex flex-wrap gap-2">
                   {markets.map((market) => (

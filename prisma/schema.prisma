@@ -2088,6 +2088,20 @@ model WebsiteSettings {
   headerBorder           Boolean @default(true)
   headerSticky           Boolean @default(true)
   headerShadow           String  @default("none")
+  /// Glass: how far the header blurs what scrolls under it, and how much it
+  /// saturates it. "" means the backdrop is left alone. The header has always
+  /// blurred slightly; these make that a choice with a dial on it.
+  headerBlur             String  @default("")
+  headerSaturate         String  @default("")
+  /// The hairline of light along the top edge that makes glass read as glass
+  /// rather than as a translucent rectangle.
+  headerGlassEdge        Boolean @default(false)
+
+  /// What the header shows. All on, which is the header as it is.
+  headerShowLogo      Boolean @default(true)
+  headerShowSiteName  Boolean @default(true)
+  headerShowMenu      Boolean @default(true)
+  headerShowMarkets   Boolean @default(true)
   headerMenuGap          String  @default("")
   headerMenuSize         String  @default("")
   headerMenuWeight       String  @default("")
@@ -2126,6 +2140,21 @@ model WebsiteSettings {
   footerColumnGap    String @default("")
   footerLogoHeight   String @default("")
   footerSocialSize   String @default("")
+  /// A colour for the contact lines, separate from the body text, since they
+  /// are the one part of the footer people are meant to read.
+  footerContactColor String @default("")
+
+  /// What the footer shows. All on, which is the footer as it is.
+  footerShowLogo        Boolean @default(true)
+  footerShowSiteName    Boolean @default(true)
+  footerShowDescription Boolean @default(true)
+  footerShowEmail       Boolean @default(true)
+  footerShowPhone       Boolean @default(true)
+  footerShowAddress     Boolean @default(true)
+  footerShowSocials     Boolean @default(true)
+  footerShowLegal       Boolean @default(true)
+  footerShowCopyright   Boolean @default(true)
+  footerShowDivider     Boolean @default(true)
 
   // Layout — global defaults every section can override
   containerWidth       String @default("72rem")

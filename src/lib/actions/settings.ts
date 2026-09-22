@@ -119,6 +119,24 @@ const buttonVariant = z.enum([
   'link',
 ]);
 
+/** Every "show this part" switch on the header and footer tabs. */
+const CHROME_TOGGLES = [
+  'headerShowLogo',
+  'headerShowSiteName',
+  'headerShowMenu',
+  'headerShowMarkets',
+  'footerShowLogo',
+  'footerShowSiteName',
+  'footerShowDescription',
+  'footerShowEmail',
+  'footerShowPhone',
+  'footerShowAddress',
+  'footerShowSocials',
+  'footerShowLegal',
+  'footerShowCopyright',
+  'footerShowDivider',
+] as const;
+
 const websiteSettingsSchema = z.object({
   siteName: z.string().trim().min(1, 'Site name is required').max(120),
   siteTitle: z.string().trim().max(200),
@@ -216,6 +234,35 @@ const websiteSettingsSchema = z.object({
   headerBorder: z.coerce.boolean().default(true),
   headerSticky: z.coerce.boolean().default(true),
   headerShadow: z.enum(['none', 'sm', 'md', 'lg']).catch('none').default('none'),
+  /*
+   * Glass. Blank for both leaves the header's own slight blur alone, which is
+   * what every site that never opens this screen keeps.
+   */
+  headerBlur: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v ?? '')
+    .refine(
+      (v) => v === '' || /^\d{1,3}(\.\d+)?(px|rem)?$/.test(v),
+      'Use a blur such as 16px — up to 40px',
+    ),
+  headerSaturate: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v ?? '')
+    .refine(
+      (v) => v === '' || /^\d{1,3}%?$/.test(v),
+      'Use a percentage such as 140% — 100% leaves the colour as it is',
+    ),
+  headerGlassEdge: z.coerce.boolean().default(false),
+
+  /* What the header shows. All default on — the header as it is. */
+  headerShowLogo: z.coerce.boolean().default(true),
+  headerShowSiteName: z.coerce.boolean().default(true),
+  headerShowMenu: z.coerce.boolean().default(true),
+  headerShowMarkets: z.coerce.boolean().default(true),
   headerMenuGap: optionalLength,
   headerMenuSize: optionalFontSize,
   headerMenuWeight: optionalWeight,
@@ -258,6 +305,19 @@ const websiteSettingsSchema = z.object({
   footerColumnGap: optionalLength,
   footerLogoHeight: optionalLength,
   footerSocialSize: optionalLength,
+  footerContactColor: optionalColor,
+
+  /* What the footer shows. All default on — the footer as it is. */
+  footerShowLogo: z.coerce.boolean().default(true),
+  footerShowSiteName: z.coerce.boolean().default(true),
+  footerShowDescription: z.coerce.boolean().default(true),
+  footerShowEmail: z.coerce.boolean().default(true),
+  footerShowPhone: z.coerce.boolean().default(true),
+  footerShowAddress: z.coerce.boolean().default(true),
+  footerShowSocials: z.coerce.boolean().default(true),
+  footerShowLegal: z.coerce.boolean().default(true),
+  footerShowCopyright: z.coerce.boolean().default(true),
+  footerShowDivider: z.coerce.boolean().default(true),
 
   defaultCurrency: z.string().trim().length(3),
   maintenanceMode: z.coerce.boolean().default(false),
@@ -280,6 +340,15 @@ export async function saveWebsiteSettings(formData: FormData): Promise<ActionRes
       maintenanceMode: raw.maintenanceMode === 'true',
       headerBorder: raw.headerBorder !== 'false',
       headerSticky: raw.headerSticky !== 'false',
+      headerGlassEdge: raw.headerGlassEdge === 'true',
+      /*
+       * The show/hide toggles, all of which default on. `!== 'false'` rather
+       * than `=== 'true'`: a form that never rendered the tab, or a caller
+       * that omits the key, must not switch a part of the site off.
+       */
+      ...Object.fromEntries(
+        CHROME_TOGGLES.map((key) => [key, raw[key] !== 'false'] as const),
+      ),
     });
 
     // URL-ish fields are normalised through the same guard the renderer uses,

@@ -30,6 +30,20 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]['id'];
 
+/** Each part of the footer that can be switched off, in the order it appears. */
+const FOOTER_PARTS: ReadonlyArray<{ name: string; label: string; hint?: string }> = [
+  { name: 'footerShowLogo', label: 'Logo', hint: 'Switched off, the site name stands in.' },
+  { name: 'footerShowSiteName', label: 'Site name', hint: 'Only shown when there is no logo.' },
+  { name: 'footerShowDescription', label: 'Description' },
+  { name: 'footerShowEmail', label: 'Email address' },
+  { name: 'footerShowPhone', label: 'Phone number' },
+  { name: 'footerShowAddress', label: 'Address' },
+  { name: 'footerShowDivider', label: 'Divider line above the bottom row' },
+  { name: 'footerShowCopyright', label: 'Copyright line' },
+  { name: 'footerShowLegal', label: 'Legal menu' },
+  { name: 'footerShowSocials', label: 'Social icons' },
+];
+
 /** The button styles a header button may use. `danger` is deliberately absent. */
 const BUTTON_VARIANTS = [
   { value: 'primary', label: 'Primary (filled)' },
@@ -867,6 +881,76 @@ export function WebsiteSettingsForm({
                 </fieldset>
 
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">Glass</legend>
+                  <p className="text-xs text-muted">
+                    How the header treats what scrolls under it. Leave both blank to keep the
+                    slight blur it already has. Glass only shows through a background that is
+                    partly transparent — set the background colour above with an opacity below
+                    100%.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="Blur"
+                      htmlFor="headerBlur"
+                      hint="Up to 40px. 16px–24px is the usual glass look."
+                    >
+                      <Input
+                        id="headerBlur"
+                        value={str('headerBlur')}
+                        placeholder="8px"
+                        onChange={(e) => set('headerBlur', e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Saturation"
+                      htmlFor="headerSaturate"
+                      hint="Above 100% stops a blurred backdrop looking washed out."
+                    >
+                      <Input
+                        id="headerSaturate"
+                        value={str('headerSaturate')}
+                        placeholder="140%"
+                        onChange={(e) => set('headerSaturate', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                  <Switch
+                    checked={str('headerGlassEdge') === 'true'}
+                    onChange={(next) => set('headerGlassEdge', next)}
+                    label="Light along the top edge"
+                    hint="The hairline that makes glass read as glass rather than as a translucent rectangle."
+                  />
+                </fieldset>
+
+                <fieldset className="space-y-3 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">
+                    What the header shows
+                  </legend>
+                  <Switch
+                    checked={str('headerShowLogo') !== 'false'}
+                    onChange={(next) => set('headerShowLogo', next)}
+                    label="Logo"
+                    hint="Switched off, the site name stands in — a home link with nothing in it is not a link."
+                  />
+                  <Switch
+                    checked={str('headerShowSiteName') !== 'false'}
+                    onChange={(next) => set('headerShowSiteName', next)}
+                    label="Site name beside the mark"
+                    hint="Only shown when there is no logo."
+                  />
+                  <Switch
+                    checked={str('headerShowMenu') !== 'false'}
+                    onChange={(next) => set('headerShowMenu', next)}
+                    label="Menu"
+                  />
+                  <Switch
+                    checked={str('headerShowMarkets') !== 'false'}
+                    onChange={(next) => set('headerShowMarkets', next)}
+                    label="Country switcher"
+                  />
+                </fieldset>
+
+                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
                   <legend className="px-1 text-sm font-medium text-content">Logo</legend>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Field label="Logo height" htmlFor="headerLogoHeight" hint="Default 2rem.">
@@ -1252,7 +1336,28 @@ export function WebsiteSettingsForm({
                         onChange={(e) => set('footerSocialSize', e.target.value)}
                       />
                     </Field>
+                    <ColorField
+                      label="Contact details"
+                      name="footerContactColor"
+                      value={str('footerContactColor')}
+                      onChange={(v) => set('footerContactColor', v)}
+                    />
                   </div>
+                </fieldset>
+
+                <fieldset className="space-y-3 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">
+                    What the footer shows
+                  </legend>
+                  {FOOTER_PARTS.map((part) => (
+                    <Switch
+                      key={part.name}
+                      checked={str(part.name) !== 'false'}
+                      onChange={(next) => set(part.name, next)}
+                      label={part.label}
+                      hint={part.hint}
+                    />
+                  ))}
                 </fieldset>
               </>
             ) : null}

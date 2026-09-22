@@ -79,6 +79,46 @@ describe('what counts as a value', () => {
   });
 });
 
+describe('glass', () => {
+  it('takes a blur and caps it where it stops meaning anything', async () => {
+    const { cssBlur } = await import('@/lib/cms/chrome');
+    expect(cssBlur('16px')).toBe('16px');
+    // A bare number means pixels…
+    expect(cssBlur('16')).toBe('16px');
+    // …and rem is converted, never read as that many pixels.
+    expect(cssBlur('1.5rem')).toBe('24px');
+    // 40px is the most anybody means by "glass"; past it is a smear.
+    expect(cssBlur('200px')).toBe('40px');
+  });
+
+  it('is nothing at all for a blur of zero or of nonsense', async () => {
+    const { cssBlur } = await import('@/lib/cms/chrome');
+    for (const value of ['', '0px', '-4px', 'lots', '50%', null]) {
+      expect(cssBlur(value), String(value)).toBeNull();
+    }
+  });
+
+  it('takes a saturation with or without the sign', async () => {
+    const { cssSaturate } = await import('@/lib/cms/chrome');
+    expect(cssSaturate('140%')).toBe('140%');
+    expect(cssSaturate('140')).toBe('140%');
+    expect(cssSaturate('999')).toBe('300%');
+    expect(cssSaturate('')).toBeNull();
+    expect(cssSaturate('a lot')).toBeNull();
+  });
+
+  it('writes both filters as one backdrop, and none where neither was set', async () => {
+    const { headerVars } = await import('@/lib/cms/chrome');
+    expect(headerVars({ headerBlur: '20px', headerSaturate: '140%' })['--header-backdrop']).toBe(
+      'blur(20px) saturate(140%)',
+    );
+    // One without the other still works — the fallback in the component is
+    // what a site that set neither keeps.
+    expect(headerVars({ headerBlur: '20px' })['--header-backdrop']).toBe('blur(20px)');
+    expect(headerVars({ headerBlur: '', headerSaturate: '' })['--header-backdrop']).toBeUndefined();
+  });
+});
+
 describe('the variables that reach the page', () => {
   it('emits nothing at all for settings nobody has filled in', () => {
     const blank = {

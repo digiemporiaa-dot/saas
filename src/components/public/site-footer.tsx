@@ -14,6 +14,7 @@ import { getPublicFormById } from '@/lib/services/forms';
 import { PublicFormRenderer } from '@/components/forms/public-form';
 import type { ResolvedNavigation, ResolvedNavItem } from '@/lib/services/navigation';
 import type { CountrySettingsView } from '@/lib/country/types';
+import { cn } from '@/lib/utils/cn';
 
 const SOCIALS: Array<{ key: keyof WebsiteSettings; label: string; Icon: IconComponent }> = [
   { key: 'linkedinUrl', label: 'LinkedIn', Icon: LinkedInIcon },
@@ -124,7 +125,7 @@ export async function SiteFooter({
         >
           <div className="max-w-sm">
             <Link href={homeUrl} className="inline-flex items-center gap-2">
-              {settings.logoDarkUrl || settings.logoUrl ? (
+              {(settings.logoDarkUrl || settings.logoUrl) && settings.footerShowLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={settings.logoDarkUrl ?? settings.logoUrl ?? undefined}
@@ -133,17 +134,23 @@ export async function SiteFooter({
                   style={{ height: 'var(--footer-logo-height, 2rem)' }}
                 />
               ) : (
-                <span className="site-footer-heading font-heading text-lg font-bold">
-                  {settings.siteName}
-                </span>
+                /* No logo, or the logo switched off: the wordmark stands in,
+                   unless that is switched off too. */
+                settings.footerShowSiteName ? (
+                  <span className="site-footer-heading font-heading text-lg font-bold">
+                    {settings.siteName}
+                  </span>
+                ) : null
               )}
             </Link>
-            {local.footerDescription ? (
+            {local.footerDescription && settings.footerShowDescription ? (
               <p className="mt-4 text-sm leading-relaxed">{local.footerDescription}</p>
             ) : null}
 
-            <ul className="mt-6 space-y-2 text-sm">
-              {local.salesEmail ? (
+            {/* The contact lines, each switchable, with a colour of their own
+                — they are the part of a footer people are meant to read. */}
+            <ul className="mt-6 space-y-2 text-sm" style={{ color: 'var(--footer-contact)' }}>
+              {local.salesEmail && settings.footerShowEmail ? (
                 <li className="flex items-start gap-2.5">
                   <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <a href={`mailto:${local.salesEmail}`} className="site-footer-link">
@@ -151,7 +158,7 @@ export async function SiteFooter({
                   </a>
                 </li>
               ) : null}
-              {local.salesPhone ? (
+              {local.salesPhone && settings.footerShowPhone ? (
                 <li className="flex items-start gap-2.5">
                   <Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <a href={`tel:${local.salesPhone.replace(/\s/g, '')}`} className="site-footer-link">
@@ -159,7 +166,7 @@ export async function SiteFooter({
                   </a>
                 </li>
               ) : null}
-              {local.address ? (
+              {local.address && settings.footerShowAddress ? (
                 <li className="flex items-start gap-2.5">
                   <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                   <span>{local.address}</span>
@@ -189,13 +196,24 @@ export async function SiteFooter({
           ))}
         </div>
 
-        <div className="site-footer-rule mt-12 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs">
-            {local.copyrightText || `© ${new Date().getFullYear()} ${local.companyName}`}
-          </p>
+        <div
+          className={cn(
+            'mt-12 flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between',
+            settings.footerShowDivider ? 'site-footer-rule border-t' : null,
+          )}
+        >
+          {settings.footerShowCopyright ? (
+            <p className="text-xs">
+              {local.copyrightText || `© ${new Date().getFullYear()} ${local.companyName}`}
+            </p>
+          ) : (
+            // Keeps the social icons on the right rather than letting them
+            // slide across when the copyright line is switched off.
+            <span />
+          )}
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {legal.length > 0 ? (
+            {settings.footerShowLegal && legal.length > 0 ? (
               <nav aria-label="Legal">
                 <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
                   {legal.map((item) => (
@@ -209,7 +227,7 @@ export async function SiteFooter({
               </nav>
             ) : null}
 
-            {socials.length > 0 ? (
+            {settings.footerShowSocials && socials.length > 0 ? (
               <ul className="flex items-center gap-3">
                 {socials.map(({ label, href, Icon }) => (
                   <li key={label}>
