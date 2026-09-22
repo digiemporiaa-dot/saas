@@ -652,35 +652,20 @@ export function BlogDesignForm({
                     />
                   </div>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Related heading" htmlFor="related-heading">
-                    <Input
-                      id="related-heading"
-                      value={values.layout.relatedHeading}
-                      onChange={(e) => setLayout('relatedHeading', e.target.value)}
-                    />
-                  </Field>
-                  <Field label="How many related articles" htmlFor="related-count">
-                    <Input
-                      id="related-count"
-                      type="number"
-                      min={1}
-                      max={12}
-                      value={values.layout.relatedCount}
-                      onChange={(e) => setLayout('relatedCount', Number(e.target.value) || 3)}
-                    />
-                  </Field>
-                  <Field label="Related columns" htmlFor="related-columns">
-                    <Input
-                      id="related-columns"
-                      type="number"
-                      min={1}
-                      max={4}
-                      value={values.layout.relatedColumns}
-                      onChange={(e) => setLayout('relatedColumns', Number(e.target.value) || 3)}
-                    />
-                  </Field>
-                </div>
+                {/*
+                  * The related rail's own settings are not here. The switch
+                  * above still decides whether an article carries one; its
+                  * heading, which posts it lists, how many and how many across
+                  * belong to the Related articles section on the article
+                  * layout, which is what renders it.
+                  */}
+                <p className="text-sm text-muted">
+                  The related rail’s heading, which articles it lists, how many and how many
+                  across are on <strong className="font-medium text-content">Blog</strong> →{' '}
+                  <strong className="font-medium text-content">Layout</strong> →{' '}
+                  <strong className="font-medium text-content">Article</strong> →{' '}
+                  <strong className="font-medium text-content">Related articles</strong>.
+                </p>
               </SettingsSection>
             </TabPanel>
 

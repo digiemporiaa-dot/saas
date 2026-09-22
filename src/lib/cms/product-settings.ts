@@ -155,11 +155,13 @@ export const productLayoutSchema = z.object({
    */
   mobileSidebar: z.enum(MOBILE_SIDEBAR).catch('below').default('below'),
 
-  // --- the rail at the bottom ---
-  relatedEnabled: bool(true),
-  relatedHeading: z.string().max(160).catch('').default('Other plans'),
-  relatedCount: z.coerce.number().int().min(1).max(12).catch(3).default(3),
-  relatedColumns: z.coerce.number().int().min(1).max(4).catch(3).default(3),
+  /*
+   * The rail of related products is not here. It is the `productRelated`
+   * block on each product's own layout, which carries its heading, its
+   * source, how many it lists and how many across — including per screen
+   * size. A catalogue-wide copy of those would be shadowed by every product's
+   * stored row, so it could only ever look broken.
+   */
 
   // --- colours (blank inherits the website palette) ---
   backgroundColor: hex,

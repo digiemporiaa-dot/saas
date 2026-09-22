@@ -139,10 +139,13 @@ export const blogLayoutSchema = z.object({
   tocCollapsible: bool(true),
   tocOpenByDefault: bool(true),
   authorBoxEnabled: bool(true),
+  /**
+   * Whether an article carries a related rail at all. What that rail says and
+   * how it lays out belongs to the `articleRelated` block on the article
+   * layout, which is what renders it — a second copy here would be shadowed by
+   * the section's own values and could only ever look broken.
+   */
   relatedEnabled: bool(true),
-  relatedHeading: z.string().max(160).catch('').default('Related articles'),
-  relatedCount: z.coerce.number().int().min(1).max(12).catch(3).default(3),
-  relatedColumns: z.coerce.number().int().min(1).max(4).catch(3).default(3),
   prevNextEnabled: bool(true),
 
   // --- colours (blank inherits the website palette) ---

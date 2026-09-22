@@ -665,50 +665,24 @@ export function ProductDesignForm({
 
               <SettingsDivider />
 
+              {/*
+                * "Other plans" is a section on each product's own Layout
+                * screen, with its own heading, source, count and columns. It
+                * used to have a second set of controls here that nothing read
+                * — a catalogue-wide default would have been shadowed by every
+                * product's stored row anyway, so it only ever looked broken.
+                */}
               <SettingsSection
                 title="Other plans"
-                description="The rail of related products at the bottom of a product page."
+                description="The rail of related products is a section on each product's page."
               >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Switch
-                    label="Show it"
-                    checked={values.layout.relatedEnabled}
-                    onChange={(checked) => setLayout('relatedEnabled', checked)}
-                  />
-                  <Field label="Heading" htmlFor="related-heading">
-                    <Input
-                      id="related-heading"
-                      value={values.layout.relatedHeading}
-                      onChange={(e) => setLayout('relatedHeading', e.target.value)}
-                    />
-                  </Field>
-                  <Field label="How many" htmlFor="related-count">
-                    <Select
-                      id="related-count"
-                      value={String(values.layout.relatedCount)}
-                      onChange={(e) => setLayout('relatedCount', Number(e.target.value))}
-                    >
-                      {[1, 2, 3, 4, 6, 8, 12].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                  <Field label="Columns" htmlFor="related-columns">
-                    <Select
-                      id="related-columns"
-                      value={String(values.layout.relatedColumns)}
-                      onChange={(e) => setLayout('relatedColumns', Number(e.target.value))}
-                    >
-                      {[1, 2, 3, 4].map((n) => (
-                        <option key={n} value={n}>
-                          {n}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                </div>
+                <p className="text-sm text-muted">
+                  Its heading, which products it lists, how many and how many across are on the
+                  product itself — <strong className="font-medium text-content">Products</strong> →
+                  a product → <strong className="font-medium text-content">Layout</strong> →{' '}
+                  <strong className="font-medium text-content">Other plans</strong>. Hiding it there
+                  takes it off that product’s page.
+                </p>
               </SettingsSection>
             </TabPanel>
 
