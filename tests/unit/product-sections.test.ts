@@ -92,6 +92,21 @@ describe('the built-in arrangement', () => {
     expect(sidebar).toEqual(['productPriceBox']);
   });
 
+  it('opens with the product mark beside its name, at the size the design asks for', () => {
+    const [header, media] = synthesiseProductSections('DETAIL');
+    const headerContent = header.content as Record<string, unknown>;
+
+    expect(headerContent.showImage).toBe(true);
+    expect(headerContent.imagePosition).toBe('left');
+    expect(headerContent.imageWidth).toBe('250px');
+    expect(headerContent.imageRatio).toBe('1/1');
+    // A logo cropped to fill a square is a damaged logo.
+    expect(headerContent.imageFit).toBe('contain');
+
+    // …and the images section below it does not repeat that same image.
+    expect((media.content as Record<string, unknown>).showMainImage).toBe(false);
+  });
+
   it('gives every fallback section a stable id, order and parsed content', () => {
     const sections = synthesiseProductSections('DETAIL');
     expect(new Set(sections.map((s) => s.id)).size).toBe(sections.length);

@@ -17,8 +17,28 @@ import type { SectionSeed } from './blog-defaults';
  */
 
 export const DEFAULT_DETAIL_SECTIONS: SectionSeed[] = [
-  { blockType: 'productHeader' },
-  { blockType: 'productMedia' },
+  /*
+   * The opening pair: the product's mark on the left, its category, name and
+   * summary beside it. A square 250px box, and `contain`, because the mark is
+   * usually a logo and a cropped logo is a damaged one.
+   */
+  {
+    blockType: 'productHeader',
+    content: {
+      showImage: true,
+      imagePosition: 'left',
+      imageWidth: '250px',
+      imageRatio: '1/1',
+      imageFit: 'contain',
+      imageBorder: true,
+    },
+  },
+  /*
+   * The header now carries the main image, so this section is the gallery
+   * alone — otherwise the same picture would appear twice, once under the
+   * other.
+   */
+  { blockType: 'productMedia', content: { showMainImage: false } },
   { blockType: 'productDescription' },
   { blockType: 'productFeatures' },
   { blockType: 'productRelated' },

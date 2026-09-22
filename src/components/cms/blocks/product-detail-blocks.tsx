@@ -63,9 +63,14 @@ export function ProductHeaderBlock({
   const { product, country } = productCtx;
 
   const centred = content.align === 'center';
+  const withImage = content.showImage && Boolean(product.imageUrl);
+  // Centring is a one-column decision; beside an image there is nothing to
+  // centre the text against.
+  const centredText = centred && !withImage;
+  const width = content.imageWidth || '250px';
 
   return (
-    <header className={cn(centred && 'text-center')}>
+    <header className={cn(centredText && 'text-center')}>
       {content.showBreadcrumb ? (
         <nav aria-label="Breadcrumb">
           <ol
@@ -93,43 +98,84 @@ export function ProductHeaderBlock({
         </nav>
       ) : null}
 
-      {(content.showCategory && product.categoryName) ||
-      (content.showBrand && product.brandName) ? (
-        <p
-          className={cn(
-            'mt-4 flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-brand',
-            centred && 'justify-center',
-          )}
-        >
-          {content.showCategory && product.categoryName ? <span>{product.categoryName}</span> : null}
-          {content.showCategory && product.categoryName && content.showBrand && product.brandName ? (
-            <span aria-hidden="true" className="text-muted">
-              ·
-            </span>
-          ) : null}
-          {content.showBrand && product.brandName ? <span>{product.brandName}</span> : null}
-        </p>
-      ) : null}
-
-      <h1
-        className="product-title mt-3 font-heading text-3xl tracking-tight text-content sm:text-4xl lg:text-5xl"
-        style={{
-          fontSize: 'var(--product-title-size)',
-          fontWeight: 'var(--product-title-weight)' as unknown as number,
-          lineHeight: 'var(--product-title-lh)',
-          letterSpacing: 'var(--product-title-ls)',
-        }}
+      {/*
+       * Image and text side by side, and one column on a phone, where two
+       * 250px columns would leave neither of them readable. The image is a
+       * fixed box rather than a share of the row, so "250px" is 250px whatever
+       * the text beside it does.
+       */}
+      <div
+        className={cn(
+          withImage && 'mt-6 flex flex-col gap-8 sm:flex-row sm:items-start',
+          withImage && content.imagePosition === 'right' && 'sm:flex-row-reverse',
+        )}
       >
-        {product.name}
-      </h1>
+        {withImage ? (
+          <Image
+            src={product.imageUrl as string}
+            alt={product.imageAlt ?? product.name}
+            width={500}
+            height={500}
+            priority
+            sizes={width}
+            className={cn('h-auto rounded-lg', content.imageBorder && 'border border-hairline')}
+            style={{
+              width,
+              maxWidth: '100%',
+              flex: `0 0 ${width}`,
+              aspectRatio: content.imageRatio === 'auto' ? undefined : content.imageRatio,
+              objectFit: content.imageFit,
+            }}
+          />
+        ) : null}
 
-      {content.showShortDescription && product.shortDescription ? (
-        <p className="mt-4 text-lg leading-relaxed text-muted">{product.shortDescription}</p>
-      ) : null}
+        <div className={cn(withImage && 'min-w-0 flex-1')}>
+          {(content.showCategory && product.categoryName) ||
+          (content.showBrand && product.brandName) ? (
+            <p
+              className={cn(
+                'flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-brand',
+                // Clear of the breadcrumb, but not of the top of its own column.
+                !withImage && 'mt-4',
+                centredText && 'justify-center',
+              )}
+            >
+              {content.showCategory && product.categoryName ? (
+                <span>{product.categoryName}</span>
+              ) : null}
+              {content.showCategory &&
+              product.categoryName &&
+              content.showBrand &&
+              product.brandName ? (
+                <span aria-hidden="true" className="text-muted">
+                  ·
+                </span>
+              ) : null}
+              {content.showBrand && product.brandName ? <span>{product.brandName}</span> : null}
+            </p>
+          ) : null}
 
-      {content.showSku && product.sku ? (
-        <p className="mt-3 text-xs uppercase tracking-wide text-muted">SKU {product.sku}</p>
-      ) : null}
+          <h1
+            className="product-title mt-3 font-heading text-3xl tracking-tight text-content sm:text-4xl lg:text-5xl"
+            style={{
+              fontSize: 'var(--product-title-size)',
+              fontWeight: 'var(--product-title-weight)' as unknown as number,
+              lineHeight: 'var(--product-title-lh)',
+              letterSpacing: 'var(--product-title-ls)',
+            }}
+          >
+            {product.name}
+          </h1>
+
+          {content.showShortDescription && product.shortDescription ? (
+            <p className="mt-4 text-lg leading-relaxed text-muted">{product.shortDescription}</p>
+          ) : null}
+
+          {content.showSku && product.sku ? (
+            <p className="mt-3 text-xs uppercase tracking-wide text-muted">SKU {product.sku}</p>
+          ) : null}
+        </div>
+      </div>
     </header>
   );
 }

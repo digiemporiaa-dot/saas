@@ -37,6 +37,27 @@ const productHeaderSchema = z.object({
   showSku: bool(false),
   showShortDescription: bool(true),
   align: z.enum(['left', 'center']).catch('left').default('left'),
+
+  /**
+   * The product's image, beside the name rather than under it.
+   *
+   * Off by default, because the page already has a "Product images" section
+   * and two copies of one image is not a layout anyone asked for. Turning it
+   * on is the pairing a catalogue page usually wants — the mark on one side,
+   * the name and summary on the other — and the images section is then hidden
+   * or left to the gallery alone.
+   */
+  showImage: bool(false),
+  imagePosition: z.enum(['left', 'right']).catch('left').default('left'),
+  /** The side the image occupies. Square by default, so 250px is 250 × 250. */
+  imageWidth: z.string().max(16).catch('250px').default('250px'),
+  imageRatio: z.enum(['1/1', '4/3', '3/2', '16/9', 'auto']).catch('1/1').default('1/1'),
+  /**
+   * `contain` by default: a product mark is usually a logo, and cropping a
+   * logo to fill a square is how a brand ends up with its corners cut off.
+   */
+  imageFit: z.enum(['cover', 'contain', 'fill', 'none']).catch('contain').default('contain'),
+  imageBorder: bool(true),
 });
 
 const productMediaSchema = z.object({
@@ -148,6 +169,57 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
         label: 'Show short description',
         width: 'half',
       },
+      {
+        kind: 'boolean',
+        name: 'showImage',
+        label: 'Show the product image beside the text',
+        width: 'half',
+        help: 'Hide the separate “Product images” section when you turn this on, or it appears twice.',
+      },
+      {
+        kind: 'select',
+        name: 'imagePosition',
+        label: 'Image side',
+        width: 'half',
+        options: [
+          { label: 'Left', value: 'left' },
+          { label: 'Right', value: 'right' },
+        ],
+      },
+      {
+        kind: 'text',
+        name: 'imageWidth',
+        label: 'Image size',
+        width: 'half',
+        placeholder: '250px',
+        help: 'The width. With a square ratio, 250px means 250 × 250.',
+      },
+      {
+        kind: 'select',
+        name: 'imageRatio',
+        label: 'Image ratio',
+        width: 'half',
+        options: [
+          { label: 'Square (1:1)', value: '1/1' },
+          { label: 'Landscape (4:3)', value: '4/3' },
+          { label: 'Landscape (3:2)', value: '3/2' },
+          { label: 'Widescreen (16:9)', value: '16/9' },
+          { label: 'Original', value: 'auto' },
+        ],
+      },
+      {
+        kind: 'select',
+        name: 'imageFit',
+        label: 'Image fit',
+        width: 'half',
+        options: [
+          { label: 'Contain — the whole image, letterboxed', value: 'contain' },
+          { label: 'Cover — fills the box, crops the edges', value: 'cover' },
+          { label: 'Fill — stretches to the box', value: 'fill' },
+          { label: 'None', value: 'none' },
+        ],
+      },
+      { kind: 'boolean', name: 'imageBorder', label: 'Draw a border round it', width: 'half' },
     ],
   },
 
