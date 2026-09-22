@@ -105,12 +105,31 @@ function MegaPanel({
 }) {
   const grouped = item.children.some((child) => child.children.length > 0);
 
+  /*
+   * Where the panel sits and how wide it is.
+   *
+   * "center" hangs it under the middle of its trigger, "left" from the
+   * trigger's own left edge — which is what a menu near the left of the
+   * header wants, since a centred panel there would run off the page — and
+   * "screen" ignores the trigger and spans the window. The width caps all
+   * three; blank keeps the 64rem the panel has always been.
+   */
+  const full = item.megaAlign === 'screen';
+  const width = item.megaWidth || '64rem';
+
   return (
-    <div className="absolute left-1/2 top-full w-screen max-w-5xl -translate-x-1/2 px-4 pt-2">
+    <div
+      className={cn(
+        'absolute top-full w-screen px-4 pt-2',
+        item.megaAlign === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2',
+      )}
+      style={{ maxWidth: full ? undefined : width }}
+    >
       <div
-        className="animate-slide-up rounded-xl border border-hairline bg-surface p-6 shadow-xl"
+        className="animate-slide-up mx-auto rounded-xl border border-hairline bg-surface p-6 shadow-xl"
         style={{
           display: 'grid',
+          maxWidth: full ? undefined : width,
           gap: grouped ? '1.5rem 2rem' : '0.25rem 1rem',
           gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         }}
@@ -158,6 +177,39 @@ function MegaPanel({
 }
 
 /**
+ * The mark beside a menu item: an uploaded image where one is set, the shipped
+ * icon otherwise, and nothing at all where neither is.
+ *
+ * The image wins because it is the more specific choice — somebody who
+ * uploaded a vendor logo meant that logo, not the cloud icon they picked
+ * before it existed.
+ */
+function NavMark({ item, className }: { item: ResolvedNavItem; className?: string }) {
+  const size = item.imageSize || '1.25rem';
+
+  if (item.imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={item.imageUrl}
+        alt={item.imageAlt ?? ''}
+        aria-hidden={item.imageAlt ? undefined : true}
+        className={cn('shrink-0 object-contain', className)}
+        style={{ width: size, height: size }}
+      />
+    );
+  }
+
+  const Icon = resolveCmsIcon(item.icon);
+  if (!Icon) return null;
+  return (
+    <span className={cn('inline-flex shrink-0 items-center justify-center text-brand', className)}>
+      <Icon style={{ width: size, height: size }} aria-hidden="true" />
+    </span>
+  );
+}
+
+/**
  * A link inside a dropdown or a mega-menu column, with its icon and blurb.
  *
  * `onNavigate` closes the panel on the way out. Next navigates on the client,
@@ -171,11 +223,9 @@ function NavPanelLink({
   item: ResolvedNavItem;
   onNavigate?: () => void;
 }) {
-  const Icon = resolveCmsIcon(item.icon);
-
   const body = (
     <>
-      {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" /> : null}
+      <NavMark item={item} className="mt-0.5" />
       <span className="min-w-0">
         <span className="block text-sm font-medium text-content">{item.label}</span>
         {item.description ? (

@@ -24,6 +24,7 @@ import { saveNavigationItems } from '@/lib/actions/navigation';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { Field, Input, Select, Switch } from '@/components/ui/field';
 import { IconSelect } from '@/components/cms/icon-select';
+import { MediaPicker } from '@/components/admin/media-picker';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/states';
@@ -50,10 +51,14 @@ export type EditorItem = {
   blogCategoryId: string;
   description: string;
   icon: string;
+  imageId: string | null;
+  imageSize: string;
   openInNewTab: boolean;
   isHighlighted: boolean;
   megaMenu: boolean;
   megaColumns: number;
+  megaWidth: string;
+  megaAlign: 'center' | 'left' | 'screen';
   isVisible: boolean;
   children: EditorItem[];
 };
@@ -83,10 +88,14 @@ export function blankItem(): EditorItem {
     blogCategoryId: '',
     description: '',
     icon: '',
+    imageId: null,
+    imageSize: '',
     openInNewTab: false,
     isHighlighted: false,
     megaMenu: false,
     megaColumns: 3,
+    megaWidth: '',
+    megaAlign: 'center',
     isVisible: true,
     children: [],
   };
@@ -164,10 +173,14 @@ export function NavigationEditor({
         blogCategoryId: item.blogCategoryId || null,
         description: item.description || null,
         icon: item.icon || null,
+        imageId: item.imageId,
+        imageSize: item.imageSize || null,
         openInNewTab: item.openInNewTab,
         isHighlighted: item.isHighlighted,
         megaMenu: item.megaMenu,
         megaColumns: item.megaColumns,
+        megaWidth: item.megaWidth || null,
+        megaAlign: item.megaAlign,
         isVisible: item.isVisible,
         children: toPayload(item.children),
       }));
@@ -554,10 +567,46 @@ function ItemFields({
           />
         </Field>
 
+        {/*
+          * The mark beside the label: an uploaded image where one is set, the
+          * shipped icon otherwise. The image wins because it is the more
+          * specific choice — a vendor logo has no equivalent in the icon set,
+          * which is the whole reason it is here.
+          */}
+        <Field
+          label="Image"
+          htmlFor={`${item.key}-image`}
+          hint={
+            item.imageId
+              ? 'Shown instead of the icon below.'
+              : 'Optional. Upload a logo to use instead of an icon.'
+          }
+          className="sm:col-span-2"
+        >
+          <MediaPicker
+            value={item.imageId}
+            onChange={(next) => onChange({ imageId: next })}
+            label="Menu image"
+          />
+        </Field>
+
+        <Field
+          label="Mark size"
+          htmlFor={`${item.key}-image-size`}
+          hint="Applies to the image or the icon. Default 1.25rem."
+        >
+          <Input
+            id={`${item.key}-image-size`}
+            value={item.imageSize}
+            placeholder="1.25rem"
+            onChange={(e) => onChange({ imageSize: e.target.value })}
+          />
+        </Field>
+
         <Field
           label="Icon"
           htmlFor={`${item.key}-icon`}
-          hint="Shown beside the label in dropdowns and mega menus."
+          hint="Used when no image is set."
           className="sm:col-span-2"
         >
           <IconSelect
@@ -599,19 +648,46 @@ function ItemFields({
               hint="A wide panel of columns instead of a dropdown list. Each sub-item becomes a column heading; add sub-items under it for the links."
             />
             {item.megaMenu ? (
-              <Field label="Columns" htmlFor={`${item.key}-mega-columns`}>
-                <Select
-                  id={`${item.key}-mega-columns`}
-                  value={String(item.megaColumns)}
-                  onChange={(e) => onChange({ megaColumns: Number(e.target.value) })}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Field label="Columns" htmlFor={`${item.key}-mega-columns`}>
+                  <Select
+                    id={`${item.key}-mega-columns`}
+                    value={String(item.megaColumns)}
+                    onChange={(e) => onChange({ megaColumns: Number(e.target.value) })}
+                  >
+                    {[1, 2, 3, 4, 5, 6].map((count) => (
+                      <option key={count} value={String(count)}>
+                        {count}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+                <Field
+                  label="Panel width"
+                  htmlFor={`${item.key}-mega-width`}
+                  hint="Default 64rem."
                 >
-                  {[1, 2, 3, 4, 5].map((count) => (
-                    <option key={count} value={String(count)}>
-                      {count}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
+                  <Input
+                    id={`${item.key}-mega-width`}
+                    value={item.megaWidth}
+                    placeholder="64rem"
+                    onChange={(e) => onChange({ megaWidth: e.target.value })}
+                  />
+                </Field>
+                <Field label="Panel position" htmlFor={`${item.key}-mega-align`}>
+                  <Select
+                    id={`${item.key}-mega-align`}
+                    value={item.megaAlign}
+                    onChange={(e) =>
+                      onChange({ megaAlign: e.target.value as EditorItem['megaAlign'] })
+                    }
+                  >
+                    <option value="center">Centred under the item</option>
+                    <option value="left">From the item&rsquo;s left edge</option>
+                    <option value="screen">Full width of the window</option>
+                  </Select>
+                </Field>
+              </div>
             ) : null}
           </>
         ) : null}

@@ -1445,6 +1445,7 @@ model Media {
   productOgImages        Product[]         @relation("ProductOgImage")
   categoryImages         ProductCategory[] @relation("CategoryImage")
   brandLogos             Brand[]           @relation("BrandLogo")
+  navItemImages          NavigationItem[]  @relation("NavItemImage")
   postFeaturedImages     BlogPost[]        @relation("PostFeaturedImage")
   postThumbnails         BlogPost[]        @relation("PostThumbnail")
   postOgImages           BlogPost[]        @relation("PostOgImage")
@@ -1963,6 +1964,16 @@ model NavigationItem {
   /// children become the links under it.
   megaMenu       Boolean     @default(false)
   megaColumns    Int         @default(3)
+  /// How wide the panel is, as a CSS length. Blank keeps the built-in 64rem.
+  megaWidth      String      @default("")
+  /// Where it sits under the trigger: "center" (the default), "left", or
+  /// "screen" for edge to edge.
+  megaAlign      String      @default("center")
+  /// An uploaded image shown in place of the icon, for a logo the shipped
+  /// icon set has no equivalent of.
+  imageId        String?
+  /// How big that image is rendered, as a CSS length. Blank is 1.25rem.
+  imageSize      String      @default("")
   sortOrder      Int         @default(0)
   isVisible      Boolean     @default(true)
 
@@ -1976,6 +1987,7 @@ model NavigationItem {
   product      Product?         @relation(fields: [productId], references: [id], onDelete: Cascade)
   blogPost     BlogPost?        @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
   blogCategory BlogCategory?    @relation(fields: [blogCategoryId], references: [id], onDelete: Cascade)
+  image        Media?           @relation("NavItemImage", fields: [imageId], references: [id], onDelete: SetNull)
 
   @@index([navigationId, sortOrder])
   @@index([parentId])
@@ -1983,6 +1995,7 @@ model NavigationItem {
   @@index([productId])
   @@index([blogPostId])
   @@index([blogCategoryId])
+  @@index([imageId])
 }
 
 // ---------------------------------------------------------------------------

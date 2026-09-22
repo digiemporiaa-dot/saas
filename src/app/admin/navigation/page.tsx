@@ -58,10 +58,16 @@ export default async function NavigationAdmin() {
     blogCategoryId: row.blogCategoryId ?? '',
     description: row.description ?? '',
     icon: row.icon ?? '',
+    imageId: row.imageId,
+    imageSize: row.imageSize,
     openInNewTab: row.openInNewTab,
     isHighlighted: row.isHighlighted,
     megaMenu: row.megaMenu,
     megaColumns: row.megaColumns,
+    megaWidth: row.megaWidth,
+    megaAlign: (row.megaAlign === 'left' || row.megaAlign === 'screen'
+      ? row.megaAlign
+      : 'center') as EditorItem['megaAlign'],
     isVisible: row.isVisible,
     children: [],
   });

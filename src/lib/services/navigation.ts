@@ -12,6 +12,15 @@ export type ResolvedNavItem = {
   description: string | null;
   /** A name from the shipped icon set, shown in dropdowns and mega menus. */
   icon: string | null;
+  /**
+   * An uploaded image shown in place of the icon. A vendor logo has no
+   * equivalent in the shipped set, and a mega menu of products is mostly
+   * logos.
+   */
+  imageUrl: string | null;
+  imageAlt: string | null;
+  /** How big that image renders. Blank means the icon's own size. */
+  imageSize: string;
   openInNewTab: boolean;
   isHighlighted: boolean;
   /**
@@ -21,6 +30,9 @@ export type ResolvedNavItem = {
    */
   megaMenu: boolean;
   megaColumns: number;
+  /** How wide the panel is. Blank keeps the built-in width. */
+  megaWidth: string;
+  megaAlign: 'center' | 'left' | 'screen';
   children: ResolvedNavItem[];
 };
 
@@ -32,6 +44,7 @@ export type ResolvedNavigation = {
 };
 
 const navInclude = {
+  image: { select: { url: true, altText: true } },
   page: { select: { slug: true, deletedAt: true } },
   product: { select: { slug: true, deletedAt: true } },
   blogPost: { select: { slug: true, deletedAt: true } },
@@ -80,10 +93,18 @@ export const getNavigations = cache(
               href,
               description: item.description,
               icon: item.icon,
+              imageUrl: item.image?.url ?? null,
+              imageAlt: item.image?.altText ?? null,
+              imageSize: item.imageSize,
               openInNewTab: item.openInNewTab,
               isHighlighted: item.isHighlighted,
               megaMenu: item.megaMenu,
-              megaColumns: Math.min(Math.max(item.megaColumns, 1), 5),
+              megaColumns: Math.min(Math.max(item.megaColumns, 1), 6),
+              megaWidth: item.megaWidth,
+              megaAlign:
+                item.megaAlign === 'left' || item.megaAlign === 'screen'
+                  ? item.megaAlign
+                  : 'center',
               children,
             },
           ];

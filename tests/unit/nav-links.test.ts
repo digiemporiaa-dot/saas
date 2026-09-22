@@ -91,3 +91,26 @@ describe('what an item with no target becomes', () => {
     expect(resolvedHref('/about', true)).toBe('/about');
   });
 });
+
+/**
+ * How wide the mega panel is, and which mark sits beside an item.
+ *
+ * Both are stored values that reach a `style` attribute, so both go through a
+ * validator first — and both fall back to what the panel already looked like
+ * rather than to nothing.
+ */
+describe('mega menu sizing', () => {
+  it('takes a width a person would type', async () => {
+    const { cssLength } = await import('@/lib/cms/chrome');
+    for (const value of ['48rem', '900px', '90%', '80vw']) {
+      expect(cssLength(value), value).toBe(value);
+    }
+  });
+
+  it('refuses a width that is not one, so the panel keeps its own', async () => {
+    const { cssLength } = await import('@/lib/cms/chrome');
+    for (const value of ['', 'wide', '64', 'calc(100% - 2rem)', '64rem;position:fixed']) {
+      expect(cssLength(value), value).toBeNull();
+    }
+  });
+});

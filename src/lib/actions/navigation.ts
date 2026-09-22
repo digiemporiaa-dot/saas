@@ -11,6 +11,7 @@ import { success, failure, toActionError, type ActionResult } from '@/lib/utils/
 import { resolveActionCountry } from '@/lib/country/admin';
 import { assertCountryAccess } from '@/lib/country/access';
 import { CMS_ICON_NAMES } from '@/components/ui/icons';
+import { cssLength } from '@/lib/cms/chrome';
 
 const menuSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(120),
@@ -123,11 +124,16 @@ const itemSchema = z.object({
   description: z.string().max(200).optional().nullable(),
   /** An icon this app ships, shown in dropdowns and mega menus. */
   icon: z.string().max(40).optional().nullable(),
+  /** An uploaded image shown in place of that icon. */
+  imageId: z.string().max(40).optional().nullable(),
+  imageSize: z.string().max(16).optional().nullable(),
   openInNewTab: z.boolean().default(false),
   isHighlighted: z.boolean().default(false),
   /** Render this item's children as a panel of columns rather than a list. */
   megaMenu: z.boolean().default(false),
-  megaColumns: z.coerce.number().int().min(1).max(5).catch(3).default(3),
+  megaColumns: z.coerce.number().int().min(1).max(6).catch(3).default(3),
+  megaWidth: z.string().max(16).optional().nullable(),
+  megaAlign: z.enum(['center', 'left', 'screen']).catch('center').default('center'),
   isVisible: z.boolean().default(true),
   children: z.array(z.lazy((): z.ZodTypeAny => itemSchema)).max(30).default([]),
 });
@@ -148,10 +154,14 @@ type ItemInput = {
   blogCategoryId?: string | null;
   description?: string | null;
   icon?: string | null;
+  imageId?: string | null;
+  imageSize?: string | null;
   openInNewTab: boolean;
   isHighlighted: boolean;
   megaMenu: boolean;
   megaColumns: number;
+  megaWidth?: string | null;
+  megaAlign: 'center' | 'left' | 'screen';
   isVisible: boolean;
   children: ItemInput[];
 };
@@ -195,10 +205,16 @@ export async function saveNavigationItems(input: unknown): Promise<ActionResult>
               // Only a name from the shipped set is stored; anything else is
               // no icon, which is what the renderer would show anyway.
               icon: item.icon && CMS_ICON_NAMES.includes(item.icon) ? item.icon : null,
+              imageId: item.imageId || null,
+              // A length or nothing: anything else would reach the renderer as
+              // a style value, and it is never worth trusting one of those.
+              imageSize: cssLength(item.imageSize) ?? '',
               openInNewTab: item.openInNewTab,
               isHighlighted: item.isHighlighted,
               megaMenu: item.megaMenu,
               megaColumns: item.megaColumns,
+              megaWidth: cssLength(item.megaWidth) ?? '',
+              megaAlign: item.megaAlign,
               isVisible: item.isVisible,
               sortOrder: (index + 1) * 10,
             },

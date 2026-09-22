@@ -50,9 +50,24 @@ That second shape is why the switch is worth having on a menu that is only two
 levels deep: turning it on widens the list into columns rather than producing a
 panel of headings with nothing under them.
 
-Every menu item can also carry an **icon** from the shipped set, shown beside
-its label in dropdowns and mega menus. Only a name this app ships is stored, so
-a menu can never pull its own markup into the header.
+### Sizing a mega menu
+
+Per item: **columns** (1–6), **panel width** (any CSS length; blank keeps the
+built-in 64rem) and **panel position** — centred under the item, from the
+item's own left edge (what a menu near the left of the header wants, since a
+centred panel there would run off the page), or the full width of the window.
+
+### The mark beside a menu item
+
+Every menu item can carry an **icon** from the shipped set, or an **uploaded
+image** — a vendor logo has no equivalent in the icon set, and a mega menu of
+products is mostly logos. The image wins where both are set, because it is the
+more specific choice. **Mark size** sizes whichever one is showing.
+
+Only a name this app ships is stored for the icon, and the image is a Media
+record, so a menu can never pull its own markup into the header. The size and
+the width go through the same length validator as everything else on the design
+screen: anything that is not a length is ignored and the built-in value stands.
 
 ## Where the code is
 
