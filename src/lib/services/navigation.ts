@@ -1,9 +1,9 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from '@/lib/db/prisma';
-import { countryPath, countryHref } from '@/lib/country/routing';
+import { navHref, resolvedHref } from '@/lib/cms/nav-links';
 import type { CountryContext } from '@/lib/country/types';
-import type { NavigationLocation, NavLinkType } from '@prisma/client';
+import type { NavigationLocation } from '@prisma/client';
 
 export type ResolvedNavItem = {
   id: string;
@@ -31,43 +31,10 @@ export type ResolvedNavigation = {
   items: ResolvedNavItem[];
 };
 
-/**
- * Turns a stored menu item into a link inside `country`.
- *
- * Menus belong to a market, so the pages, products and articles they point at
- * are that market's — and the URL they resolve to carries that market's prefix.
- * A hand-typed internal URL goes through `countryHref`, which leaves external
- * links, anchors and system routes exactly as the editor wrote them.
- */
-function hrefFor(
-  item: {
-    linkType: NavLinkType;
-    url: string | null;
-    page: { slug: string } | null;
-    product: { slug: string } | null;
-    blogPost: { slug: string } | null;
-    blogCategory: { slug: string } | null;
-  },
-  country: CountryContext,
-): string {
-  switch (item.linkType) {
-    case 'PAGE':
-      return item.page ? countryPath(country, item.page.slug) : '#';
-    case 'PRODUCT':
-      return item.product ? countryPath(country, `products/${item.product.slug}`) : '#';
-    case 'BLOG_POST':
-      return item.blogPost ? countryPath(country, `blog/${item.blogPost.slug}`) : '#';
-    case 'BLOG_CATEGORY':
-      return item.blogCategory ? countryPath(country, `blog/category/${item.blogCategory.slug}`) : '#';
-    default:
-      return item.url ? countryHref(country, item.url) : '#';
-  }
-}
-
 const navInclude = {
-  page: { select: { slug: true } },
-  product: { select: { slug: true } },
-  blogPost: { select: { slug: true } },
+  page: { select: { slug: true, deletedAt: true } },
+  product: { select: { slug: true, deletedAt: true } },
+  blogPost: { select: { slug: true, deletedAt: true } },
   blogCategory: { select: { slug: true } },
 };
 
@@ -95,21 +62,32 @@ export const getNavigations = cache(
         byParent.set(key, list);
       }
 
+      /*
+       * An item whose target is gone is dropped rather than rendered as a dead
+       * link — unless it has children, where it is still the heading its
+       * dropdown opens from and only stops being clickable itself.
+       */
       const build = (parentId: string | null): ResolvedNavItem[] =>
-        (byParent.get(parentId) ?? []).map((item) => ({
-          id: item.id,
-          label: item.label,
-          href: hrefFor(item, country),
-          description: item.description,
-          icon: item.icon,
-          openInNewTab: item.openInNewTab,
-          isHighlighted: item.isHighlighted,
-          // A mega menu with no columns to lay out is a dropdown, so the flag
-          // only counts where there is something to arrange.
-          megaMenu: item.megaMenu,
-          megaColumns: Math.min(Math.max(item.megaColumns, 1), 5),
-          children: build(item.id),
-        }));
+        (byParent.get(parentId) ?? []).flatMap((item) => {
+          const children = build(item.id);
+          const href = resolvedHref(navHref(item, country), children.length > 0);
+          if (!href) return [];
+
+          return [
+            {
+              id: item.id,
+              label: item.label,
+              href,
+              description: item.description,
+              icon: item.icon,
+              openInNewTab: item.openInNewTab,
+              isHighlighted: item.isHighlighted,
+              megaMenu: item.megaMenu,
+              megaColumns: Math.min(Math.max(item.megaColumns, 1), 5),
+              children,
+            },
+          ];
+        });
 
       return { id: menu.id, name: menu.name, slug: menu.slug, items: build(null) };
     });

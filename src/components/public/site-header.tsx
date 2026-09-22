@@ -94,7 +94,15 @@ function HeaderButton({
  * only two levels deep: turning it on widens the list into columns instead of
  * producing a panel of headings with nothing under them.
  */
-function MegaPanel({ item, columns }: { item: ResolvedNavItem; columns: number }) {
+function MegaPanel({
+  item,
+  columns,
+  onNavigate,
+}: {
+  item: ResolvedNavItem;
+  columns: number;
+  onNavigate?: () => void;
+}) {
   const grouped = item.children.some((child) => child.children.length > 0);
 
   return (
@@ -110,41 +118,63 @@ function MegaPanel({ item, columns }: { item: ResolvedNavItem; columns: number }
         {grouped
           ? item.children.map((group) => (
               <div key={group.id} className="min-w-0">
-                <Link
-                  href={group.href}
-                  target={group.openInNewTab ? '_blank' : undefined}
-                  rel={group.openInNewTab ? 'noopener noreferrer' : undefined}
-                  className="block px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted hover:text-brand"
-                >
-                  {group.label}
-                </Link>
+                {/*
+                  * A column heading is a link where it has somewhere to go and
+                  * plain text where it does not — a group whose own page was
+                  * deleted still names its column.
+                  */}
+                {group.href === '#' ? (
+                  <p className="px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">
+                    {group.label}
+                  </p>
+                ) : (
+                  <Link
+                    href={group.href}
+                    target={group.openInNewTab ? '_blank' : undefined}
+                    rel={group.openInNewTab ? 'noopener noreferrer' : undefined}
+                    onClick={onNavigate}
+                    className="block px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted hover:text-brand"
+                  >
+                    {group.label}
+                  </Link>
+                )}
                 {group.children.length > 0 ? (
                   <ul className="mt-2 space-y-1">
                     {group.children.map((child) => (
                       <li key={child.id}>
-                        <NavPanelLink item={child} />
+                        <NavPanelLink item={child} onNavigate={onNavigate} />
                       </li>
                     ))}
                   </ul>
                 ) : null}
               </div>
             ))
-          : item.children.map((child) => <NavPanelLink key={child.id} item={child} />)}
+          : item.children.map((child) => (
+              <NavPanelLink key={child.id} item={child} onNavigate={onNavigate} />
+            ))}
       </div>
     </div>
   );
 }
 
-/** A link inside a dropdown or a mega-menu column, with its icon and blurb. */
-function NavPanelLink({ item }: { item: ResolvedNavItem }) {
+/**
+ * A link inside a dropdown or a mega-menu column, with its icon and blurb.
+ *
+ * `onNavigate` closes the panel on the way out. Next navigates on the client,
+ * and the effect that watches the path only fires once the new route commits —
+ * long enough for the old menu to be left hanging over the new page.
+ */
+function NavPanelLink({
+  item,
+  onNavigate,
+}: {
+  item: ResolvedNavItem;
+  onNavigate?: () => void;
+}) {
   const Icon = resolveCmsIcon(item.icon);
-  return (
-    <Link
-      href={item.href}
-      target={item.openInNewTab ? '_blank' : undefined}
-      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-      className="flex gap-2.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/[0.06]"
-    >
+
+  const body = (
+    <>
       {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" /> : null}
       <span className="min-w-0">
         <span className="block text-sm font-medium text-content">{item.label}</span>
@@ -154,6 +184,27 @@ function NavPanelLink({ item }: { item: ResolvedNavItem }) {
           </span>
         ) : null}
       </span>
+    </>
+  );
+
+  const className = 'flex gap-2.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/[0.06]';
+
+  // `#` means the item's target is gone. It is still worth showing where it
+  // heads a group, but it is not a link, and pretending otherwise is what a
+  // link that does nothing when clicked feels like.
+  if (item.href === '#') {
+    return <span className={className}>{body}</span>;
+  }
+
+  return (
+    <Link
+      href={item.href}
+      target={item.openInNewTab ? '_blank' : undefined}
+      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+      onClick={onNavigate}
+      className={className}
+    >
+      {body}
     </Link>
   );
 }
@@ -172,6 +223,43 @@ export function SiteHeader({
   const [openDropdown, setOpenDropdown] = React.useState<string | null>(null);
   const pathname = usePathname();
 
+  /*
+   * Closing is deferred by a beat.
+   *
+   * Without it, the pointer leaving the trigger on its way to the panel — or
+   * crossing the sub-pixel seam between them — closed the menu before the
+   * click landed, which is exactly what "the submenu links don't work" looks
+   * like from the other side of the screen.
+   */
+  const closeTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = React.useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
+  const open = React.useCallback(
+    (id: string) => {
+      cancelClose();
+      setOpenDropdown(id);
+    },
+    [cancelClose],
+  );
+
+  const closeSoon = React.useCallback(() => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpenDropdown(null), 180);
+  }, [cancelClose]);
+
+  const closeNow = React.useCallback(() => {
+    cancelClose();
+    setOpenDropdown(null);
+  }, [cancelClose]);
+
+  React.useEffect(() => cancelClose, [cancelClose]);
+
   React.useEffect(() => {
     setMobileOpen(false);
     setOpenDropdown(null);
@@ -188,12 +276,12 @@ export function SiteHeader({
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMobileOpen(false);
-        setOpenDropdown(null);
+        closeNow();
       }
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, []);
+  }, [closeNow]);
 
   const isActive = (href: string) =>
     href !== '/' && href !== '#' ? pathname === href || pathname.startsWith(`${href}/`) : pathname === href;
@@ -294,18 +382,51 @@ export function SiteHeader({
               textTransform: 'var(--header-menu-transform, none)' as React.CSSProperties['textTransform'],
             }}
           >
+            {/*
+              * Hover opens a dropdown, and so does focus — a keyboard could
+              * not reach these links at all while hover was the only way in.
+              * Clicking the trigger opens it too rather than toggling: on a
+              * touch screen the tap arrives as an enter *and* a click, and a
+              * toggle would close what the enter had just opened. Clicking it
+              * again, with the menu already open, is what closes it.
+              */}
             {nav.map((item) => (
               <li key={item.id} className="relative">
                 {item.children.length > 0 ? (
                   <div
-                    onMouseEnter={() => setOpenDropdown(item.id)}
-                    onMouseLeave={() => setOpenDropdown(null)}
+                    onMouseEnter={() => open(item.id)}
+                    onMouseLeave={closeSoon}
+                    onFocus={() => open(item.id)}
+                    onBlur={(event) => {
+                      if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                        closeSoon();
+                      }
+                    }}
                   >
                     <button
                       type="button"
                       aria-expanded={openDropdown === item.id}
                       aria-haspopup="true"
-                      onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
+                      onPointerDown={(event) => {
+                        // Pointer-type aware: a mouse has already opened it on
+                        // enter, so a click means close. A touch has not.
+                        if (event.pointerType === 'mouse' && openDropdown === item.id) {
+                          closeNow();
+                        } else {
+                          open(item.id);
+                        }
+                      }}
+                      onClick={(event) => {
+                        /*
+                         * `detail` is 0 for a click synthesised from Enter or
+                         * Space, which never sends a pointerdown — so that is
+                         * the one case this has to handle itself.
+                         */
+                        if (event.detail === 0) {
+                          if (openDropdown === item.id) closeNow();
+                          else open(item.id);
+                        }
+                      }}
                       className={cn(
                         'nav-tokens site-nav-link flex items-center gap-1 rounded-lg px-3 py-2 transition-colors',
                         isActive(item.href) ? 'is-active text-brand' : 'text-content hover:text-brand',
@@ -318,13 +439,13 @@ export function SiteHeader({
                     </button>
                     {openDropdown === item.id ? (
                       item.megaMenu ? (
-                        <MegaPanel item={item} columns={item.megaColumns} />
+                        <MegaPanel item={item} columns={item.megaColumns} onNavigate={closeNow} />
                       ) : (
                         <div className="absolute left-0 top-full w-[22rem] pt-2">
                           <ul className="animate-slide-up rounded-xl border border-hairline bg-surface p-2 shadow-xl">
                             {item.children.map((child) => (
                               <li key={child.id}>
-                                <NavPanelLink item={child} />
+                                <NavPanelLink item={child} onNavigate={closeNow} />
                               </li>
                             ))}
                           </ul>
@@ -410,13 +531,21 @@ export function SiteHeader({
                       <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
                     </summary>
                     <ul className="ml-3 space-y-1 border-l border-hairline pl-3">
-                      {item.children.map((child) => (
-                        <li key={child.id}>
-                          <Link href={child.href} className="block rounded-lg px-3 py-2.5 text-sm text-muted">
-                            {child.label}
-                          </Link>
-                        </li>
-                      ))}
+                      {item.children.map((child) =>
+                        child.href === '#' ? null : (
+                          <li key={child.id}>
+                            <Link
+                              href={child.href}
+                              target={child.openInNewTab ? '_blank' : undefined}
+                              rel={child.openInNewTab ? 'noopener noreferrer' : undefined}
+                              onClick={() => setMobileOpen(false)}
+                              className="block rounded-lg px-3 py-2.5 text-sm text-muted"
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        ),
+                      )}
                     </ul>
                   </details>
                 ) : (
