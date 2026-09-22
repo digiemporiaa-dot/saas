@@ -11,7 +11,14 @@ import { getMedia, getMediaByIds } from '@/lib/services/media';
 import { resolveCmsIcon } from '@/components/ui/icons';
 import { cn } from '@/lib/utils/cn';
 import { safeUrl } from '@/lib/utils/sanitize';
-import { SectionHeading, CtaLink, RichText, type BlockContext, columnVars } from './shared';
+import {
+  SectionHeading,
+  CtaLink,
+  RichText,
+  type BlockContext,
+  columnVars,
+  blockColumnVars,
+} from './shared';
 
 export function RichTextBlock({ content, ctx }: { content: RichTextContent; ctx: BlockContext }) {
   const inverted = ctx.inverted;
@@ -110,7 +117,7 @@ export async function FeatureGridBlock({
         className="mb-12"
       />
 
-      <ul className="cms-grid" style={columnVars(ctx.design, content.columns)}>
+      <ul className="cms-grid" style={blockColumnVars(ctx.design, content)}>
         {items.map((item, index) => {
           const Icon = resolveCmsIcon(item.icon);
           const image = item.imageId ? media.get(item.imageId) : null;

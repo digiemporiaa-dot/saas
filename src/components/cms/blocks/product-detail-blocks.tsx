@@ -21,7 +21,13 @@ import { cn } from '@/lib/utils/cn';
 import { ProductCta } from '@/components/products/product-cta';
 import { ProductCard } from '@/components/products/product-card';
 import { PublicFormRenderer } from '@/components/forms/public-form';
-import { RichText, SectionHeading, columnVars, type BlockContext } from './shared';
+import {
+  RichText,
+  SectionHeading,
+  columnVars,
+  blockColumnVars,
+  type BlockContext,
+} from './shared';
 
 /**
  * The blocks a product page is built from.
@@ -350,7 +356,7 @@ export function ProductFeaturesBlock({
   const benefits = content.showBenefits ? cap(product.benefits) : [];
   if (features.length === 0 && benefits.length === 0) return null;
 
-  const columns = columnVars(ctx.design, content.columns);
+  const columns = blockColumnVars(ctx.design, content);
   const featuresHeadingId = `product-features-${ctx.sectionId}`;
   const benefitsHeadingId = `product-benefits-${ctx.sectionId}`;
 
@@ -510,7 +516,7 @@ export async function ProductRelatedBlock({
           {content.heading}
         </h2>
       ) : null}
-      <div className="cms-grid mt-8 gap-6" style={columnVars(ctx.design, content.columns)}>
+      <div className="cms-grid mt-8 gap-6" style={blockColumnVars(ctx.design, content)}>
         {related.map((item) => (
           <ProductCard
             key={item.id}

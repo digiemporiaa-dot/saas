@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { BlockDefinition } from './block-types';
+import {
+  responsiveColumnsSchema,
+  responsiveColumnFields,
+  type BlockDefinition,
+} from './block-types';
 
 /**
  * Footer blocks.
@@ -48,6 +52,7 @@ const footerBrandSchema = z.object({
 const footerMenusSchema = z.object({
   /** 0 means "as many columns as there are menus", which is what it did. */
   columns: z.coerce.number().int().min(0).max(6).catch(0).default(0),
+  ...responsiveColumnsSchema,
   showHeadings: bool(true),
   /**
    * Blank shows every menu with a footer location, in the order they were
@@ -108,6 +113,7 @@ const footerColumnSchema = z.object({
 
 const footerColumnsSchema = z.object({
   columns: z.coerce.number().int().min(1).max(6).catch(4).default(4),
+  ...responsiveColumnsSchema,
   showHeadings: bool(true),
   items: z.array(footerColumnSchema).max(12).catch([]).default([]),
 });
@@ -213,6 +219,7 @@ export const FOOTER_BLOCKS: Record<string, BlockDefinition> = {
         max: 6,
         help: '0 gives one column per menu.',
       },
+      ...responsiveColumnFields,
       { kind: 'boolean', name: 'showHeadings', label: 'Show menu names', width: 'half' },
       {
         kind: 'repeater',
@@ -236,6 +243,7 @@ export const FOOTER_BLOCKS: Record<string, BlockDefinition> = {
     schema: footerColumnsSchema,
     fields: [
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 6 },
+      ...responsiveColumnFields,
       { kind: 'boolean', name: 'showHeadings', label: 'Show headings', width: 'half' },
       {
         kind: 'repeater',

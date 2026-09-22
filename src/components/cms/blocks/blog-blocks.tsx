@@ -687,8 +687,8 @@ export async function BlogGridBlock({ content, ctx }: { content: BlogGridContent
           country={ctx.country}
           card={card}
           columns={content.columns}
-          tabletColumns={content.tabletColumns}
-          mobileColumns={content.mobileColumns}
+          tabletColumns={content.tabletColumns || Math.min(content.columns, 2)}
+          mobileColumns={content.mobileColumns || 1}
           priorityCount={ctx.isFirst ? content.columns : 0}
         />
       )}
@@ -1254,8 +1254,8 @@ export async function ArticleRelatedBlock({
         country={ctx.country}
         card={card}
         columns={content.columns}
-        tabletColumns={Math.min(content.columns, 2)}
-        mobileColumns={1}
+        tabletColumns={content.tabletColumns || Math.min(content.columns, 2)}
+        mobileColumns={content.mobileColumns || 1}
       />
     </div>
   );

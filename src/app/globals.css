@@ -488,6 +488,26 @@
   }
 
   /*
+    A footer row divided into columns. The renderer resolves each breakpoint's
+    tracks — a column may name its own width on a wide screen — and the row
+    narrows to two and then one, because four columns on a phone is a column
+    of single words.
+  */
+  .footer-grid {
+    display: grid;
+    gap: var(--footer-column-gap, 2.5rem);
+    grid-template-columns: var(--footer-cols, repeat(4, minmax(0, 1fr)));
+  }
+
+  @media (max-width: 1023px) {
+    .footer-grid { grid-template-columns: var(--footer-cols-tablet, repeat(2, minmax(0, 1fr))); }
+  }
+
+  @media (max-width: 767px) {
+    .footer-grid { grid-template-columns: var(--footer-cols-mobile, minmax(0, 1fr)); }
+  }
+
+  /*
     A footer row is a section, but a footer is not a page. The space between
     rows is the footer's own — `--footer-row-gap` on the column that holds
     them — so a row brings no page-section spacing with it unless somebody

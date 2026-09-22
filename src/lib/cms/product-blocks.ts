@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import type { BlockDefinition } from './block-types';
+import {
+  responsiveColumnsSchema,
+  responsiveColumnFields,
+  type BlockDefinition,
+} from './block-types';
 
 /**
  * Product blocks.
@@ -134,6 +138,7 @@ const productFeaturesSchema = z.object({
   showBenefits: bool(true),
   benefitsHeading: heading('Why teams choose it'),
   columns: z.coerce.number().int().min(1).max(3).catch(2).default(2),
+  ...responsiveColumnsSchema,
   /** 0 lists every feature and benefit the product carries. */
   limit: z.coerce.number().int().min(0).max(40).catch(0).default(0),
   showIcons: bool(true),
@@ -152,6 +157,7 @@ const productRelatedSchema = z.object({
   source: z.enum(['category', 'brand', 'featured', 'latest']).catch('category').default('category'),
   limit: z.coerce.number().int().min(1).max(12).catch(3).default(3),
   columns: z.coerce.number().int().min(1).max(4).catch(3).default(3),
+  ...responsiveColumnsSchema,
   showPrice: bool(true),
   showFeatures: bool(false),
 });
@@ -461,6 +467,7 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
       { kind: 'text', name: 'benefitsHeading', label: 'Benefits heading', width: 'half' },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 3 },
+      ...responsiveColumnFields,
       {
         kind: 'number',
         name: 'limit',
@@ -525,6 +532,7 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
       },
       { kind: 'number', name: 'limit', label: 'How many', width: 'half', min: 1, max: 12 },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 4 },
+      ...responsiveColumnFields,
       { kind: 'boolean', name: 'showPrice', label: 'Show pricing', width: 'half' },
       { kind: 'boolean', name: 'showFeatures', label: 'Show feature list', width: 'half' },
     ],

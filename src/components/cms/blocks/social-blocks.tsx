@@ -3,7 +3,7 @@ import type { FaqContent, TestimonialsContent } from '@/lib/cms/blocks';
 import { getMediaByIds } from '@/lib/services/media';
 import { cn } from '@/lib/utils/cn';
 import { initials } from '@/lib/utils/format';
-import { SectionHeading, RichText, type BlockContext, columnVars } from './shared';
+import { SectionHeading, RichText, type BlockContext, blockColumnVars } from './shared';
 
 export function FaqBlock({ content, ctx }: { content: FaqContent; ctx: BlockContext }) {
   const inverted = ctx.inverted;
@@ -85,7 +85,7 @@ export async function TestimonialsBlock({
         inverted={inverted}
         className="mb-12"
       />
-      <ul className="cms-grid" style={columnVars(ctx.design, content.columns)}>
+      <ul className="cms-grid" style={blockColumnVars(ctx.design, content)}>
         {items.map((item, index) => {
           const image = item.imageId ? media.get(item.imageId) : null;
           return (

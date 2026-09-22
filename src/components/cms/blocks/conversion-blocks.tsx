@@ -6,7 +6,7 @@ import { getMedia } from '@/lib/services/media';
 import { PublicFormRenderer } from '@/components/forms/public-form';
 import { cn } from '@/lib/utils/cn';
 import { Check } from 'lucide-react';
-import { SectionHeading, CtaLink, type BlockContext, columnVars } from './shared';
+import { SectionHeading, CtaLink, type BlockContext } from './shared';
 import { buildPanelStyles } from '@/lib/cms/design';
 
 export async function CtaBlock({ content, ctx }: { content: CtaContent; ctx: BlockContext }) {

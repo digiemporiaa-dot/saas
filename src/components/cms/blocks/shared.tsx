@@ -61,6 +61,24 @@ export type BlockContext = {
   footer?: FooterRenderContext;
 };
 
+/**
+ * Grid variables for a block that carries its own per-breakpoint counts.
+ *
+ * The block says what it wants at each width and the design panel's Responsive
+ * tab overrides it, so the common case is one place and the exception is still
+ * the section's own.
+ */
+export function blockColumnVars(
+  design: SectionDesign,
+  content: { columns?: number; tabletColumns?: number; mobileColumns?: number },
+  fallback = 3,
+): Record<string, string> {
+  return columnVars(design, content.columns || fallback, {
+    tablet: content.tabletColumns || undefined,
+    mobile: content.mobileColumns || undefined,
+  });
+}
+
 /** CSS variables for a responsive card grid, design panel taking precedence. */
 export function columnVars(
   design: SectionDesign,

@@ -1,7 +1,12 @@
 import { z } from 'zod';
 import { normaliseColor } from './color';
 import { panelDesignSchema } from './design';
-import { linkFields, type BlockDefinition } from './block-types';
+import {
+  linkFields,
+  responsiveColumnsSchema,
+  responsiveColumnFields,
+  type BlockDefinition,
+} from './block-types';
 import type { FieldDescriptor } from './fields';
 
 /**
@@ -278,8 +283,12 @@ const blogGridSchema = z.object({
   ...postSourceSchema,
   ...cardOverrideSchema,
   columns: z.coerce.number().int().min(1).max(4).catch(3).default(3),
-  tabletColumns: z.coerce.number().int().min(1).max(3).catch(2).default(2),
-  mobileColumns: z.coerce.number().int().min(1).max(2).catch(1).default(1),
+  /*
+   * The same pair every grid block offers, where 0 means "narrow it for me".
+   * It replaces a hardcoded 2 and 1 here, which is what automatic resolves to
+   * anyway — so a grid nobody has touched still lays out exactly as it did.
+   */
+  ...responsiveColumnsSchema,
   /**
    * Makes this the page's paginated grid: it honours ?page, ?q, ?category and
    * ?tag and renders alongside the pagination section. Only the first such grid
@@ -395,6 +404,7 @@ const articleRelatedSchema = z.object({
   ...postSourceSchema,
   ...cardOverrideSchema,
   columns: z.coerce.number().int().min(1).max(4).catch(3).default(3),
+  ...responsiveColumnsSchema,
   emptyText: z.string().max(240).catch('').default(''),
 });
 
@@ -927,22 +937,7 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
       ...headingFields,
       ...postSourceFields,
       { kind: 'number', name: 'columns', label: 'Desktop columns', min: 1, max: 4, width: 'half' },
-      {
-        kind: 'number',
-        name: 'tabletColumns',
-        label: 'Tablet columns',
-        min: 1,
-        max: 3,
-        width: 'half',
-      },
-      {
-        kind: 'number',
-        name: 'mobileColumns',
-        label: 'Mobile columns',
-        min: 1,
-        max: 2,
-        width: 'half',
-      },
+      ...responsiveColumnFields,
       {
         kind: 'boolean',
         name: 'paginate',
@@ -1278,6 +1273,7 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
       ...headingFields,
       ...postSourceFields,
       { kind: 'number', name: 'columns', label: 'Columns', min: 1, max: 4, width: 'half' },
+      ...responsiveColumnFields,
       ...cardOverrideFields,
       { kind: 'text', name: 'emptyText', label: 'Text when there is nothing related' },
     ],

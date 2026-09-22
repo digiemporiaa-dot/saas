@@ -305,6 +305,45 @@ export async function resetFooter(rawCountryId: unknown): Promise<ActionResult> 
   }
 }
 
+/**
+ * Replaces a market's footer with one of the built-in arrangements.
+ *
+ * Reset then take control again would do it, but only from an empty screen —
+ * and a footer somebody has already taken control of never shows that screen.
+ * Switching is the ordinary thing to want: the footer that was written first
+ * is not always the shape the site turns out to need.
+ *
+ * Everything it holds is thrown away, which is why it is confirmed. What it
+ * writes is ordinary rows, editable from that moment like any other.
+ */
+export async function replaceFooterArrangement(
+  rawCountryId: unknown,
+  rawArrangement: unknown,
+): Promise<ActionResult> {
+  try {
+    const { user, country } = await requireCountry(rawCountryId);
+    const arrangement = z
+      .enum(Object.keys(FOOTER_ARRANGEMENTS) as [FooterArrangement, ...FooterArrangement[]])
+      .parse(rawArrangement);
+
+    await prisma.footerSection.deleteMany({ where: { countryId: country.id } });
+    await materialiseFooter(country.id, arrangement);
+
+    await recordAudit({
+      actor: user,
+      action: 'footer.rebuilt',
+      entity: 'Country',
+      entityId: country.id,
+      summary: `Rebuilt ${country.name}'s footer from “${FOOTER_ARRANGEMENTS[arrangement].label}”`,
+    });
+
+    await revalidateFooter(country.id);
+    return success(undefined, `Footer rebuilt from “${FOOTER_ARRANGEMENTS[arrangement].label}”.`);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
 async function normaliseOrder(countryId: string) {
   const rows = await prisma.footerSection.findMany({
     where: { countryId },

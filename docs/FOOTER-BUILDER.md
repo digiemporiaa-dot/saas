@@ -27,6 +27,11 @@ outline as everything else.
   **Footer menus** does the simpler thing for the menus themselves, one per
   column or a fixed count.
 
+- **Columns per screen size.** Both blocks take a column count for tablet and
+  for mobile beside the one for desktop. Leave them at 0 and the row narrows
+  on its own — to two, then one — because four columns on a phone is a column
+  of single words.
+
 Every **page** section works here too, so a row can just as easily be a rich
 text block, an image, a logo wall or a call to action.
 
@@ -73,6 +78,9 @@ The one-row arrangement points its two menu columns at the slugs `products`
 and `support`. A slug that matches no menu renders an empty column — point it
 at a real one in **Settings → Navigation**, or type the links into the column
 by hand.
+
+**Start again from an arrangement** rebuilds a footer you have already taken
+control of from either starting point. It replaces every row, so it asks first.
 
 **Reset to the built-in footer** throws the rows away and puts the choice back.
 

@@ -1,4 +1,4 @@
-import type { z } from 'zod';
+import { z } from 'zod';
 import type { FieldDescriptor } from './fields';
 
 /**
@@ -94,5 +94,40 @@ export const linkFields = (prefix: string, label: string): FieldDescriptor[] => 
     label: `${label} link`,
     width: 'half',
     placeholder: '/contact',
+  },
+];
+
+/**
+ * Per-breakpoint column counts, for a grid block that already has `columns`.
+ *
+ * `columns` is what the block wants on a wide screen; these two say what it
+ * wants on the narrower ones, where 0 means "narrow it for me" — the same
+ * automatic step down a grid took before anybody asked for anything. The
+ * design panel's Responsive tab still overrides all three, because that is a
+ * per-section override rather than what the block is for.
+ */
+export const responsiveColumnsSchema = {
+  tabletColumns: z.coerce.number().int().min(0).max(6).catch(0).default(0),
+  mobileColumns: z.coerce.number().int().min(0).max(6).catch(0).default(0),
+};
+
+export const responsiveColumnFields: FieldDescriptor[] = [
+  {
+    kind: 'number',
+    name: 'tabletColumns',
+    label: 'Columns on tablet',
+    width: 'half',
+    min: 0,
+    max: 6,
+    help: '0 narrows it for you.',
+  },
+  {
+    kind: 'number',
+    name: 'mobileColumns',
+    label: 'Columns on mobile',
+    width: 'half',
+    min: 0,
+    max: 6,
+    help: '0 puts one per row.',
   },
 ];

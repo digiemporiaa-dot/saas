@@ -13,7 +13,7 @@ import { ProductCard } from '@/components/products/product-card';
 import { getProductSettings } from '@/lib/services/product-cms';
 import { productCardVars, productImageVars } from '@/lib/cms/product-settings';
 import { ProductCta } from '@/components/products/product-cta';
-import { SectionHeading, columnVars, type BlockContext } from './shared';
+import { SectionHeading, blockColumnVars, type BlockContext } from './shared';
 
 
 /**
@@ -69,7 +69,7 @@ export async function ProductCardsBlock({
       />
       <div
         className="cms-grid items-stretch"
-        style={{ ...columnVars(ctx.design, content.columns), ...(await cardStyle()) }}
+        style={{ ...blockColumnVars(ctx.design, content), ...(await cardStyle()) }}
       >
         {products.map((product) => (
           <ProductCard
@@ -590,7 +590,7 @@ export async function ProductGridBlock({
       {heading}
       <div
         className="cms-grid items-stretch"
-        style={{ ...columnVars(ctx.design, content.columns || 3), ...(await cardStyle()) }}
+        style={{ ...blockColumnVars(ctx.design, content, 3), ...(await cardStyle()) }}
       >
         {products.map((product) => (
           <ProductCard

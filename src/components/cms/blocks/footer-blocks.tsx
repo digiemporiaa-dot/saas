@@ -42,27 +42,38 @@ const SOCIALS: Array<{ key: string; label: string; Icon: IconComponent }> = [
   { key: 'youtubeUrl', label: 'YouTube', Icon: YouTubeIcon },
 ];
 
-/** Columns as a custom property: the count is data, and a class cannot be. */
-function columnStyle(count: number, widths?: string[]): React.CSSProperties {
-  const clamped = Math.min(Math.max(count, 1), 6);
-  /*
-   * A row where one column is wider than the rest — the brand beside three
-   * narrow menus — is an ordinary footer, so a column may name its own track.
-   * Any column that does not still takes an equal share of what is left.
-   */
-  const tracks =
+/**
+ * The tracks a footer row uses at each width, as custom properties `.footer-grid`
+ * reads: the count is data, and a class cannot be.
+ *
+ * A wide screen may give one column a width of its own — the brand beside
+ * three narrow menus is an ordinary footer. The narrower ones share equally
+ * and step down to two and then one, because four columns on a phone is a
+ * column of single words; a row that wants otherwise says so.
+ */
+function columnStyle(
+  count: number,
+  widths?: string[],
+  tablet = 0,
+  mobile = 0,
+): React.CSSProperties {
+  const clamp = (value: number) => Math.min(Math.max(value, 1), 6);
+  const clamped = clamp(count);
+  const even = (value: number) => `repeat(${clamp(value)}, minmax(0, 1fr))`;
+
+  const desktop =
     widths && widths.some(Boolean)
       ? widths
           .slice(0, clamped)
           .map((width) => (width ? `minmax(0, ${width})` : 'minmax(0, 1fr)'))
           .join(' ')
-      : `repeat(${clamped}, minmax(0, 1fr))`;
+      : even(clamped);
 
   return {
-    display: 'grid',
-    gap: 'var(--footer-column-gap, 2.5rem)',
-    gridTemplateColumns: tracks,
-  };
+    ['--footer-cols' as string]: desktop,
+    ['--footer-cols-tablet' as string]: even(tablet || Math.min(clamped, 2)),
+    ['--footer-cols-mobile' as string]: even(mobile || 1),
+  } as React.CSSProperties;
 }
 
 /** The market's social links, in the order the footer lists them. */
@@ -263,7 +274,15 @@ export function FooterMenusBlock({
   if (menus.length === 0) return null;
 
   return (
-    <div style={columnStyle(content.columns || menus.length)}>
+    <div
+      className="footer-grid"
+      style={columnStyle(
+        content.columns || menus.length,
+        undefined,
+        content.tabletColumns,
+        content.mobileColumns,
+      )}
+    >
       {menus.map((menu) => (
         <nav key={menu.id} aria-label={menu.name}>
           {content.showHeadings ? (
@@ -315,7 +334,15 @@ export async function FooterColumnsBlock({
   );
 
   return (
-    <div style={columnStyle(content.columns, content.items.map((column) => column.width))}>
+    <div
+      className="footer-grid"
+      style={columnStyle(
+        content.columns,
+        content.items.map((column) => column.width),
+        content.tabletColumns,
+        content.mobileColumns,
+      )}
+    >
       {columns}
     </div>
   );

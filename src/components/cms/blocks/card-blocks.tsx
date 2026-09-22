@@ -19,7 +19,7 @@ import {
   CmsImage,
   IconBadge,
   MaybeLink,
-  columnVars,
+  blockColumnVars,
   type BlockContext,
 } from './shared';
 
@@ -57,7 +57,7 @@ export async function ImageCardsBlock({
       {items.length === 0 ? (
         <EmptyBlockHint inverted={ctx.inverted} message="Add a card to this section to see it here." />
       ) : (
-        <ul className="cms-grid list-none" style={columnVars(ctx.design, columns)}>
+        <ul className="cms-grid list-none" style={blockColumnVars(ctx.design, content)}>
           {items.map((item, index) => {
             const image = item.imageId ? (media.get(item.imageId) ?? null) : null;
             const overlay = content.cardStyle === 'overlay' && image;
@@ -156,7 +156,7 @@ export async function IconCardsBlock({
       {items.length === 0 ? (
         <EmptyBlockHint inverted={ctx.inverted} message="Add a card to this section to see it here." />
       ) : (
-        <ul className="cms-grid list-none" style={columnVars(ctx.design, columns)}>
+        <ul className="cms-grid list-none" style={blockColumnVars(ctx.design, content)}>
           {items.map((item, index) => {
             const Icon = resolveCmsIcon(item.icon);
             const image = item.imageId ? media.get(item.imageId) : null;
@@ -432,7 +432,7 @@ export function ListSectionBlock({ content, ctx }: { content: ListSectionContent
       {items.length === 0 ? (
         <EmptyBlockHint inverted={ctx.inverted} message="Add list items to this section to see them here." />
       ) : (
-        <ul className="cms-grid list-none" style={columnVars(ctx.design, content.columns || 1)}>
+        <ul className="cms-grid list-none" style={blockColumnVars(ctx.design, content, 1)}>
           {items.map((item, index) => (
             <li key={index} className="flex items-start gap-3">
               <Marker marker={content.marker} index={index} icon={item.icon} inverted={ctx.inverted} />
@@ -599,7 +599,7 @@ export function StatisticsBlock({ content, ctx }: { content: StatisticsContent; 
       ) : (
         <dl
           className={cn('cms-grid', centred && 'text-center', content.style === 'divided' && 'gap-y-8')}
-          style={columnVars(ctx.design, content.columns || 4)}
+          style={blockColumnVars(ctx.design, content, 4)}
         >
           {items.map((item, index) => {
             const Icon = resolveCmsIcon(item.icon);

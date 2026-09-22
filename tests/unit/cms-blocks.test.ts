@@ -167,3 +167,47 @@ describe('form builder model', () => {
     expect(uniqueFieldName('company', fields)).toBe('company_3');
   });
 });
+
+/**
+ * A grid that can be set per screen size.
+ *
+ * `columns` alone only ever said what a wide screen gets; the narrower ones
+ * stepped down on their own and the only way to say otherwise was the design
+ * panel's Responsive tab, one section at a time. A block that offers a column
+ * count now offers one for each width, with 0 meaning "narrow it for me".
+ */
+describe('per-breakpoint columns', () => {
+  const gridBlocks = BLOCK_LIST.filter((block) =>
+    block.fields.some((field) => field.name === 'columns'),
+  );
+
+  it('offers tablet and mobile beside every block’s own column count', () => {
+    expect(gridBlocks.length).toBeGreaterThan(5);
+
+    for (const block of gridBlocks) {
+      const names = block.fields.map((field) => field.name);
+      expect(names, `${block.type} should offer a tablet count`).toContain('tabletColumns');
+      expect(names, `${block.type} should offer a mobile count`).toContain('mobileColumns');
+
+      // And the schema has to hold what the editor collects.
+      const defaults = blockDefaults(block.type);
+      expect(defaults.tabletColumns, `${block.type} defaults`).toBe(0);
+      expect(defaults.mobileColumns, `${block.type} defaults`).toBe(0);
+    }
+  });
+
+  it('keeps a chosen count and refuses a nonsense one', () => {
+    const chosen = parseBlockContent('productGrid', {
+      columns: 4,
+      tabletColumns: 3,
+      mobileColumns: 2,
+    }) as Record<string, unknown>;
+    expect([chosen.columns, chosen.tabletColumns, chosen.mobileColumns]).toEqual([4, 3, 2]);
+
+    const nonsense = parseBlockContent('productGrid', {
+      mobileColumns: 'many',
+    }) as Record<string, unknown>;
+    expect(nonsense.mobileColumns).toBe(0);
+  });
+});
+

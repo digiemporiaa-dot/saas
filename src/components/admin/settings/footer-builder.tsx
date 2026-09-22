@@ -10,6 +10,7 @@ import {
   reorderFooterSections,
   toggleFooterSectionVisibility,
   ensureFooterSections,
+  replaceFooterArrangement,
   resetFooter,
 } from '@/lib/actions/footer-layout';
 import { FOOTER_ARRANGEMENTS, type FooterArrangement } from '@/lib/cms/footer-defaults';
@@ -18,6 +19,7 @@ import { SectionWorkspace, type WorkspaceActions } from '@/components/cms/sectio
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { useToast } from '@/components/ui/toast';
+import { cn } from '@/lib/utils/cn';
 
 /**
  * The footer, as a builder.
@@ -50,6 +52,9 @@ export function FooterBuilder({
   const { toast } = useToast();
   const [claiming, setClaiming] = React.useState<FooterArrangement | null>(null);
   const [resetting, setResetting] = React.useState(false);
+  const [picking, setPicking] = React.useState(false);
+  /** The arrangement waiting on a confirmation, because rebuilding discards. */
+  const [rebuilding, setRebuilding] = React.useState<FooterArrangement | null>(null);
 
   const actions = React.useMemo<WorkspaceActions>(
     () => ({
@@ -89,40 +94,21 @@ export function FooterBuilder({
           * lock anything in.
           */}
         {canEdit ? (
-          <div className="mx-auto mt-6 grid max-w-2xl gap-3 sm:grid-cols-2">
-            {(Object.keys(FOOTER_ARRANGEMENTS) as FooterArrangement[]).map((key) => {
-              const arrangement = FOOTER_ARRANGEMENTS[key];
-              return (
-                <div
-                  key={key}
-                  className="flex flex-col rounded-lg border border-hairline p-4 text-left"
-                >
-                  <p className="text-sm font-medium text-content">{arrangement.label}</p>
-                  <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">
-                    {arrangement.description}
-                  </p>
-                  <Button
-                    className="mt-4"
-                    size="sm"
-                    variant={key === 'classic' ? 'primary' : 'outline'}
-                    disabled={claiming !== null}
-                    onClick={async () => {
-                      setClaiming(key);
-                      const result = await ensureFooterSections(countryId, key);
-                      setClaiming(null);
-                      if (!result.ok) {
-                        toast(result.error, 'error');
-                        return;
-                      }
-                      router.refresh();
-                    }}
-                  >
-                    {claiming === key ? 'Preparing…' : 'Start from this'}
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
+          <ArrangementCards
+            className="mx-auto mt-6 max-w-2xl"
+            busy={claiming}
+            actionLabel="Start from this"
+            onPick={async (key) => {
+              setClaiming(key);
+              const result = await ensureFooterSections(countryId, key);
+              setClaiming(null);
+              if (!result.ok) {
+                toast(result.error, 'error');
+                return;
+              }
+              router.refresh();
+            }}
+          />
         ) : null}
       </div>
     );
@@ -144,12 +130,59 @@ export function FooterBuilder({
       />
 
       {canEdit ? (
-        <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={() => setResetting(true)}>
-            Reset to the built-in footer
-          </Button>
-        </div>
+        <>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setPicking((open) => !open)}>
+              {picking ? 'Never mind' : 'Start again from an arrangement'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setResetting(true)}>
+              Reset to the built-in footer
+            </Button>
+          </div>
+
+          {/*
+            * Switching is the ordinary thing to want — the footer written
+            * first is not always the shape the site turns out to need — but it
+            * discards what is here, so it asks before it does.
+            */}
+          {picking ? (
+            <div className="rounded-xl border border-dashed border-hairline p-4">
+              <p className="mb-3 text-sm text-muted">
+                Rebuilding replaces every row below. Nothing else about this market changes.
+              </p>
+              <ArrangementCards
+                busy={null}
+                actionLabel="Rebuild from this"
+                onPick={(key) => setRebuilding(key)}
+              />
+            </div>
+          ) : null}
+        </>
       ) : null}
+
+      <ConfirmDialog
+        open={rebuilding !== null}
+        onClose={() => setRebuilding(null)}
+        title={
+          rebuilding ? `Rebuild ${countryName}'s footer from “${FOOTER_ARRANGEMENTS[rebuilding].label}”?` : ''
+        }
+        message="Every row here is replaced with that arrangement. Other markets are not affected."
+        confirmLabel="Rebuild"
+        tone="danger"
+        onConfirm={async () => {
+          const key = rebuilding;
+          setRebuilding(null);
+          if (!key) return;
+          const result = await replaceFooterArrangement(countryId, key);
+          if (!result.ok) {
+            toast(result.error, 'error');
+            return;
+          }
+          setPicking(false);
+          toast(result.message ?? 'Footer rebuilt.');
+          router.refresh();
+        }}
+      />
 
       <ConfirmDialog
         open={resetting}
@@ -169,6 +202,50 @@ export function FooterBuilder({
           router.refresh();
         }}
       />
+    </div>
+  );
+}
+
+/**
+ * The arrangements a footer can be built from, as cards.
+ *
+ * Shared by the empty screen and by the rebuild panel so the two offer the
+ * same choice in the same words — the only difference is what picking one
+ * does.
+ */
+function ArrangementCards({
+  busy,
+  actionLabel,
+  onPick,
+  className,
+}: {
+  busy: FooterArrangement | null;
+  actionLabel: string;
+  onPick: (key: FooterArrangement) => void;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid gap-3 sm:grid-cols-2', className)}>
+      {(Object.keys(FOOTER_ARRANGEMENTS) as FooterArrangement[]).map((key) => {
+        const arrangement = FOOTER_ARRANGEMENTS[key];
+        return (
+          <div key={key} className="flex flex-col rounded-lg border border-hairline p-4 text-left">
+            <p className="text-sm font-medium text-content">{arrangement.label}</p>
+            <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">
+              {arrangement.description}
+            </p>
+            <Button
+              className="mt-4"
+              size="sm"
+              variant={key === 'classic' ? 'primary' : 'outline'}
+              disabled={busy !== null}
+              onClick={() => onPick(key)}
+            >
+              {busy === key ? 'Preparing…' : actionLabel}
+            </Button>
+          </div>
+        );
+      })}
     </div>
   );
 }

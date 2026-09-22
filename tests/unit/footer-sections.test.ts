@@ -201,3 +201,23 @@ describe('the arrangements a footer can start from', () => {
     }
   });
 });
+
+describe('a footer row on a phone', () => {
+  it('offers a column count per screen size, like every other grid', () => {
+    for (const type of ['footerColumns', 'footerMenus']) {
+      const names = BLOCKS[type]!.fields.map((field) => field.name);
+      expect(names, `${type} should offer a tablet count`).toContain('tabletColumns');
+      expect(names, `${type} should offer a mobile count`).toContain('mobileColumns');
+    }
+
+    const parsed = parseBlockContent('footerColumns', {
+      columns: 4,
+      mobileColumns: 2,
+    }) as Record<string, unknown>;
+    expect(parsed.columns).toBe(4);
+    expect(parsed.mobileColumns).toBe(2);
+    // Nothing chosen for tablet means the row narrows on its own.
+    expect(parsed.tabletColumns).toBe(0);
+  });
+});
+

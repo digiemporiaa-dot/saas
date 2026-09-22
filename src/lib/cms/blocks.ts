@@ -10,6 +10,8 @@ import {
   type BlockGroup,
   type BlockSurface,
   PAGE_BLOCK_SURFACES,
+  responsiveColumnsSchema,
+  responsiveColumnFields,
 } from './block-types';
 import { BLOG_BLOCKS } from './blog-blocks';
 import { PRODUCT_BLOCKS } from './product-blocks';
@@ -121,6 +123,7 @@ const featureGridSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(2).max(4).default(3),
+  ...responsiveColumnsSchema,
   style: z.enum(['card', 'plain']).default('card'),
   items: z
     .array(
@@ -154,6 +157,7 @@ const productCardsSchema = z.object({
   productIds: z.array(z.string()).default([]),
   limit: z.coerce.number().int().min(1).max(12).default(3),
   columns: z.coerce.number().int().min(2).max(4).default(3),
+  ...responsiveColumnsSchema,
   showImage: z.boolean().default(true),
   showDescription: z.boolean().default(true),
   showPrice: z.boolean().default(true),
@@ -223,6 +227,7 @@ const testimonialsSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(1).max(3).default(3),
+  ...responsiveColumnsSchema,
   items: z
     .array(
       z.object({
@@ -359,6 +364,7 @@ const imageCardsSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(1).max(6).default(3),
+  ...responsiveColumnsSchema,
   maxRows: z.coerce.number().int().min(0).max(20).default(0),
   imageRatio,
   imageFit: objectFit,
@@ -382,6 +388,7 @@ const iconCardsSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(1).max(6).default(3),
+  ...responsiveColumnsSchema,
   iconSize: cssLength,
   iconPosition: z.enum(['top', 'left']).catch('top').default('top'),
   iconStyle: z.enum(['plain', 'circle', 'square']).catch('circle').default('circle'),
@@ -434,6 +441,7 @@ const listSectionSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(1).max(4).default(1),
+  ...responsiveColumnsSchema,
   marker: z.enum(['check', 'bullet', 'number', 'icon', 'none']).catch('check').default('check'),
   items: z
     .array(
@@ -487,6 +495,7 @@ const statisticsSchema = z.object({
   heading: z.string().max(240).default(''),
   description: z.string().max(800).default(''),
   columns: z.coerce.number().int().min(1).max(6).default(4),
+  ...responsiveColumnsSchema,
   align: z.enum(['left', 'center']).catch('center').default('center'),
   style: z.enum(['plain', 'card', 'divided']).catch('card').default('card'),
   items: z
@@ -517,6 +526,7 @@ const productGridSchema = z.object({
   productIds: z.array(z.string()).default([]),
   limit: z.coerce.number().int().min(1).max(24).default(6),
   columns: z.coerce.number().int().min(1).max(4).default(3),
+  ...responsiveColumnsSchema,
   layout: z.enum(['grid', 'list']).catch('grid').default('grid'),
   billing: z.enum(['monthly', 'annual']).catch('monthly').default('monthly'),
   showImage: z.boolean().default(true),
@@ -716,6 +726,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 2, max: 4 },
+      ...responsiveColumnFields,
       {
         kind: 'select',
         name: 'style',
@@ -788,6 +799,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       ...productSourceFields,
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 2, max: 4 },
+      ...responsiveColumnFields,
       {
         kind: 'select',
         name: 'billing',
@@ -916,6 +928,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 3 },
+      ...responsiveColumnFields,
       {
         kind: 'repeater',
         name: 'items',
@@ -1282,6 +1295,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading', width: 'half' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       { kind: 'number', name: 'columns', label: 'Cards per row', width: 'half', min: 1, max: 6 },
+      ...responsiveColumnFields,
       {
         kind: 'number',
         name: 'maxRows',
@@ -1352,6 +1366,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading', width: 'half' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       { kind: 'number', name: 'columns', label: 'Cards per row', width: 'half', min: 1, max: 6 },
+      ...responsiveColumnFields,
       { kind: 'length', name: 'iconSize', label: 'Icon size', width: 'half', placeholder: '28px' },
       {
         kind: 'select',
@@ -1501,6 +1516,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading', width: 'half' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 4 },
+      ...responsiveColumnFields,
       {
         kind: 'select',
         name: 'marker',
@@ -1629,6 +1645,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         min: 1,
         max: 6,
       },
+      ...responsiveColumnFields,
       { kind: 'select', name: 'align', label: 'Alignment', width: 'half', options: ALIGN_OPTIONS },
       {
         kind: 'select',
@@ -1708,6 +1725,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         showWhen: { field: 'source', equals: ['selected'] },
       },
       { kind: 'number', name: 'columns', label: 'Products per row', width: 'half', min: 1, max: 4 },
+      ...responsiveColumnFields,
       {
         kind: 'select',
         name: 'layout',
