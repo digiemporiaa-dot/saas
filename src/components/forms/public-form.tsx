@@ -341,31 +341,44 @@ export function PublicFormRenderer({
           )}
         </div>
 
+        {/*
+          * The spam check, on one line.
+          *
+          * It used to be a bordered panel with its own heading and a sentence
+          * of explanation — three rows of a short form given over to the one
+          * field nobody wanted to fill in. The question is the label, the box
+          * sits beside it, and the explanation is the input's title rather
+          * than a line of its own. It wraps on a narrow column rather than
+          * squeezing the answer box.
+          */}
         {form.requireCaptcha ? (
-          <div className="mt-4 rounded-lg border border-hairline bg-muted/[0.03] p-4">
-            <label htmlFor={captchaId} className="fd-label">
-              {captcha ? captcha.question : 'Loading verification question…'}
-              <span className="fd-required" aria-hidden="true">
-                {' '}
-                *
-              </span>
-            </label>
-            <p className="fd-help">A quick check to help us keep out automated spam.</p>
-            <input
-              id={captchaId}
-              type="text"
-              inputMode="numeric"
-              autoComplete="off"
-              required
-              disabled={!captcha}
-              value={captchaAnswer}
-              onChange={(event) => setCaptchaAnswer(event.target.value)}
-              aria-describedby={fieldErrors._captcha ? `${captchaId}-error` : undefined}
-              aria-invalid={fieldErrors._captcha ? true : undefined}
-              className="fd-control mt-2 w-32"
-            />
+          <div className="mt-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+              <label htmlFor={captchaId} className="fd-label mb-0">
+                {captcha ? captcha.question : 'Loading verification question…'}
+                <span className="fd-required" aria-hidden="true">
+                  {' '}
+                  *
+                </span>
+              </label>
+              <input
+                id={captchaId}
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                required
+                disabled={!captcha}
+                value={captchaAnswer}
+                onChange={(event) => setCaptchaAnswer(event.target.value)}
+                placeholder="Your answer"
+                title="A quick check to help us keep out automated spam."
+                aria-describedby={fieldErrors._captcha ? `${captchaId}-error` : undefined}
+                aria-invalid={fieldErrors._captcha ? true : undefined}
+                className="fd-control w-28 shrink-0"
+              />
+            </div>
             {fieldErrors._captcha ? (
-              <p id={`${captchaId}-error`} className="fd-error" role="alert">
+              <p id={`${captchaId}-error`} className="fd-error mt-1" role="alert">
                 {fieldErrors._captcha[0]}
               </p>
             ) : null}
