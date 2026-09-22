@@ -100,7 +100,18 @@ type FieldVariant =
       max?: number;
     };
 
-export type FieldDescriptor = FieldVariant & { showWhen?: FieldCondition };
+export type FieldDescriptor = FieldVariant & {
+  showWhen?: FieldCondition;
+  /**
+   * What a new repeater item starts this field at.
+   *
+   * Without one a blank item takes the empty value for its kind, which is
+   * right for a text box and wrong for a switch the block's schema defaults to
+   * on: the row would be saved with the switch off and the administrator would
+   * have to turn on something nobody turned off.
+   */
+  defaultValue?: unknown;
+};
 
 export type FieldKind = FieldVariant['kind'];
 

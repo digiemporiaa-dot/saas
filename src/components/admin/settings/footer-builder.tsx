@@ -12,6 +12,7 @@ import {
   ensureFooterSections,
   resetFooter,
 } from '@/lib/actions/footer-layout';
+import { FOOTER_ARRANGEMENTS, type FooterArrangement } from '@/lib/cms/footer-defaults';
 import type { BuilderSection } from '@/components/cms/section-builder';
 import { SectionWorkspace, type WorkspaceActions } from '@/components/cms/section-workspace';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,7 @@ export function FooterBuilder({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [claiming, setClaiming] = React.useState(false);
+  const [claiming, setClaiming] = React.useState<FooterArrangement | null>(null);
   const [resetting, setResetting] = React.useState(false);
 
   const actions = React.useMemo<WorkspaceActions>(
@@ -77,26 +78,51 @@ export function FooterBuilder({
         <p className="mx-auto mt-1.5 max-w-lg text-sm text-muted">
           The website already renders a complete footer for this market. Take control of it to
           reorder its rows, divide one into columns, restyle it or add anything you can add to a
-          page — nothing on the website changes until you edit something, and no other market is
+          page — nothing on the website changes until you pick one, and no other market is
           affected.
         </p>
+
+        {/*
+          * Two starting points rather than one. Either is an ordinary set of
+          * rows the moment it is written, so choosing the one nearer the
+          * footer somebody has in mind saves them rebuilding it — it does not
+          * lock anything in.
+          */}
         {canEdit ? (
-          <Button
-            className="mt-5"
-            disabled={claiming}
-            onClick={async () => {
-              setClaiming(true);
-              const result = await ensureFooterSections(countryId);
-              setClaiming(false);
-              if (!result.ok) {
-                toast(result.error, 'error');
-                return;
-              }
-              router.refresh();
-            }}
-          >
-            {claiming ? 'Preparing…' : 'Customise this footer'}
-          </Button>
+          <div className="mx-auto mt-6 grid max-w-2xl gap-3 sm:grid-cols-2">
+            {(Object.keys(FOOTER_ARRANGEMENTS) as FooterArrangement[]).map((key) => {
+              const arrangement = FOOTER_ARRANGEMENTS[key];
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col rounded-lg border border-hairline p-4 text-left"
+                >
+                  <p className="text-sm font-medium text-content">{arrangement.label}</p>
+                  <p className="mt-1 flex-1 text-xs leading-relaxed text-muted">
+                    {arrangement.description}
+                  </p>
+                  <Button
+                    className="mt-4"
+                    size="sm"
+                    variant={key === 'classic' ? 'primary' : 'outline'}
+                    disabled={claiming !== null}
+                    onClick={async () => {
+                      setClaiming(key);
+                      const result = await ensureFooterSections(countryId, key);
+                      setClaiming(null);
+                      if (!result.ok) {
+                        toast(result.error, 'error');
+                        return;
+                      }
+                      router.refresh();
+                    }}
+                  >
+                    {claiming === key ? 'Preparing…' : 'Start from this'}
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
         ) : null}
       </div>
     );

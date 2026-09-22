@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { BLOCKS, blocksForSurface, blockAllowedOnSurface, parseBlockContent } from '@/lib/cms/blocks';
 import { FOOTER_BLOCKS } from '@/lib/cms/footer-blocks';
-import { synthesiseFooterSections } from '@/lib/cms/footer-defaults';
+import { synthesiseFooterSections, FOOTER_ARRANGEMENTS } from '@/lib/cms/footer-defaults';
 import { buildSectionStyles, parseSectionDesign, DEFAULT_SECTION_DESIGN } from '@/lib/cms/design';
 
 /**
@@ -132,5 +132,72 @@ describe('a footer row on the footer’s own surface', () => {
     const page = buildSectionStyles(DEFAULT_SECTION_DESIGN, 'row');
     expect(page.style['--sec-bg']).toBe('rgb(var(--brand-background))');
     expect(page.style['--sec-text']).toBe('rgb(var(--brand-muted))');
+  });
+});
+
+/**
+ * A row whose columns are not all the same kind of thing.
+ *
+ * A footer whose brand sits beside its menus and its sign-up form is the
+ * common arrangement, so those belong inside one row rather than as three
+ * rows stacked down the page.
+ */
+describe('a footer row of mixed columns', () => {
+  it('keeps each column’s kind and fills the rest in from the schema', () => {
+    const parsed = parseBlockContent('footerColumns', {
+      items: [{ kind: 'brand' }, { kind: 'newsletter' }, { kind: 'content' }],
+    }) as { items: Array<Record<string, unknown>> };
+
+    expect(parsed.items.map((item) => item.kind)).toEqual(['brand', 'newsletter', 'content']);
+    // The brand column's switches default on, the form's panel too.
+    expect(parsed.items[0]!.showLogo).toBe(true);
+    expect(parsed.items[0]!.showSocials).toBe(true);
+    expect(parsed.items[1]!.formPanel).toBe(true);
+    // And a column that names no width takes an equal share.
+    expect(parsed.items[0]!.width).toBe('');
+  });
+
+  it('falls back to an ordinary column when the kind means nothing', () => {
+    const parsed = parseBlockContent('footerColumns', {
+      items: [{ kind: 'nonsense' }],
+    }) as { items: Array<Record<string, unknown>> };
+
+    expect(parsed.items[0]!.kind).toBe('content');
+  });
+});
+
+describe('the arrangements a footer can start from', () => {
+  it('writes the stacked footer as the rows it has always rendered', () => {
+    expect(synthesiseFooterSections().map((row) => row.blockType)).toEqual([
+      'footerNewsletter',
+      'footerBrand',
+      'footerMenus',
+      'footerBottom',
+    ]);
+    // The default argument and the named one are the same arrangement.
+    expect(synthesiseFooterSections('classic')).toEqual(synthesiseFooterSections());
+  });
+
+  it('writes the one-row footer as a row of columns over the legal line', () => {
+    const rows = synthesiseFooterSections('columns');
+    expect(rows.map((row) => row.blockType)).toEqual(['footerColumns', 'footerBottom']);
+
+    const top = rows[0]!.content as { columns: number; items: Array<{ kind: string }> };
+    expect(top.columns).toBe(4);
+    expect(top.items.map((item) => item.kind)).toEqual([
+      'brand',
+      'content',
+      'content',
+      'newsletter',
+    ]);
+  });
+
+  it('seeds every arrangement from real blocks', () => {
+    for (const [name, arrangement] of Object.entries(FOOTER_ARRANGEMENTS)) {
+      for (const seed of arrangement.sections) {
+        expect(BLOCKS[seed.blockType], `${name} seeds ${seed.blockType}`).toBeDefined();
+        expect(blockAllowedOnSurface(seed.blockType, 'footer')).toBe(true);
+      }
+    }
   });
 });

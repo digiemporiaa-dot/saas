@@ -364,6 +364,10 @@ function Repeater({
     if (field.max && items.length >= field.max) return;
     const blank: FieldValues = {};
     for (const sub of field.fields) {
+      if (sub.defaultValue !== undefined) {
+        blank[sub.name] = sub.defaultValue;
+        continue;
+      }
       blank[sub.name] =
         sub.kind === 'boolean'
           ? false

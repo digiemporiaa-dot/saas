@@ -8,6 +8,7 @@ import { recordAudit } from '@/lib/services/audit';
 import { blockDefaults, getBlock, blockAllowedOnSurface } from '@/lib/cms/blocks';
 import { parseSectionDesign, DEFAULT_SECTION_DESIGN } from '@/lib/cms/design';
 import { materialiseFooter } from '@/lib/services/footer-cms';
+import { FOOTER_ARRANGEMENTS, type FooterArrangement } from '@/lib/cms/footer-defaults';
 import { resolveActionCountry } from '@/lib/country/admin';
 import { assertCountryAccess } from '@/lib/country/access';
 import { sanitizeText } from '@/lib/utils/sanitize';
@@ -258,10 +259,18 @@ export async function toggleFooterSectionVisibility(sectionId: string): Promise<
 }
 
 /** Materialises the built-in arrangement so it can be edited. */
-export async function ensureFooterSections(rawCountryId: unknown): Promise<ActionResult> {
+export async function ensureFooterSections(
+  rawCountryId: unknown,
+  rawArrangement: unknown = 'classic',
+): Promise<ActionResult> {
   try {
     const { country } = await requireCountry(rawCountryId);
-    await materialiseFooter(country.id);
+    const arrangement = z
+      .enum(Object.keys(FOOTER_ARRANGEMENTS) as [FooterArrangement, ...FooterArrangement[]])
+      .catch('classic' as FooterArrangement)
+      .parse(rawArrangement);
+
+    await materialiseFooter(country.id, arrangement);
     await revalidateFooter(country.id);
     return success(undefined, 'Footer ready to edit.');
   } catch (error) {

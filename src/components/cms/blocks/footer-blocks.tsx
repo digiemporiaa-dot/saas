@@ -7,7 +7,7 @@ import type {
   FooterBottomContent,
   FooterNewsletterContent,
 } from '@/lib/cms/footer-blocks';
-import { footerMenu } from '@/lib/cms/footer-render';
+import { footerMenu, type FooterRenderContext } from '@/lib/cms/footer-render';
 import {
   LinkedInIcon,
   XIcon,
@@ -43,12 +43,103 @@ const SOCIALS: Array<{ key: string; label: string; Icon: IconComponent }> = [
 ];
 
 /** Columns as a custom property: the count is data, and a class cannot be. */
-function columnStyle(count: number): React.CSSProperties {
+function columnStyle(count: number, widths?: string[]): React.CSSProperties {
+  const clamped = Math.min(Math.max(count, 1), 6);
+  /*
+   * A row where one column is wider than the rest — the brand beside three
+   * narrow menus — is an ordinary footer, so a column may name its own track.
+   * Any column that does not still takes an equal share of what is left.
+   */
+  const tracks =
+    widths && widths.some(Boolean)
+      ? widths
+          .slice(0, clamped)
+          .map((width) => (width ? `minmax(0, ${width})` : 'minmax(0, 1fr)'))
+          .join(' ')
+      : `repeat(${clamped}, minmax(0, 1fr))`;
+
   return {
     display: 'grid',
     gap: 'var(--footer-column-gap, 2.5rem)',
-    gridTemplateColumns: `repeat(${Math.min(Math.max(count, 1), 6)}, minmax(0, 1fr))`,
+    gridTemplateColumns: tracks,
   };
+}
+
+/** The market's social links, in the order the footer lists them. */
+function socialLinks(settings: FooterRenderContext['settings']) {
+  return SOCIALS.map(({ key, label, Icon }) => {
+    const href = settings[key as keyof typeof settings];
+    return { label, Icon, href: typeof href === 'string' ? href : null };
+  }).filter((social): social is { label: string; Icon: IconComponent; href: string } =>
+    Boolean(social.href),
+  );
+}
+
+function SocialRow({ settings }: { settings: FooterRenderContext['settings'] }) {
+  const socials = socialLinks(settings);
+  if (socials.length === 0) return null;
+
+  return (
+    <ul className="flex items-center gap-3">
+      {socials.map(({ label, href, Icon }) => (
+        <li key={label}>
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={label}
+            className="site-footer-social site-footer-link inline-flex items-center justify-center rounded-full transition-colors"
+            style={{
+              height: 'var(--footer-social-size, 2rem)',
+              width: 'var(--footer-social-size, 2rem)',
+            }}
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Email, phone and address, as the brand block and a brand column both list them. */
+function ContactList({
+  email,
+  phone,
+  address,
+}: {
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+}) {
+  if (!email && !phone && !address) return null;
+
+  return (
+    <ul className="mt-6 space-y-2 text-sm" style={{ color: 'var(--footer-contact)' }}>
+      {email ? (
+        <li className="flex items-start gap-2.5">
+          <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <a href={`mailto:${email}`} className="site-footer-link">
+            {email}
+          </a>
+        </li>
+      ) : null}
+      {phone ? (
+        <li className="flex items-start gap-2.5">
+          <Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <a href={`tel:${phone.replace(/\s/g, '')}`} className="site-footer-link">
+            {phone}
+          </a>
+        </li>
+      ) : null}
+      {address ? (
+        <li className="flex items-start gap-2.5">
+          <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+          <span>{address}</span>
+        </li>
+      ) : null}
+    </ul>
+  );
 }
 
 export function FooterBrandBlock({
@@ -62,59 +153,87 @@ export function FooterBrandBlock({
   if (!footer) return null;
   const { settings, local, homeUrl } = footer;
 
-  const logoUrl = settings.logoDarkUrl ?? settings.logoUrl ?? null;
-  const description = content.description || local.footerDescription;
-  const email = content.emailOverride || local.salesEmail;
-  const phone = content.phoneOverride || local.salesPhone;
-  const address = content.addressOverride || local.address;
-
   return (
     <div className="max-w-sm">
+      <FooterBrand
+        footer={footer}
+        description={content.showDescription ? content.description : ''}
+        showLogo={content.showLogo}
+        showSiteName={content.showSiteName}
+        showDescription={content.showDescription}
+        logoHeight={content.logoHeight}
+        email={content.showEmail ? content.emailOverride || local.salesEmail : null}
+        phone={content.showPhone ? content.phoneOverride || local.salesPhone : null}
+        address={content.showAddress ? content.addressOverride || local.address : null}
+      />
+    </div>
+  );
+}
+
+/**
+ * The brand itself — logo or wordmark, the line under it, optional contact
+ * details and optional social icons.
+ *
+ * Shared by the brand block and by a brand column inside a row, because a
+ * footer whose brand sits beside its menus is the common arrangement and the
+ * two must not drift into looking different.
+ */
+function FooterBrand({
+  footer,
+  description,
+  showLogo,
+  showSiteName = true,
+  showDescription,
+  logoHeight,
+  email,
+  phone,
+  address,
+  socials = false,
+}: {
+  footer: FooterRenderContext;
+  /** Blank uses the market's own description. */
+  description: string;
+  showLogo: boolean;
+  showSiteName?: boolean;
+  showDescription: boolean;
+  logoHeight?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  socials?: boolean;
+}) {
+  const { settings, local, homeUrl } = footer;
+  const logoUrl = settings.logoDarkUrl ?? settings.logoUrl ?? null;
+  const line = description || local.footerDescription;
+
+  return (
+    <>
       <Link href={homeUrl} className="inline-flex items-center gap-2">
-        {logoUrl && content.showLogo ? (
+        {logoUrl && showLogo ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={logoUrl}
             alt={settings.siteName}
             className="w-auto max-w-[10rem] object-contain"
-            style={{ height: content.logoHeight || 'var(--footer-logo-height, 2rem)' }}
+            style={{ height: logoHeight || 'var(--footer-logo-height, 2rem)' }}
           />
-        ) : content.showSiteName ? (
+        ) : showSiteName ? (
           <span className="site-footer-heading font-heading text-lg font-bold">
             {settings.siteName}
           </span>
         ) : null}
       </Link>
 
-      {description && content.showDescription ? (
-        <p className="mt-4 text-sm leading-relaxed">{description}</p>
-      ) : null}
+      {line && showDescription ? <p className="mt-4 text-sm leading-relaxed">{line}</p> : null}
 
-      <ul className="mt-6 space-y-2 text-sm" style={{ color: 'var(--footer-contact)' }}>
-        {email && content.showEmail ? (
-          <li className="flex items-start gap-2.5">
-            <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <a href={`mailto:${email}`} className="site-footer-link">
-              {email}
-            </a>
-          </li>
-        ) : null}
-        {phone && content.showPhone ? (
-          <li className="flex items-start gap-2.5">
-            <Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <a href={`tel:${phone.replace(/\s/g, '')}`} className="site-footer-link">
-              {phone}
-            </a>
-          </li>
-        ) : null}
-        {address && content.showAddress ? (
-          <li className="flex items-start gap-2.5">
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span>{address}</span>
-          </li>
-        ) : null}
-      </ul>
-    </div>
+      <ContactList email={email ?? null} phone={phone ?? null} address={address ?? null} />
+
+      {socials ? (
+        <div className="mt-6">
+          <SocialRow settings={settings} />
+        </div>
+      ) : null}
+    </>
   );
 }
 
@@ -172,7 +291,7 @@ export function FooterMenusBlock({
   );
 }
 
-export function FooterColumnsBlock({
+export async function FooterColumnsBlock({
   content,
   ctx,
 }: {
@@ -182,54 +301,117 @@ export function FooterColumnsBlock({
   const footer = ctx.footer;
   if (!footer || content.items.length === 0) return null;
 
+  const columns = await Promise.all(
+    content.items.map(async (column, index) => {
+      const body = (
+        <FooterColumn column={column} content={content} ctx={ctx} footer={footer} />
+      );
+      return (
+        <div key={index} className="min-w-0">
+          {body}
+        </div>
+      );
+    }),
+  );
+
   return (
-    <div style={columnStyle(content.columns)}>
-      {content.items.map((column, index) => {
-        const menu = footerMenu(footer, column.menuSlug);
-        const links = column.links.filter((link) => link.label && link.url);
-
-        return (
-          <div key={index} className="min-w-0">
-            {column.heading && content.showHeadings ? (
-              <h2 className="site-footer-heading font-heading text-sm font-semibold">
-                {column.heading}
-              </h2>
-            ) : null}
-            {column.body ? (
-              <p className="mt-3 text-sm leading-relaxed">{column.body}</p>
-            ) : null}
-
-            {/* A named menu and hand-typed links can both appear: a column of
-                product links with one extra "see all" underneath is ordinary. */}
-            {menu || links.length > 0 ? (
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {menu?.items.map((item) =>
-                  item.href === '#' ? null : (
-                    <li key={item.id}>
-                      <Link
-                        href={item.href}
-                        target={item.openInNewTab ? '_blank' : undefined}
-                        rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                        className="site-footer-link transition-colors"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ),
-                )}
-                {links.map((link, linkIndex) => (
-                  <li key={`link-${linkIndex}`}>
-                    <Link href={link.url} className="site-footer-link transition-colors">
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        );
-      })}
+    <div style={columnStyle(content.columns, content.items.map((column) => column.width))}>
+      {columns}
     </div>
+  );
+}
+
+/** One column of a footer row: ordinary content, the brand, or the form. */
+async function FooterColumn({
+  column,
+  content,
+  ctx,
+  footer,
+}: {
+  column: FooterColumnsContent['items'][number];
+  content: FooterColumnsContent;
+  ctx: BlockContext;
+  footer: FooterRenderContext;
+}) {
+  if (column.kind === 'brand') {
+    const { local } = footer;
+    return (
+      <FooterBrand
+        footer={footer}
+        description={column.body}
+        showLogo={column.showLogo}
+        showDescription={column.showDescription}
+        socials={column.showSocials}
+        email={column.showContact ? local.salesEmail : null}
+        phone={column.showContact ? local.salesPhone : null}
+        address={column.showContact ? local.address : null}
+      />
+    );
+  }
+
+  if (column.kind === 'newsletter') {
+    const form = column.formSlug
+      ? await getPublicForm(column.formSlug, ctx.country.id)
+      : footer.newsletter;
+    if (!form) return null;
+
+    const heading = column.heading || form.name;
+
+    return (
+      <>
+        {heading && content.showHeadings ? (
+          <h2 className="site-footer-heading font-heading text-sm font-semibold">{heading}</h2>
+        ) : null}
+        {column.body ? <p className="mt-3 text-sm leading-relaxed">{column.body}</p> : null}
+        <div
+          className={cn('mt-4', column.formPanel && 'rounded-xl bg-surface p-4 text-content sm:p-5')}
+        >
+          <PublicFormRenderer form={form} ctaLocation="footer-newsletter" compact />
+        </div>
+      </>
+    );
+  }
+
+  const menu = footerMenu(footer, column.menuSlug);
+  const links = column.links.filter((link) => link.label && link.url);
+
+  return (
+    <>
+      {column.heading && content.showHeadings ? (
+        <h2 className="site-footer-heading font-heading text-sm font-semibold">
+          {column.heading}
+        </h2>
+      ) : null}
+      {column.body ? <p className="mt-3 text-sm leading-relaxed">{column.body}</p> : null}
+
+      {/* A named menu and hand-typed links can both appear: a column of
+          product links with one extra "see all" underneath is ordinary. */}
+      {menu || links.length > 0 ? (
+        <ul className="mt-4 space-y-2.5 text-sm">
+          {menu?.items.map((item) =>
+            item.href === '#' ? null : (
+              <li key={item.id}>
+                <Link
+                  href={item.href}
+                  target={item.openInNewTab ? '_blank' : undefined}
+                  rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+                  className="site-footer-link transition-colors"
+                >
+                  {item.label}
+                </Link>
+              </li>
+            ),
+          )}
+          {links.map((link, linkIndex) => (
+            <li key={`link-${linkIndex}`}>
+              <Link href={link.url} className="site-footer-link transition-colors">
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
   );
 }
 
@@ -292,13 +474,6 @@ export function FooterBottomBlock({
   if (!footer) return null;
   const { settings, local, legal } = footer;
 
-  const socials = SOCIALS.map(({ key, label, Icon }) => {
-    const href = settings[key as keyof typeof settings];
-    return { label, Icon, href: typeof href === 'string' ? href : null };
-  }).filter((social): social is { label: string; Icon: IconComponent; href: string } =>
-    Boolean(social.href),
-  );
-
   const copyright = (content.copyrightOverride || local.copyrightText || '').replace(
     '{year}',
     String(new Date().getFullYear()),
@@ -336,27 +511,7 @@ export function FooterBottomBlock({
           </nav>
         ) : null}
 
-        {content.showSocials && socials.length > 0 ? (
-          <ul className="flex items-center gap-3">
-            {socials.map(({ label, href, Icon }) => (
-              <li key={label}>
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={label}
-                  className="site-footer-link inline-flex items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
-                  style={{
-                    height: 'var(--footer-social-size, 2rem)',
-                    width: 'var(--footer-social-size, 2rem)',
-                  }}
-                >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {content.showSocials ? <SocialRow settings={settings} /> : null}
       </div>
     </div>
   );

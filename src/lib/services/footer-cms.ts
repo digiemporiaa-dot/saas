@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { prisma } from '@/lib/db/prisma';
-import { synthesiseFooterSections } from '@/lib/cms/footer-defaults';
+import { synthesiseFooterSections, type FooterArrangement } from '@/lib/cms/footer-defaults';
 import type { RenderableSection } from '@/components/cms/section-renderer';
 
 /**
@@ -46,12 +46,15 @@ export async function getFooterSectionRows(countryId: string) {
  * administrator opens the footer they get the footer they have been looking
  * at, as editable rows, rather than an empty screen.
  */
-export async function materialiseFooter(countryId: string): Promise<void> {
+export async function materialiseFooter(
+  countryId: string,
+  arrangement: FooterArrangement = 'classic',
+): Promise<void> {
   const existing = await prisma.footerSection.count({ where: { countryId } });
   if (existing > 0) return;
 
   await prisma.footerSection.createMany({
-    data: synthesiseFooterSections().map((seed) => ({
+    data: synthesiseFooterSections(arrangement).map((seed) => ({
       countryId,
       blockType: seed.blockType,
       sortOrder: seed.sortOrder,

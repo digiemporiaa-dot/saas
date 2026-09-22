@@ -12,9 +12,20 @@ outline as everything else.
   you drag them into. The gap between them is *Space between rows* on Website
   design → Footer.
 - **Columns live inside a row.** The **Footer columns** block divides one row
-  into up to six columns, each with a heading and any of: some text, a footer
-  menu by slug, or hand-typed links. **Footer menus** does the same thing for
-  the menus themselves, one per column or a fixed count.
+  into up to six columns. Each column says what it holds:
+
+  | This column holds | What goes in it |
+  | --- | --- |
+  | Text, links or a menu | A heading over some text, a footer menu by slug, hand-typed links, or any mix |
+  | The brand block | Logo or site name, the line under it, the social icons, optionally the contact details |
+  | The sign-up form | A heading, some copy and a form from Forms |
+
+  Each column can also name its own **width** as one grid track — `1.4fr` for a
+  column half again as wide as the rest, `20rem` to pin it. Blank shares the
+  row equally. That is what puts a wide brand column beside three narrow ones.
+
+  **Footer menus** does the simpler thing for the menus themselves, one per
+  column or a fixed count.
 
 Every **page** section works here too, so a row can just as easily be a rich
 text block, an image, a logo wall or a call to action.
@@ -44,11 +55,34 @@ footer leaves every other market exactly as it was.
 
 A market that has never opened the builder has **no rows**, and renders the
 built-in arrangement: the newsletter, the brand block, the menus and the bottom
-row — the footer exactly as it was. Opening the builder offers to *take control
-of it*, which writes that same arrangement out as real rows, so the first edit
-starts from what is already live rather than from an empty screen.
+row — the footer exactly as it was.
 
-**Reset to the built-in footer** throws the rows away and puts it back.
+Opening the builder offers two starting points, and writes whichever you pick
+out as real rows, so the first edit starts from something rather than from an
+empty screen:
+
+| Starting point | What it writes |
+| --- | --- |
+| **The footer you have now** | The four rows above, exactly as the website already renders them |
+| **Brand, menus and sign-up in one row** | One `footerColumns` row — a wide brand column, two menu columns and the sign-up form — over a bottom row with the rule and the legal links |
+
+Both are ordinary rows the moment they are written: nothing about either is
+fixed, and everything in them is a field.
+
+The one-row arrangement points its two menu columns at the slugs `products`
+and `support`. A slug that matches no menu renders an empty column — point it
+at a real one in **Settings → Navigation**, or type the links into the column
+by hand.
+
+**Reset to the built-in footer** throws the rows away and puts the choice back.
+
+## Colours and spacing
+
+Structure is arranged here; how it looks is **Settings → Website design →
+Footer**: background, text, headings, links, the divider line, vertical
+padding, content width, the gap between rows and between columns, logo height
+and social icon size. A pale footer is that screen's *Background* and *Text*
+— the rows follow whatever it is set to.
 
 ## Where the code is
 

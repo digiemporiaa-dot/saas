@@ -476,6 +476,18 @@
   .site-footer .site-footer-rule { border-color: var(--footer-border, rgb(255 255 255 / 0.1)); }
 
   /*
+    A social icon sits on a disc tinted from the footer's own text colour, so
+    one rule reads on a dark footer and on a light one — a fixed white tint
+    disappears the moment somebody makes their footer pale.
+  */
+  .site-footer .site-footer-social {
+    background: var(--footer-social-bg, color-mix(in srgb, currentColor 12%, transparent));
+  }
+  .site-footer .site-footer-social:hover {
+    background: var(--footer-social-bg, color-mix(in srgb, currentColor 22%, transparent));
+  }
+
+  /*
     A footer row is a section, but a footer is not a page. The space between
     rows is the footer's own — `--footer-row-gap` on the column that holds
     them — so a row brings no page-section spacing with it unless somebody

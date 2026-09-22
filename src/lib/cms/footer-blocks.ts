@@ -58,7 +58,25 @@ const footerMenusSchema = z.object({
 });
 
 // --- footerColumns ---------------------------------------------------------
+/**
+ * What a column holds.
+ *
+ * `content` is the ordinary one — a heading over some text, a menu, or a few
+ * hand-typed links. The other two put the blocks a footer's top row usually
+ * carries *into* that row: a footer whose brand, its menus and its sign-up
+ * form sit side by side is the common arrangement, and stacking them as three
+ * rows is not it.
+ */
+const FOOTER_COLUMN_KINDS = ['content', 'brand', 'newsletter'] as const;
+
 const footerColumnSchema = z.object({
+  kind: z.enum(FOOTER_COLUMN_KINDS).catch('content').default('content'),
+  /**
+   * This column's share of the row, as one grid track: `1.4fr` for a column
+   * half again as wide as the others, or a length like `20rem` to pin it.
+   * Blank shares the row equally, which is what most columns want.
+   */
+  width: text(24),
   heading: text(120),
   body: text(1200),
   /** A footer menu to list under the heading, by slug. */
@@ -68,6 +86,24 @@ const footerColumnSchema = z.object({
     .array(z.object({ label: text(120), url: text(500) }))
     .catch([])
     .default([]),
+
+  // --- a brand column ---
+  showLogo: bool(true),
+  showDescription: bool(true),
+  showSocials: bool(true),
+  showContact: bool(false),
+
+  // --- a newsletter column ---
+  /** Blank uses the form chosen in Settings → Footer. */
+  formSlug: text(120),
+  /**
+   * The form on its own light panel.
+   *
+   * On a dark footer it needs one: a form carries the colours chosen for it in
+   * Forms → Design, and those were chosen against a page background. On a
+   * light footer the panel is the thing that looks wrong, so it comes off.
+   */
+  formPanel: bool(true),
 });
 
 const footerColumnsSchema = z.object({
@@ -208,13 +244,46 @@ export const FOOTER_BLOCKS: Record<string, BlockDefinition> = {
         itemLabel: 'Column',
         titleField: 'heading',
         fields: [
-          { kind: 'text', name: 'heading', label: 'Heading' },
-          { kind: 'textarea', name: 'body', label: 'Text', rows: 3 },
+          {
+            kind: 'select',
+            name: 'kind',
+            label: 'This column holds',
+            width: 'half',
+            defaultValue: 'content',
+            options: [
+              { label: 'Text, links or a menu', value: 'content' },
+              { label: 'The brand block', value: 'brand' },
+              { label: 'The sign-up form', value: 'newsletter' },
+            ],
+          },
+          {
+            kind: 'text',
+            name: 'width',
+            label: 'Width',
+            width: 'half',
+            placeholder: 'Equal share',
+            help: 'One grid track — 1.4fr for half again as wide, or 20rem to pin it.',
+          },
+          {
+            kind: 'text',
+            name: 'heading',
+            label: 'Heading',
+            showWhen: { field: 'kind', equals: ['content', 'newsletter'] },
+          },
+          {
+            kind: 'textarea',
+            name: 'body',
+            label: 'Text',
+            rows: 3,
+            showWhen: { field: 'kind', equals: ['content', 'newsletter', 'brand'] },
+            help: 'On a brand column this replaces the market’s own description.',
+          },
           {
             kind: 'text',
             name: 'menuSlug',
             label: 'Menu slug',
             help: 'Lists that menu under the heading.',
+            showWhen: { field: 'kind', equals: ['content'] },
           },
           {
             kind: 'repeater',
@@ -222,10 +291,62 @@ export const FOOTER_BLOCKS: Record<string, BlockDefinition> = {
             label: 'Links',
             itemLabel: 'Link',
             titleField: 'label',
+            showWhen: { field: 'kind', equals: ['content'] },
             fields: [
               { kind: 'text', name: 'label', label: 'Label', width: 'half' },
               { kind: 'url', name: 'url', label: 'Link', width: 'half' },
             ],
+          },
+
+          {
+            kind: 'boolean',
+            name: 'showLogo',
+            label: 'Show the logo',
+            width: 'half',
+            defaultValue: true,
+            showWhen: { field: 'kind', equals: ['brand'] },
+          },
+          {
+            kind: 'boolean',
+            name: 'showDescription',
+            label: 'Show the description',
+            width: 'half',
+            defaultValue: true,
+            showWhen: { field: 'kind', equals: ['brand'] },
+          },
+          {
+            kind: 'boolean',
+            name: 'showSocials',
+            label: 'Show the social icons',
+            width: 'half',
+            defaultValue: true,
+            showWhen: { field: 'kind', equals: ['brand'] },
+          },
+          {
+            kind: 'boolean',
+            name: 'showContact',
+            label: 'Show the contact details',
+            width: 'half',
+            defaultValue: false,
+            help: 'Email, phone and address, from this market.',
+            showWhen: { field: 'kind', equals: ['brand'] },
+          },
+
+          {
+            kind: 'form',
+            name: 'formSlug',
+            label: 'Form',
+            width: 'half',
+            showWhen: { field: 'kind', equals: ['newsletter'] },
+          },
+          {
+            kind: 'boolean',
+            name: 'formPanel',
+            label: 'Form on a light panel',
+            width: 'half',
+            defaultValue: true,
+            help: 'Needed on a dark footer; switch it off on a light one.',
+            showWhen: { field: 'kind', equals: ['newsletter'] },
           },
         ],
       },
