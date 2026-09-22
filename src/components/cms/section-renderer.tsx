@@ -71,6 +71,21 @@ import type {
   ProductRelatedContent,
   ProductPriceBoxContent,
 } from '@/lib/cms/product-blocks';
+import {
+  FooterBrandBlock,
+  FooterMenusBlock,
+  FooterColumnsBlock,
+  FooterNewsletterBlock,
+  FooterBottomBlock,
+} from './blocks/footer-blocks';
+import type {
+  FooterBrandContent,
+  FooterMenusContent,
+  FooterColumnsContent,
+  FooterBottomContent,
+  FooterNewsletterContent,
+} from '@/lib/cms/footer-blocks';
+import type { FooterRenderContext } from '@/lib/cms/footer-render';
 import type { ProductRenderContext } from '@/lib/cms/product-render';
 import { localiseContent } from '@/lib/country/routing';
 import { getRequestCountry } from '@/lib/country/request';
@@ -300,6 +315,17 @@ async function BlockBody({ section, ctx }: { section: RenderableSection; ctx: Bl
     case 'productPriceBox':
       return <ProductPriceBoxBlock content={parse<ProductPriceBoxContent>()} ctx={ctx} />;
 
+    case 'footerBrand':
+      return <FooterBrandBlock content={parse<FooterBrandContent>()} ctx={ctx} />;
+    case 'footerMenus':
+      return <FooterMenusBlock content={parse<FooterMenusContent>()} ctx={ctx} />;
+    case 'footerColumns':
+      return <FooterColumnsBlock content={parse<FooterColumnsContent>()} ctx={ctx} />;
+    case 'footerNewsletter':
+      return <FooterNewsletterBlock content={parse<FooterNewsletterContent>()} ctx={ctx} />;
+    case 'footerBottom':
+      return <FooterBottomBlock content={parse<FooterBottomContent>()} ctx={ctx} />;
+
     default:
       if (process.env.NODE_ENV !== 'production') {
         console.warn(`[cms] no renderer registered for block type "${blockType}"`);
@@ -322,6 +348,7 @@ export async function SectionRenderer({
   design: providedDesign,
   blog,
   product,
+  footer,
   country: providedCountry,
   container = true,
 }: {
@@ -335,6 +362,8 @@ export async function SectionRenderer({
   blog?: BlogRenderContext;
   /** Product surfaces do the same with the product being rendered. */
   product?: ProductRenderContext;
+  /** The footer surface does the same with the market it is rendering. */
+  footer?: FooterRenderContext;
   /**
    * Wrap the block in the standard centred container. The article column has
    * its own width, so its sections opt out and fill the column instead.
@@ -350,7 +379,15 @@ export async function SectionRenderer({
       : null;
 
   const styles = buildSectionStyles(design, section.id, backgroundMedia?.url ?? null);
-  const ctx: BlockContext = { country, inverted: styles.inverted, isFirst, design, blog, product };
+  const ctx: BlockContext = {
+    country,
+    inverted: styles.inverted,
+    isFirst,
+    design,
+    blog,
+    product,
+    footer,
+  };
 
   /*
    * A section that paints a background inside a column — the article's CTA, say
@@ -410,6 +447,7 @@ export async function SectionList({
   sections,
   blog,
   product,
+  footer,
   country: providedCountry,
   container = true,
   allowFirst = true,
@@ -418,6 +456,8 @@ export async function SectionList({
   blog?: BlogRenderContext;
   /** Product surfaces pass their resolved context down to every section. */
   product?: ProductRenderContext;
+  /** The footer surface does the same with the market it is rendering. */
+  footer?: FooterRenderContext;
   /** The market to render for. Resolved from the request when not supplied. */
   country?: CountryContext;
   container?: boolean;
@@ -445,6 +485,7 @@ export async function SectionList({
           anchorId={anchors.get(section.id)}
           blog={blog}
           product={product}
+          footer={footer}
           country={country}
           container={container}
         />

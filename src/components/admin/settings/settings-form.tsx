@@ -1320,6 +1320,14 @@ export function WebsiteSettingsForm({
                         onChange={(e) => set('footerColumnGap', e.target.value)}
                       />
                     </Field>
+                    <Field label="Space between rows" htmlFor="footerRowGap" hint="Default 3rem.">
+                      <Input
+                        id="footerRowGap"
+                        value={str('footerRowGap')}
+                        placeholder="3rem"
+                        onChange={(e) => set('footerRowGap', e.target.value)}
+                      />
+                    </Field>
                     <Field label="Logo height" htmlFor="footerLogoHeight" hint="Default 2rem.">
                       <Input
                         id="footerLogoHeight"

@@ -303,6 +303,7 @@ const websiteSettingsSchema = z.object({
   footerPaddingY: optionalLength,
   footerWidth: optionalLength,
   footerColumnGap: optionalLength,
+  footerRowGap: optionalLength,
   footerLogoHeight: optionalLength,
   footerSocialSize: optionalLength,
   footerContactColor: optionalColor,

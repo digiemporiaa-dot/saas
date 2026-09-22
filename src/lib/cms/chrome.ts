@@ -122,6 +122,7 @@ export type ChromeSettings = {
   footerPaddingY: string;
   footerWidth: string;
   footerColumnGap: string;
+  footerRowGap: string;
   footerLogoHeight: string;
   footerSocialSize: string;
   footerContactColor: string;
@@ -199,6 +200,7 @@ export function footerVars(settings: Partial<ChromeSettings>): Vars {
   put(vars, '--footer-padding-y', cssLength(settings.footerPaddingY));
   put(vars, '--footer-width', cssLength(settings.footerWidth));
   put(vars, '--footer-column-gap', cssLength(settings.footerColumnGap));
+  put(vars, '--footer-row-gap', cssLength(settings.footerRowGap));
   put(vars, '--footer-logo-height', cssLength(settings.footerLogoHeight));
   put(vars, '--footer-social-size', cssLength(settings.footerSocialSize));
   put(vars, '--footer-contact', cssColor(settings.footerContactColor));

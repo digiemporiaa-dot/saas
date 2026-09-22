@@ -1,46 +1,32 @@
 import type * as React from 'react';
-import Link from 'next/link';
-import { Mail, Phone, MapPin } from 'lucide-react';
-import {
-  LinkedInIcon,
-  XIcon,
-  FacebookIcon,
-  InstagramIcon,
-  YouTubeIcon,
-  type IconComponent,
-} from '@/components/ui/icons';
 import type { WebsiteSettings } from '@prisma/client';
 import { getPublicFormById } from '@/lib/services/forms';
-import { PublicFormRenderer } from '@/components/forms/public-form';
+import { getFooterSections } from '@/lib/services/footer-cms';
+import { SectionList } from '@/components/cms/section-renderer';
+import type { FooterRenderContext } from '@/lib/cms/footer-render';
 import type { ResolvedNavigation, ResolvedNavItem } from '@/lib/services/navigation';
-import type { CountrySettingsView } from '@/lib/country/types';
-import { cn } from '@/lib/utils/cn';
-
-const SOCIALS: Array<{ key: keyof WebsiteSettings; label: string; Icon: IconComponent }> = [
-  { key: 'linkedinUrl', label: 'LinkedIn', Icon: LinkedInIcon },
-  { key: 'twitterUrl', label: 'X', Icon: XIcon },
-  { key: 'facebookUrl', label: 'Facebook', Icon: FacebookIcon },
-  { key: 'instagramUrl', label: 'Instagram', Icon: InstagramIcon },
-  { key: 'youtubeUrl', label: 'YouTube', Icon: YouTubeIcon },
-];
+import type { CountryContext, CountrySettingsView } from '@/lib/country/types';
 
 /**
  * The site footer.
  *
- * Brand identity — logo, palette, social profiles — stays global; the company
- * name, contact details and copyright line come from the market being browsed
- * and fall back to the global settings, so the root market's footer renders
- * exactly what it rendered before markets existed.
+ * It is built the way a page is: a list of sections this market owns, each an
+ * ordinary CMS block with the same design panel as everything else. Rows are
+ * sections; columns live inside one, in the footer-columns block or in any
+ * page block that lays out in columns.
  *
- * Nothing here is written into the component: the columns and the legal row
- * are whichever menus an administrator gave a footer location, the social
- * icons are whichever profile URLs are filled in, and the newsletter is one of
- * the site's own forms. A market with no footer menus renders no columns
- * rather than a placeholder.
+ * A market that has never opened the builder has no rows and renders the
+ * built-in arrangement — the footer exactly as it was — so adding the builder
+ * changed no live site.
+ *
+ * Brand identity stays global; the company name, contact details, menus and
+ * copyright line come from the market being browsed, which is why the whole
+ * footer is per market rather than one arrangement shared by all of them.
  */
 export async function SiteFooter({
   settings,
   local,
+  country,
   homeUrl = '/',
   columns,
   legal,
@@ -48,6 +34,7 @@ export async function SiteFooter({
   settings: WebsiteSettings;
   /** The current market's contact details and copy. */
   local: CountrySettingsView;
+  country: CountryContext;
   /** The current market's home page. */
   homeUrl?: string;
   columns: ResolvedNavigation[];
@@ -59,16 +46,21 @@ export async function SiteFooter({
    * on any other page, and a signup from here lands in the same place as one
    * from a landing page.
    */
-  const newsletter =
+  const [sections, newsletter] = await Promise.all([
+    getFooterSections(country.id),
     settings.footerNewsletterEnabled && settings.footerNewsletterFormId
-      ? await getPublicFormById(settings.footerNewsletterFormId)
-      : null;
+      ? getPublicFormById(settings.footerNewsletterFormId)
+      : Promise.resolve(null),
+  ]);
 
-  const socials = SOCIALS.map(({ key, label, Icon }) => ({
-    label,
-    Icon,
-    href: typeof settings[key] === 'string' ? (settings[key] as string) : null,
-  })).filter((s): s is { label: string; Icon: IconComponent; href: string } => Boolean(s.href));
+  const ctx: FooterRenderContext = {
+    settings,
+    local,
+    homeUrl,
+    menus: columns,
+    legal,
+    newsletter,
+  };
 
   return (
     <footer className="site-footer site-footer-body border-t border-hairline">
@@ -79,176 +71,16 @@ export async function SiteFooter({
           paddingBlock: 'var(--footer-padding-y, 3.5rem)',
         }}
       >
-        {newsletter ? (
-          <div className="mb-12 grid gap-6 rounded-2xl bg-white/5 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
-            <div>
-              <h2 className="site-footer-heading font-heading text-lg font-bold">{newsletter.name}</h2>
-              {newsletter.description ? (
-                <p className="mt-2 text-sm leading-relaxed">{newsletter.description}</p>
-              ) : null}
-            </div>
-            {/*
-              * On a light panel: the form carries its own colours from Forms →
-              * Design, and those are chosen against a page background. Painting
-              * it straight onto a dark footer would leave an administrator
-              * restyling one form for one location.
-              */}
-            <div className="rounded-xl bg-surface p-4 text-content sm:p-5">
-              <PublicFormRenderer form={newsletter} ctaLocation="footer-newsletter" compact />
-            </div>
-          </div>
-        ) : null}
-
-        {/*
-          * One column per menu, plus a wider first one for the brand block.
-          *
-          * The count is a custom property because the number of menus is
-          * whatever the admin configured, and a class name cannot be built from
-          * data. It only takes effect from `lg` up, so the footer still stacks
-          * on a phone. The class it replaces was
-          * `lg:grid-cols-[1.4fr_repeat(auto-fit,minmax(9rem,1fr))]`,
-          * which is invalid CSS: `repeat(auto-fit, …)` cannot be combined with
-          * a flexible `fr` track, so browsers dropped the whole declaration and
-          * the footer rendered as a single stacked column on every desktop.
-          *
-          * `minmax(0, …)` on each track is what stops a long menu label pushing
-          * the footer wider than the page.
-          */}
-        <div
-          className="grid lg:[grid-template-columns:minmax(0,1.4fr)_repeat(var(--footer-cols),minmax(0,1fr))]"
-          style={
-            {
-              '--footer-cols': columns.length || 1,
-              gap: 'var(--footer-column-gap, 2.5rem)',
-            } as React.CSSProperties
-          }
-        >
-          <div className="max-w-sm">
-            <Link href={homeUrl} className="inline-flex items-center gap-2">
-              {(settings.logoDarkUrl || settings.logoUrl) && settings.footerShowLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={settings.logoDarkUrl ?? settings.logoUrl ?? undefined}
-                  alt={settings.siteName}
-                  className="w-auto max-w-[10rem] object-contain"
-                  style={{ height: 'var(--footer-logo-height, 2rem)' }}
-                />
-              ) : (
-                /* No logo, or the logo switched off: the wordmark stands in,
-                   unless that is switched off too. */
-                settings.footerShowSiteName ? (
-                  <span className="site-footer-heading font-heading text-lg font-bold">
-                    {settings.siteName}
-                  </span>
-                ) : null
-              )}
-            </Link>
-            {local.footerDescription && settings.footerShowDescription ? (
-              <p className="mt-4 text-sm leading-relaxed">{local.footerDescription}</p>
-            ) : null}
-
-            {/* The contact lines, each switchable, with a colour of their own
-                — they are the part of a footer people are meant to read. */}
-            <ul className="mt-6 space-y-2 text-sm" style={{ color: 'var(--footer-contact)' }}>
-              {local.salesEmail && settings.footerShowEmail ? (
-                <li className="flex items-start gap-2.5">
-                  <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <a href={`mailto:${local.salesEmail}`} className="site-footer-link">
-                    {local.salesEmail}
-                  </a>
-                </li>
-              ) : null}
-              {local.salesPhone && settings.footerShowPhone ? (
-                <li className="flex items-start gap-2.5">
-                  <Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <a href={`tel:${local.salesPhone.replace(/\s/g, '')}`} className="site-footer-link">
-                    {local.salesPhone}
-                  </a>
-                </li>
-              ) : null}
-              {local.address && settings.footerShowAddress ? (
-                <li className="flex items-start gap-2.5">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <span>{local.address}</span>
-                </li>
-              ) : null}
-            </ul>
-          </div>
-
-          {columns.map((column) => (
-            <nav key={column.id} aria-label={column.name}>
-              <h2 className="site-footer-heading font-heading text-sm font-semibold">{column.name}</h2>
-              <ul className="mt-4 space-y-2.5 text-sm">
-                {column.items.map((item) => (
-                  <li key={item.id}>
-                    <Link
-                      href={item.href}
-                      target={item.openInNewTab ? '_blank' : undefined}
-                      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                      className="site-footer-link transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          ))}
-        </div>
-
-        <div
-          className={cn(
-            'mt-12 flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between',
-            settings.footerShowDivider ? 'site-footer-rule border-t' : null,
-          )}
-        >
-          {settings.footerShowCopyright ? (
-            <p className="text-xs">
-              {local.copyrightText || `© ${new Date().getFullYear()} ${local.companyName}`}
-            </p>
-          ) : (
-            // Keeps the social icons on the right rather than letting them
-            // slide across when the copyright line is switched off.
-            <span />
-          )}
-
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-            {settings.footerShowLegal && legal.length > 0 ? (
-              <nav aria-label="Legal">
-                <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
-                  {legal.map((item) => (
-                    <li key={item.id}>
-                      <Link href={item.href} className="site-footer-link transition-colors">
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
-            ) : null}
-
-            {settings.footerShowSocials && socials.length > 0 ? (
-              <ul className="flex items-center gap-3">
-                {socials.map(({ label, href, Icon }) => (
-                  <li key={label}>
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={label}
-                      className="site-footer-link inline-flex items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
-                      style={{
-                        height: 'var(--footer-social-size, 2rem)',
-                        width: 'var(--footer-social-size, 2rem)',
-                      }}
-                    >
-                      <Icon className="h-4 w-4" aria-hidden="true" />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
+        {/* A flex column rather than `space-y`, so the gap between rows is one
+            CSS variable the design screen can set. */}
+        <div className="flex flex-col" style={{ gap: 'var(--footer-row-gap, 3rem)' }}>
+          <SectionList
+            sections={sections}
+            footer={ctx}
+            country={country}
+            container={false}
+            allowFirst={false}
+          />
         </div>
       </div>
     </footer>

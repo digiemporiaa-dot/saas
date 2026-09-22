@@ -81,6 +81,7 @@ export default async function PreviewRender({ params }: { params: Promise<{ id: 
         <SiteFooter
           settings={site}
           local={local}
+          country={country}
           homeUrl={countryPath(country)}
           columns={footerMenus}
           legal={legalMenus[0]?.items ?? []}

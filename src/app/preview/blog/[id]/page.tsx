@@ -77,6 +77,7 @@ export default async function BlogPreviewRender({
       <SiteFooter
         settings={site}
         local={local}
+        country={country}
         homeUrl={countryPath(country)}
         columns={footerMenus}
         legal={legalMenus[0]?.items ?? []}

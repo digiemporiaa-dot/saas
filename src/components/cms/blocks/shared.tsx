@@ -9,6 +9,7 @@ import type { SectionDesign } from '@/lib/cms/design';
 import { resolveColumns, gridStyle } from '@/lib/cms/design';
 import type { BlogRenderContext } from '@/lib/cms/blog-render';
 import type { ProductRenderContext } from '@/lib/cms/product-render';
+import type { FooterRenderContext } from '@/lib/cms/footer-render';
 import type { CountryContext } from '@/lib/country/types';
 
 /**
@@ -44,6 +45,12 @@ export type BlockContext = {
    * has to query for the product it happens to be on.
    */
   product?: ProductRenderContext;
+  /**
+   * Present only on the footer surface. It carries the market's settings, its
+   * menus and the newsletter form, so a footer block never has to query for
+   * the market it happens to be in.
+   */
+  footer?: FooterRenderContext;
 };
 
 /** CSS variables for a responsive card grid, design panel taking precedence. */

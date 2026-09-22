@@ -139,6 +139,7 @@ export default async function PublicLayout({
         <SiteFooter
           settings={site}
           local={local}
+          country={country}
           homeUrl={countryPath(country)}
           columns={footerMenus}
           legal={legalMenus[0]?.items ?? []}
