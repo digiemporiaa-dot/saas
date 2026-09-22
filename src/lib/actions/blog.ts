@@ -8,6 +8,7 @@ import { recordAudit } from '@/lib/services/audit';
 import { canSetParent } from '@/lib/utils/tree';
 import { blogPostSchema, blogCategorySchema } from '@/lib/validation/blog';
 import { uniqueSlug, slugify } from '@/lib/utils/slug';
+import { sectionCopy } from '@/lib/cms/section-copy';
 import { sanitizeHtml, sanitizeText } from '@/lib/utils/sanitize';
 import { readingTimeMinutes, plainExcerpt } from '@/lib/utils/format';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
@@ -305,7 +306,7 @@ export async function duplicateBlogPostToCountry(
 
     const source = await prisma.blogPost.findUnique({
       where: { id: postId },
-      include: { tags: true },
+      include: { tags: true, sections: { orderBy: { sortOrder: 'asc' } } },
     });
     if (!source || source.deletedAt) return failure('That post no longer exists.');
     await assertCountryAccess(user, source.countryId);
@@ -356,9 +357,15 @@ export async function duplicateBlogPostToCountry(
       twitterImageId: source.twitterImageId,
     };
 
+    const sectionData = source.sections.map((section) => ({
+      ...sectionCopy(section),
+      surface: section.surface,
+    }));
+
     const copy = await prisma.$transaction(async (tx) => {
       if (existing) {
         await tx.blogPostTag.deleteMany({ where: { postId: existing.id } });
+        await tx.blogSection.deleteMany({ where: { postId: existing.id } });
         return tx.blogPost.update({
           where: { id: existing.id },
           data: {
@@ -366,6 +373,7 @@ export async function duplicateBlogPostToCountry(
             slug: source.slug,
             deletedAt: null,
             tags: { create: source.tags.map((tag) => ({ tagId: tag.tagId })) },
+            sections: { create: sectionData },
           },
         });
       }
@@ -375,6 +383,7 @@ export async function duplicateBlogPostToCountry(
           countryId: target.id,
           slug: source.slug,
           tags: { create: source.tags.map((tag) => ({ tagId: tag.tagId })) },
+          sections: { create: sectionData },
         },
       });
     });
@@ -404,7 +413,7 @@ export async function duplicateBlogPost(postId: string): Promise<ActionResult<{ 
     const user = await authorize('blog.create');
     const source = await prisma.blogPost.findUnique({
       where: { id: postId },
-      include: { tags: true },
+      include: { tags: true, sections: { orderBy: { sortOrder: 'asc' } } },
     });
     if (!source) return failure('That post no longer exists.');
     await assertCountryAccess(user, source.countryId);
@@ -447,6 +456,14 @@ export async function duplicateBlogPost(postId: string): Promise<ActionResult<{ 
         ogImageId: source.ogImageId,
         twitterImageId: source.twitterImageId,
         tags: { create: source.tags.map((t) => ({ tagId: t.tagId })) },
+        // A post that overrides its own sidebar keeps that override; a post
+        // that uses the blog-wide set has no rows and goes on using it.
+        sections: {
+          create: source.sections.map((section) => ({
+            ...sectionCopy(section),
+            surface: section.surface,
+          })),
+        },
       },
     });
 

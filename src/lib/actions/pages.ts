@@ -9,6 +9,7 @@ import { pageInputSchema, sectionOrderSchema } from '@/lib/validation/page';
 import { blockDefaults, getBlock } from '@/lib/cms/blocks';
 import { parseSectionDesign, DEFAULT_SECTION_DESIGN } from '@/lib/cms/design';
 import { uniqueSlug, pageSlug } from '@/lib/utils/slug';
+import { sectionCopies } from '@/lib/cms/section-copy';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { sanitizeText } from '@/lib/utils/sanitize';
 import { resolveActionCountry } from '@/lib/country/admin';
@@ -282,16 +283,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ id: 
         ogImageId: source.ogImageId,
         createdById: user.id,
         updatedById: user.id,
-        sections: {
-          create: source.sections.map((section) => ({
-            blockType: section.blockType,
-            name: section.name,
-            sortOrder: section.sortOrder,
-            isVisible: section.isVisible,
-            content: section.content as object,
-            settings: section.settings as object,
-          })),
-        },
+        sections: { create: sectionCopies(source.sections) },
       },
     });
 
@@ -357,14 +349,7 @@ export async function duplicatePageToCountry(
       );
     }
 
-    const sectionData = source.sections.map((section) => ({
-      blockType: section.blockType,
-      name: section.name,
-      sortOrder: section.sortOrder,
-      isVisible: section.isVisible,
-      content: section.content as object,
-      settings: section.settings as object,
-    }));
+    const sectionData = sectionCopies(source.sections);
 
     const shared = {
       title: source.title,

@@ -14,6 +14,7 @@ import { success, failure, toActionError, type ActionResult } from '@/lib/utils/
 import { listActiveCountries } from '@/lib/country/registry';
 import { scopeForUser } from '@/lib/country/admin';
 import { offerIn, removeFrom } from '@/lib/country/availability';
+import { sectionCopy } from '@/lib/cms/section-copy';
 import { countryPath } from '@/lib/country/routing';
 import type { SessionUser } from '@/lib/auth/guards';
 
@@ -457,7 +458,10 @@ export async function duplicateProduct(productId: string): Promise<ActionResult<
     const user = await authorize('products.create');
     const source = await prisma.product.findUnique({
       where: { id: productId },
-      include: { variants: { orderBy: { sortOrder: 'asc' } } },
+      include: {
+        variants: { orderBy: { sortOrder: 'asc' } },
+        sections: { orderBy: { sortOrder: 'asc' } },
+      },
     });
     if (!source) return failure('That product no longer exists.');
 
@@ -478,6 +482,7 @@ export async function duplicateProduct(productId: string): Promise<ActionResult<
       data: {
         ...rest,
         variants: undefined,
+        sections: undefined,
         name: `${source.name} (copy)`,
         slug,
         sku: sku ? `${sku}-COPY` : null,
@@ -512,6 +517,22 @@ export async function duplicateProduct(productId: string): Promise<ActionResult<
       priceSuffix: source.priceSuffix,
       priceNote: source.priceNote,
     });
+
+    /*
+     * The page somebody built for the product comes across with it — every
+     * section of both surfaces, in order. Duplicating a product to sell a
+     * variation of it is the common case, and a copy that fell back to the
+     * built-in arrangement would silently throw that work away.
+     */
+    if (source.sections.length > 0) {
+      await prisma.productSection.createMany({
+        data: source.sections.map((section) => ({
+          ...sectionCopy(section),
+          productId: copy.id,
+          surface: section.surface,
+        })),
+      });
+    }
 
     if (source.variants.length > 0) {
       await prisma.productVariant.createMany({
