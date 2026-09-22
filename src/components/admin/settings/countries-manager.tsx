@@ -651,9 +651,7 @@ function CountrySettingsForm({
               {text('headerCtaLabel', 'Header button label')}
               {text('headerCtaUrl', 'Header button URL', 'A path is resolved inside this country.')}
               {text('salesCtaText', 'Sales CTA text')}
-              {text('copyrightText', 'Copyright line')}
             </div>
-            {text('footerDescription', 'Footer description')}
           </SettingsSection>
 
           <SettingsDivider />

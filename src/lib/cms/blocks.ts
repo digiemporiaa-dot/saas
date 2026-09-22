@@ -15,7 +15,6 @@ import {
 } from './block-types';
 import { BLOG_BLOCKS } from './blog-blocks';
 import { PRODUCT_BLOCKS } from './product-blocks';
-import { FOOTER_BLOCKS } from './footer-blocks';
 import { SLIDER_BLOCKS } from './slider-blocks';
 import { productSourceFields } from './product-source';
 
@@ -1799,7 +1798,6 @@ export const BLOCKS: Record<string, BlockDefinition> = {
   ...SLIDER_BLOCKS,
   ...BLOG_BLOCKS,
   ...PRODUCT_BLOCKS,
-  ...FOOTER_BLOCKS,
 };
 
 export type BlockType = keyof typeof BLOCKS;

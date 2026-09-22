@@ -1,17 +1,19 @@
-# Header and footer
+# Header
 
-Everything the site's chrome looks like is set in **Settings → Website design**
-(also on **Settings**), on the **Header** and **Footer** tabs.
+Everything the site header looks like is set in **Settings → Website design**
+(also on **Settings**), on the **Header** tab.
+
+> The footer has been removed and will be rebuilt from scratch. Nothing about
+> it is documented here any more, and nothing in the code renders one.
 
 ## Blank means "leave it alone"
 
-Every size and colour on those two tabs may be left empty, and empty is not
-zero and not transparent — it means the header or footer keeps exactly what it
-looks like now. A value only reaches the page as a CSS custom property when
+Every size and colour on that tab may be left empty, and empty is not zero and
+not transparent — it means the header keeps exactly what it looks like now. A value only reaches the page as a CSS custom property when
 somebody actually sets it, and each component carries its original value as
 that property's fallback.
 
-So opening these tabs on a live site changes nothing until a field is filled
+So opening that tab on a live site changes nothing until a field is filled
 in, and clearing a field puts it back.
 
 ## Header
@@ -44,18 +46,6 @@ saturation blank keeps the slight fixed blur the header has always had.
 The **edge** is the hairline of light along the top that makes glass read as
 glass rather than as a translucent rectangle. It only makes sense over content,
 so it is off unless asked for.
-
-## Footer
-
-Background, text, headings, links, links on hover, contact details, divider
-line, vertical padding, content width, space between columns, logo height and
-social icon size. The columns themselves are still whichever menus have a
-footer location in Navigation.
-
-Each part can be switched off on its own: logo, site name, description, email,
-phone, address, divider, copyright, legal menu and social icons. Switching the
-logo off leaves the site name standing in — a home link with nothing in it is
-not a link.
 
 ## Mega menus
 
@@ -99,5 +89,4 @@ screen: anything that is not a length is ignored and the built-in value stands.
 | `src/lib/cms/chrome.ts` | Settings in, CSS custom properties out. Pure, and where the validation lives. |
 | `src/components/public/brand-style.tsx` | Writes those properties into the page. |
 | `src/components/public/site-header.tsx` | The header, the mega panel and the header buttons. |
-| `src/components/public/site-footer.tsx` | The footer. |
 | `src/app/globals.css` | The colour rules, each with its original value as the fallback. |

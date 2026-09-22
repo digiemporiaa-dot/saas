@@ -100,8 +100,6 @@ export default async function CountriesAdmin({
         'headerCtaLabel',
         'headerCtaUrl',
         'salesCtaText',
-        'footerDescription',
-        'copyrightText',
         'defaultTitle',
         'titleTemplate',
         'defaultDescription',

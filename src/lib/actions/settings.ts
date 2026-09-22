@@ -119,14 +119,7 @@ const buttonVariant = z.enum([
   'link',
 ]);
 
-/**
- * Every "show this part" switch on the header tab.
- *
- * The footer had ten of its own here. They stopped being read when the footer
- * became a list of blocks — the brand block decides whether it shows a logo,
- * the bottom row whether it shows a copyright line — so they were ten switches
- * an administrator could set and watch do nothing.
- */
+/** Every "show this part" switch on the header tab. */
 const CHROME_TOGGLES = [
   'headerShowLogo',
   'headerShowSiteName',
@@ -285,25 +278,6 @@ const websiteSettingsSchema = z.object({
   headerSecondaryCtaIconSide: z.enum(['left', 'right']).catch('left').default('left'),
   headerSecondaryCtaVariant: buttonVariant.catch('ghost').default('ghost'),
 
-  footerDescription: optional(600),
-  footerNewsletterEnabled: z.coerce.boolean().default(false),
-  footerNewsletterFormId: optional(40),
-  copyrightText: optional(300),
-
-  /** Footer appearance. Blank means the footer it already had. */
-  footerBg: optionalColor,
-  footerText: optionalColor,
-  footerHeadingColor: optionalColor,
-  footerLinkColor: optionalColor,
-  footerLinkHover: optionalColor,
-  footerBorderColor: optionalColor,
-  footerPaddingY: optionalLength,
-  footerWidth: optionalLength,
-  footerColumnGap: optionalLength,
-  footerRowGap: optionalLength,
-  footerLogoHeight: optionalLength,
-  footerSocialSize: optionalLength,
-  footerContactColor: optionalColor,
 
   defaultCurrency: z.string().trim().length(3),
   maintenanceMode: z.coerce.boolean().default(false),
@@ -322,7 +296,6 @@ export async function saveWebsiteSettings(formData: FormData): Promise<ActionRes
     const input = websiteSettingsSchema.parse({
       ...raw,
       announcementEnabled: raw.announcementEnabled === 'true',
-      footerNewsletterEnabled: raw.footerNewsletterEnabled === 'true',
       maintenanceMode: raw.maintenanceMode === 'true',
       headerBorder: raw.headerBorder !== 'false',
       headerSticky: raw.headerSticky !== 'false',
@@ -345,10 +318,7 @@ export async function saveWebsiteSettings(formData: FormData): Promise<ActionRes
       siteTitle: sanitizeText(input.siteTitle),
       siteDescription: sanitizeText(input.siteDescription),
       address: input.address ? sanitizeText(input.address) : null,
-      footerDescription: input.footerDescription ? sanitizeText(input.footerDescription) : null,
       // An empty select means "no form", which is the same as off.
-      footerNewsletterFormId: input.footerNewsletterFormId || null,
-      copyrightText: input.copyrightText ? sanitizeText(input.copyrightText) : null,
       announcementText: input.announcementText ? sanitizeText(input.announcementText) : null,
       announcementUrl: safeUrl(input.announcementUrl),
       headerCtaUrl: safeUrl(input.headerCtaUrl),
@@ -384,7 +354,7 @@ export async function saveWebsiteSettings(formData: FormData): Promise<ActionRes
       summary: 'Updated website settings',
     });
 
-    // Colours, fonts, header and footer are all read in the root layout.
+    // Colours, fonts and the header are all read in the root layout.
     revalidatePath('/', 'layout');
     revalidatePath('/admin', 'layout');
     return success(undefined, 'Website settings saved.');

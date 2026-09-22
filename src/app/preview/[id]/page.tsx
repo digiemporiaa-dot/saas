@@ -9,7 +9,6 @@ import { getCountrySettings } from '@/lib/country/settings';
 import { countryPath, countryHref } from '@/lib/country/routing';
 import { SectionList } from '@/components/cms/section-renderer';
 import { SiteHeader } from '@/components/public/site-header';
-import { SiteFooter } from '@/components/public/site-footer';
 
 export const metadata: Metadata = {
   title: 'Preview',
@@ -76,17 +75,6 @@ export default async function PreviewRender({ params }: { params: Promise<{ id: 
       <main>
         <SectionList sections={page.sections} country={country} />
       </main>
-
-      {page.showFooter ? (
-        <SiteFooter
-          settings={site}
-          local={local}
-          country={country}
-          homeUrl={countryPath(country)}
-          columns={footerMenus}
-          legal={legalMenus[0]?.items ?? []}
-        />
-      ) : null}
     </>
   );
 }

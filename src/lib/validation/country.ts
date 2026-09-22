@@ -95,8 +95,6 @@ export const countrySettingsSchema = z.object({
   headerCtaLabel: optional(60),
   headerCtaUrl: optional(300),
   salesCtaText: optional(200),
-  footerDescription: optional(600),
-  copyrightText: optional(200),
   defaultTitle: optional(200),
   titleTemplate: optional(120),
   defaultDescription: optional(400),

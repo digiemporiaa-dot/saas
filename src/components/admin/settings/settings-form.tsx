@@ -25,7 +25,6 @@ const TABS = [
   { id: 'typography', label: 'Typography' },
   { id: 'design', label: 'Website design' },
   { id: 'header', label: 'Header' },
-  { id: 'footer', label: 'Footer' },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
@@ -54,24 +53,12 @@ export function WebsiteSettingsForm({
   canEdit,
   only,
   forms = [],
-  footerSlot,
 }: {
   initial: WebsiteSettingsValues;
   canEdit: boolean;
   only?: readonly TabId[];
-  /** Active forms the footer newsletter can be pointed at. */
+  /** Active forms a setting can be pointed at. */
   forms?: Array<{ id: string; name: string }>;
-  /**
-   * The footer's structure, rendered above this form while the Footer tab is
-   * open.
-   *
-   * It is a sibling of the form rather than part of it: the builder has its
-   * own buttons and its own Server Actions, and a form inside a form is
-   * neither valid nor something a Save button can be trusted around. Passing
-   * it in is what lets one screen hold the whole footer — what it is made of,
-   * and then what it looks like — instead of two that overlap.
-   */
-  footerSlot?: React.ReactNode;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -117,8 +104,6 @@ export function WebsiteSettingsForm({
 
   return (
     <div className="space-y-5">
-      {footerSlot && tab === 'footer' ? footerSlot : null}
-
       <form onSubmit={onSubmit}>
       {bool('maintenanceMode') ? (
         <Alert tone="warning" className="mb-5" title="Maintenance mode is on">
@@ -1195,170 +1180,6 @@ export function WebsiteSettingsForm({
               </>
             ) : null}
 
-            {tab === 'footer' ? (
-              <>
-                <Field
-                  label="Footer description"
-                  htmlFor="footerDescription"
-                  hint="Shown under the logo in the first footer column."
-                >
-                  <Textarea
-                    id="footerDescription"
-                    rows={3}
-                    value={str('footerDescription')}
-                    onChange={(e) => set('footerDescription', e.target.value)}
-                  />
-                </Field>
-                <Field
-                  label="Copyright line"
-                  htmlFor="copyrightText"
-                  hint="Leave blank for “© {year} {site name}”."
-                >
-                  <Input
-                    id="copyrightText"
-                    value={str('copyrightText')}
-                    onChange={(e) => set('copyrightText', e.target.value)}
-                  />
-                </Field>
-                <Switch
-                  label="Show a newsletter sign-up in the footer"
-                  checked={bool('footerNewsletterEnabled')}
-                  onChange={(checked) => set('footerNewsletterEnabled', checked)}
-                  hint="Uses one of your existing forms, so its fields, consent text and submissions work exactly as they do anywhere else."
-                />
-                {bool('footerNewsletterEnabled') ? (
-                  <Field
-                    label="Newsletter form"
-                    htmlFor="footerNewsletterFormId"
-                    hint={
-                      forms.length === 0
-                        ? 'No active forms yet — create one under Forms first.'
-                        : 'Only active forms appear here.'
-                    }
-                    error={errors.footerNewsletterFormId?.[0]}
-                  >
-                    <Select
-                      id="footerNewsletterFormId"
-                      value={str('footerNewsletterFormId')}
-                      onChange={(e) => set('footerNewsletterFormId', e.target.value)}
-                    >
-                      <option value="">No form</option>
-                      {forms.map((form) => (
-                        <option key={form.id} value={form.id}>
-                          {form.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </Field>
-                ) : null}
-                <p className="text-sm text-muted">
-                  Which rows the footer has, what each one holds and which parts it shows are in{' '}
-                  <strong className="font-medium text-content">Footer structure</strong> above. The
-                  menus themselves come from{' '}
-                  <strong className="font-medium text-content">Navigation</strong>.
-                </p>
-
-                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
-                  <legend className="px-1 text-sm font-medium text-content">Appearance</legend>
-                  <p className="text-xs text-muted">
-                    Leave anything blank to keep the footer exactly as it looks now.
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <ColorField
-                      label="Background"
-                      name="footerBg"
-                      value={str('footerBg')}
-                      onChange={(v) => set('footerBg', v)}
-                    />
-                    <ColorField
-                      label="Text"
-                      name="footerText"
-                      value={str('footerText')}
-                      onChange={(v) => set('footerText', v)}
-                    />
-                    <ColorField
-                      label="Headings"
-                      name="footerHeadingColor"
-                      value={str('footerHeadingColor')}
-                      onChange={(v) => set('footerHeadingColor', v)}
-                    />
-                    <ColorField
-                      label="Links"
-                      name="footerLinkColor"
-                      value={str('footerLinkColor')}
-                      onChange={(v) => set('footerLinkColor', v)}
-                    />
-                    <ColorField
-                      label="Links on hover"
-                      name="footerLinkHover"
-                      value={str('footerLinkHover')}
-                      onChange={(v) => set('footerLinkHover', v)}
-                    />
-                    <ColorField
-                      label="Divider line"
-                      name="footerBorderColor"
-                      value={str('footerBorderColor')}
-                      onChange={(v) => set('footerBorderColor', v)}
-                    />
-                    <Field label="Vertical padding" htmlFor="footerPaddingY" hint="Default 3.5rem.">
-                      <Input
-                        id="footerPaddingY"
-                        value={str('footerPaddingY')}
-                        placeholder="3.5rem"
-                        onChange={(e) => set('footerPaddingY', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Content width" htmlFor="footerWidth" hint="Default 80rem.">
-                      <Input
-                        id="footerWidth"
-                        value={str('footerWidth')}
-                        placeholder="80rem"
-                        onChange={(e) => set('footerWidth', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Space between columns" htmlFor="footerColumnGap">
-                      <Input
-                        id="footerColumnGap"
-                        value={str('footerColumnGap')}
-                        placeholder="2.5rem"
-                        onChange={(e) => set('footerColumnGap', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Space between rows" htmlFor="footerRowGap" hint="Default 3rem.">
-                      <Input
-                        id="footerRowGap"
-                        value={str('footerRowGap')}
-                        placeholder="3rem"
-                        onChange={(e) => set('footerRowGap', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Logo height" htmlFor="footerLogoHeight" hint="Default 2rem.">
-                      <Input
-                        id="footerLogoHeight"
-                        value={str('footerLogoHeight')}
-                        placeholder="2rem"
-                        onChange={(e) => set('footerLogoHeight', e.target.value)}
-                      />
-                    </Field>
-                    <Field label="Social icon size" htmlFor="footerSocialSize" hint="Default 2rem.">
-                      <Input
-                        id="footerSocialSize"
-                        value={str('footerSocialSize')}
-                        placeholder="2rem"
-                        onChange={(e) => set('footerSocialSize', e.target.value)}
-                      />
-                    </Field>
-                    <ColorField
-                      label="Contact details"
-                      name="footerContactColor"
-                      value={str('footerContactColor')}
-                      onChange={(v) => set('footerContactColor', v)}
-                    />
-                  </div>
-                </fieldset>
-
-              </>
-            ) : null}
           </fieldset>
         </CardBody>
 
@@ -1384,13 +1205,12 @@ export function WebsiteSettingsForm({
 
 function tabForField(field: string): TabId {
   /*
-   * The chrome prefixes are matched first, ahead of the typography and design
-   * rules below: `headerMenuWeight` and `footerColumnGap` belong to the header
-   * and the footer, not to the tabs whose looser patterns would also claim
-   * them, and a validation error has to open the tab its field is actually on.
+   * The header prefixes are matched first, ahead of the typography and design
+   * rules below: `headerMenuWeight` belongs to the header, not to the tabs
+   * whose looser patterns would also claim it, and a validation error has to
+   * open the tab its field is actually on.
    */
   if (field.startsWith('announcement') || field.startsWith('header')) return 'header';
-  if (field.startsWith('footer') || field.startsWith('copyright')) return 'footer';
   if (field.startsWith('color')) return 'theme';
   if (
     field.includes('Font') ||

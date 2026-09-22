@@ -1,5 +1,5 @@
 /**
- * The header and the footer, as design values.
+ * The header, as design values.
  *
  * Everything here is pure: settings in, CSS custom properties out. That is
  * what lets the whole of the site's chrome be restyled from the admin without
@@ -9,7 +9,7 @@
  * The one rule that matters: **a variable is emitted only for a value somebody
  * set.** Every component keeps its original appearance as the fallback inside
  * its own `var(--x, original)`, so a site that never opens the design screen
- * renders exactly the header and footer it rendered before this existed. An
+ * renders exactly the header it rendered before this existed. An
  * empty or unusable value is not "transparent" or "0" — it is "leave it alone".
  */
 
@@ -113,19 +113,6 @@ export type ChromeSettings = {
   headerLogoMaxWidth: string;
   announcementBgColor: string;
   announcementTextColor: string;
-  footerBg: string;
-  footerText: string;
-  footerHeadingColor: string;
-  footerLinkColor: string;
-  footerLinkHover: string;
-  footerBorderColor: string;
-  footerPaddingY: string;
-  footerWidth: string;
-  footerColumnGap: string;
-  footerRowGap: string;
-  footerLogoHeight: string;
-  footerSocialSize: string;
-  footerContactColor: string;
 };
 
 type Vars = Record<string, string>;
@@ -188,32 +175,12 @@ export function headerMobileVars(settings: Partial<ChromeSettings>): Vars {
   return vars;
 }
 
-export function footerVars(settings: Partial<ChromeSettings>): Vars {
-  const vars: Vars = {};
-
-  put(vars, '--footer-bg', cssColor(settings.footerBg));
-  put(vars, '--footer-text', cssColor(settings.footerText));
-  put(vars, '--footer-heading', cssColor(settings.footerHeadingColor));
-  put(vars, '--footer-link', cssColor(settings.footerLinkColor));
-  put(vars, '--footer-link-hover', cssColor(settings.footerLinkHover));
-  put(vars, '--footer-border', cssColor(settings.footerBorderColor));
-  put(vars, '--footer-padding-y', cssLength(settings.footerPaddingY));
-  put(vars, '--footer-width', cssLength(settings.footerWidth));
-  put(vars, '--footer-column-gap', cssLength(settings.footerColumnGap));
-  put(vars, '--footer-row-gap', cssLength(settings.footerRowGap));
-  put(vars, '--footer-logo-height', cssLength(settings.footerLogoHeight));
-  put(vars, '--footer-social-size', cssLength(settings.footerSocialSize));
-  put(vars, '--footer-contact', cssColor(settings.footerContactColor));
-
-  return vars;
-}
-
 /**
- * Both sets as a stylesheet, with the phone overrides in their media query.
+ * The header's values as a stylesheet, with the phone overrides in their media
+ * query.
  *
  * Returned as text rather than as inline styles because the header is sticky
- * and the footer is a separate element: one `:root` block reaches both, and a
- * media query cannot be expressed as a style attribute at all.
+ * and a media query cannot be expressed as a style attribute at all.
  */
 export function chromeStylesheet(settings: Partial<ChromeSettings>): string {
   const declare = (vars: Vars) =>
@@ -221,7 +188,7 @@ export function chromeStylesheet(settings: Partial<ChromeSettings>): string {
       .map(([name, value]) => `${name}:${value};`)
       .join('');
 
-  const base = { ...headerVars(settings), ...footerVars(settings) };
+  const base = headerVars(settings);
   const mobile = headerMobileVars(settings);
 
   const blocks: string[] = [];

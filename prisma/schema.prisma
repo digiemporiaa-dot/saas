@@ -312,7 +312,6 @@ model Country {
   syncMappingsAsTarget CountrySyncMapping[]     @relation("SyncTarget")
   syncRunsAsSource     CountrySyncRun[]         @relation("SyncRunSource")
   syncRunsAsTarget     CountrySyncRun[]         @relation("SyncRunTarget")
-  footerSections       FooterSection[]
 
   @@index([isActive, sortOrder])
   @@index([isActive, isPublished])
@@ -350,11 +349,9 @@ model CountrySettings {
   taxLabel       String?
   taxNumber      String?
 
-  headerCtaLabel    String?
-  headerCtaUrl      String?
-  salesCtaText      String?
-  footerDescription String? @db.Text
-  copyrightText     String?
+  headerCtaLabel String?
+  headerCtaUrl   String?
+  salesCtaText   String?
 
   // --- Crawler rules for this market ---------------------------------------
   // Compiled into the single host-root robots.txt, prefixed with the market's
@@ -1349,39 +1346,6 @@ enum ProductSurface {
 /// block-registry key, a validated `content` payload and a universal
 /// `settings` design record — so products reuse the page builder's registry,
 /// design panel and renderer rather than growing a third one.
-/// One reorderable part of the site footer, in one market.
-///
-/// Deliberately the same shape as `PageSection`, `BlogSection` and
-/// `ProductSection` — a block-registry key, a validated `content` payload and
-/// the universal `settings` design record — so the footer reuses the page
-/// builder's registry, design panel and renderer rather than growing a fourth
-/// one.
-///
-/// Per market, because a footer already differs by market: the contact
-/// details, the menus and the copyright line are all a market's own.
-///
-/// A market with no rows renders the built-in arrangement, which is the footer
-/// as it was before this table existed — so adding the builder changed nothing
-/// about any live footer.
-model FooterSection {
-  id        String  @id @default(cuid())
-  countryId String
-  blockType String
-  name      String?
-  sortOrder Int     @default(0)
-  isVisible Boolean @default(true)
-
-  content  Json @default("{}")
-  settings Json @default("{}")
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  country Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
-
-  @@index([countryId, sortOrder])
-}
-
 model ProductSection {
   id        String         @id @default(cuid())
   surface   ProductSurface
@@ -2154,31 +2118,6 @@ model WebsiteSettings {
   headerSecondaryCtaIcon     String @default("")
   headerSecondaryCtaIconSide String @default("left")
   headerSecondaryCtaVariant  String @default("ghost")
-
-  // Footer
-  footerDescription       String? @db.Text
-  footerNewsletterEnabled Boolean @default(false)
-  footerNewsletterFormId  String?
-  copyrightText           String?
-
-  /// Footer appearance. Blank means the footer it already had — the dark
-  /// brand-secondary panel — for the same reason as the header above.
-  footerBg           String @default("")
-  footerText         String @default("")
-  footerHeadingColor String @default("")
-  footerLinkColor    String @default("")
-  footerLinkHover    String @default("")
-  footerBorderColor  String @default("")
-  footerPaddingY     String @default("")
-  footerWidth        String @default("")
-  footerColumnGap    String @default("")
-  /// The gap between footer rows, which are sections now.
-  footerRowGap       String @default("")
-  footerLogoHeight   String @default("")
-  footerSocialSize   String @default("")
-  /// A colour for the contact lines, separate from the body text, since they
-  /// are the one part of the footer people are meant to read.
-  footerContactColor String @default("")
 
   // Layout — global defaults every section can override
   containerWidth       String @default("72rem")

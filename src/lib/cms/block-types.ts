@@ -36,7 +36,6 @@ export const BLOCK_SURFACES = [
   'blogSidebar',
   'productDetail',
   'productSidebar',
-  'footer',
 ] as const;
 export type BlockSurface = (typeof BLOCK_SURFACES)[number];
 
@@ -47,7 +46,6 @@ export const BLOCK_SURFACE_LABELS: Record<BlockSurface, string> = {
   blogSidebar: 'Blog sidebar',
   productDetail: 'Product page',
   productSidebar: 'Product sidebar',
-  footer: 'Footer',
 };
 
 /**
@@ -59,7 +57,7 @@ export const BLOCK_SURFACE_LABELS: Record<BlockSurface, string> = {
  * a narrow column is a different shape, so it offers only the blocks that
  * opted into it by name.
  */
-export const PAGE_BLOCK_SURFACES: readonly BlockSurface[] = ['productDetail', 'footer'];
+export const PAGE_BLOCK_SURFACES: readonly BlockSurface[] = ['productDetail'];
 
 export type BlockDefinition = {
   type: string;

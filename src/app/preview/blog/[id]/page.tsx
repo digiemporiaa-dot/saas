@@ -9,7 +9,6 @@ import { getCountrySettings } from '@/lib/country/settings';
 import { countryPath, countryHref } from '@/lib/country/routing';
 import { BlogArticle } from '@/components/blog/blog-article';
 import { SiteHeader } from '@/components/public/site-header';
-import { SiteFooter } from '@/components/public/site-footer';
 
 export const metadata: Metadata = {
   title: 'Blog preview',
@@ -73,15 +72,6 @@ export default async function BlogPreviewRender({
       <main>
         <BlogArticle post={post} country={country} />
       </main>
-
-      <SiteFooter
-        settings={site}
-        local={local}
-        country={country}
-        homeUrl={countryPath(country)}
-        columns={footerMenus}
-        legal={legalMenus[0]?.items ?? []}
-      />
     </>
   );
 }

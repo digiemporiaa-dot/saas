@@ -150,7 +150,7 @@ src/
 │   ├── ui/                Primitives: button, field, card, table, dialog, toast
 │   ├── cms/               Block renderers, section renderer, generated editor
 │   ├── admin/             Admin shell and per-area screens
-│   ├── public/            Header, footer, popup host, brand style
+│   ├── public/            Header, popup host, brand style
 │   ├── forms/             Public form runtime
 │   └── products/          Product card and CTA
 │

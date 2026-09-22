@@ -8,7 +8,6 @@ import {
 } from "@/lib/services/navigation";
 import { MaintenanceNotice } from "@/components/public/maintenance-notice";
 import { SiteHeader } from "@/components/public/site-header";
-import { SiteFooter } from "@/components/public/site-footer";
 import { PopupHost } from "@/components/public/popup-host";
 import { JsonLd } from "@/components/seo/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/seo/structured-data";
@@ -41,12 +40,10 @@ export default async function PublicLayout({
   // this adds no extra query for the page route itself.
   const chrome = await resolveChrome(country, path);
 
-  const [site, local, nav, footerMenus, legalMenus, markets, popups] = await Promise.all([
+  const [site, local, nav, markets, popups] = await Promise.all([
     getWebsiteSettings(),
     getCountrySettings(country),
     getPrimaryNavigation(country),
-    getNavigations(country, "FOOTER"),
-    getNavigations(country, "LEGAL"),
     resolveMarketOptions(country, path),
     prisma.popup.findMany({
       where: {
@@ -135,16 +132,6 @@ export default async function PublicLayout({
       <main id="main" className="min-h-[60vh]">
         {children}
       </main>
-      {chrome.showFooter ? (
-        <SiteFooter
-          settings={site}
-          local={local}
-          country={country}
-          homeUrl={countryPath(country)}
-          columns={footerMenus}
-          legal={legalMenus[0]?.items ?? []}
-        />
-      ) : null}
       <PopupHost
         basePath={countryPath(country)}
         popups={visiblePopups.map((p) => ({

@@ -7,12 +7,11 @@ import {
   cssShadow,
   headerVars,
   headerMobileVars,
-  footerVars,
   chromeStylesheet,
 } from '@/lib/cms/chrome';
 
 /**
- * Restyling the header and the footer without restyling them by accident.
+ * Restyling the header without restyling it by accident.
  *
  * The rule the whole screen rests on: a blank field means "leave it as it is",
  * not zero and not transparent. Nothing is emitted for a value nobody set, so
@@ -126,11 +125,8 @@ describe('the variables that reach the page', () => {
       headerBg: '',
       headerMenuTransform: 'none',
       headerShadow: 'none',
-      footerBg: '',
-      footerPaddingY: '',
     };
     expect(headerVars(blank)).toEqual({});
-    expect(footerVars(blank)).toEqual({});
     expect(chromeStylesheet(blank)).toBe('');
   });
 
@@ -154,11 +150,11 @@ describe('the variables that reach the page', () => {
     expect(chromeStylesheet({ headerHeight: '5rem' })).not.toContain('@media');
   });
 
-  it('puts the header and the footer in one block', () => {
-    const sheet = chromeStylesheet({ headerBg: '#FFFFFF', footerBg: '#0B1B34' });
+  it('puts every value it was given in one block', () => {
+    const sheet = chromeStylesheet({ headerBg: '#FFFFFF', headerHeight: '5rem' });
     expect(sheet.match(/:root\{/g)).toHaveLength(1);
     expect(sheet).toContain('--header-bg:#FFFFFF;');
-    expect(sheet).toContain('--footer-bg:#0B1B34;');
+    expect(sheet).toContain('--header-height:5rem;');
   });
 
   it('cannot be made to carry anything but a value it recognised', () => {
@@ -166,7 +162,7 @@ describe('the variables that reach the page', () => {
     // close the declaration and add rules of its own.
     const sheet = chromeStylesheet({
       headerBg: '#fff;} body{display:none} .x{color:red',
-      footerPaddingY: '1rem;position:fixed',
+      headerHeight: '1rem;position:fixed',
       headerShadow: 'none} * {display:none',
     });
     expect(sheet).toBe('');

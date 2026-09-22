@@ -88,8 +88,6 @@ export type CountrySettingsView = {
   headerCtaLabel: string | null;
   headerCtaUrl: string | null;
   salesCtaText: string | null;
-  footerDescription: string | null;
-  copyrightText: string | null;
   defaultTitle: string;
   titleTemplate: string;
   defaultDescription: string;

@@ -259,8 +259,6 @@ export async function seedSettings() {
       address: site?.address ?? null,
       headerCtaLabel: site?.headerCtaLabel ?? null,
       headerCtaUrl: site?.headerCtaUrl ?? null,
-      footerDescription: site?.footerDescription ?? null,
-      copyrightText: site?.copyrightText ?? null,
       defaultTitle: seo?.defaultTitle ?? null,
       titleTemplate: seo?.titleTemplate ?? null,
       defaultDescription: seo?.defaultDescription ?? null,

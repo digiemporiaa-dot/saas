@@ -49,8 +49,6 @@ export const getCountrySettings = cache(
       headerCtaLabel: clean(row?.headerCtaLabel) ?? clean(site.headerCtaLabel),
       headerCtaUrl: clean(row?.headerCtaUrl) ?? clean(site.headerCtaUrl),
       salesCtaText: clean(row?.salesCtaText),
-      footerDescription: clean(row?.footerDescription) ?? clean(site.footerDescription),
-      copyrightText: clean(row?.copyrightText) ?? clean(site.copyrightText),
       noIndexCountry: row?.noIndexCountry ?? false,
       defaultTitle: clean(row?.defaultTitle) ?? seo.defaultTitle,
       titleTemplate: clean(row?.titleTemplate) ?? seo.titleTemplate,
