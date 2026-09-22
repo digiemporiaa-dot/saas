@@ -529,6 +529,16 @@ export function buildSectionStyles(
   design: SectionDesign,
   sectionId: string,
   backgroundImageUrl: string | null = null,
+  /**
+   * `inheritSurface` is for a section rendered inside chrome that paints its
+   * own surface — the footer. A page section that nobody has restyled paints
+   * the page background and the page's body colour, which is invisible on a
+   * page and wrong in a dark footer: every row covers it with a white band and
+   * writes grey on it. With this set, a section left at the default preset
+   * sets no colour at all and inherits the one around it. Choosing a preset, a
+   * background or a colour still paints, exactly as it does on a page.
+   */
+  options: { inheritSurface?: boolean } = {},
 ): SectionStyles {
   const className = `sec-${sectionId.replace(/[^a-zA-Z0-9_-]/g, '')}`;
   const preset = PRESET_TOKENS[design.preset];
@@ -541,15 +551,23 @@ export function buildSectionStyles(
   if (design.widthMode === 'full') style['--sec-px'] = '0px';
 
   // Colours: an explicit value always beats the preset.
+  const untouched = Boolean(options.inheritSurface) && design.preset === 'default';
   const solid =
     design.colors.background ||
     (design.background.type === 'solid' && design.background.color
       ? design.background.color
       : '') ||
-    preset.bg;
-  style['--sec-bg'] = solid;
-  style['--sec-text'] = design.colors.text || (inverted ? 'rgba(255,255,255,0.85)' : preset.text);
-  style['--sec-heading-color'] = design.colors.heading || (inverted ? '#FFFFFF' : preset.heading);
+    (untouched ? '' : preset.bg);
+  const text = design.colors.text || (inverted ? 'rgba(255,255,255,0.85)' : untouched ? '' : preset.text);
+  const heading =
+    design.colors.heading || (inverted ? '#FFFFFF' : untouched ? '' : preset.heading);
+
+  // Left unset rather than set to a fallback: `.cms-section` reads these
+  // through `var(…, transparent)` and `var(…, inherit)`, so an absent one is
+  // what "take the surface around me" means.
+  if (solid) style['--sec-bg'] = solid;
+  if (text) style['--sec-text'] = text;
+  if (heading) style['--sec-heading-color'] = heading;
   style['--sec-primary'] = design.colors.primary || 'rgb(var(--brand-primary))';
   style['--sec-secondary'] = design.colors.secondary || 'rgb(var(--brand-secondary))';
   style['--sec-button'] =

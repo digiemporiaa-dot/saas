@@ -468,11 +468,23 @@
   button.site-nav-link.is-active { color: var(--header-link-active, rgb(var(--brand-primary))); }
 
   .site-footer { background: var(--footer-bg, rgb(var(--brand-secondary))); }
-  .site-footer .site-footer-body { color: var(--footer-text, rgb(255 255 255 / 0.7)); }
+  /* One element carries both classes, so this is not a descendant selector. */
+  .site-footer.site-footer-body { color: var(--footer-text, rgb(255 255 255 / 0.7)); }
   .site-footer .site-footer-heading { color: var(--footer-heading, #fff); }
   .site-footer a.site-footer-link { color: var(--footer-link, inherit); }
   .site-footer a.site-footer-link:hover { color: var(--footer-link-hover, #fff); }
   .site-footer .site-footer-rule { border-color: var(--footer-border, rgb(255 255 255 / 0.1)); }
+
+  /*
+    A footer row is a section, but a footer is not a page. The space between
+    rows is the footer's own — `--footer-row-gap` on the column that holds
+    them — so a row brings no page-section spacing with it unless somebody
+    sets padding on that row.
+  */
+  .site-footer .cms-section {
+    padding-top: var(--sec-pt, 0);
+    padding-bottom: var(--sec-pb, 0);
+  }
 
   /* -------------------------------------------------------------------------
    * Form design engine

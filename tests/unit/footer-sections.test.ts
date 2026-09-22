@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { BLOCKS, blocksForSurface, blockAllowedOnSurface, parseBlockContent } from '@/lib/cms/blocks';
 import { FOOTER_BLOCKS } from '@/lib/cms/footer-blocks';
 import { synthesiseFooterSections } from '@/lib/cms/footer-defaults';
+import { buildSectionStyles, parseSectionDesign, DEFAULT_SECTION_DESIGN } from '@/lib/cms/design';
 
 /**
  * The footer, built the way a page is.
@@ -94,5 +95,42 @@ describe('the built-in footer', () => {
     }
     // Synthesised twice, identical — nothing about it is time or random.
     expect(synthesiseFooterSections()).toEqual(rows);
+  });
+});
+
+/**
+ * A footer paints its own surface, so a row that nobody has restyled has to
+ * take it. Painting the page's background instead is what put a white band
+ * over every row of a dark footer.
+ */
+describe('a footer row on the footer’s own surface', () => {
+  it('sets no colour of its own while it is left at the default', () => {
+    const styles = buildSectionStyles(DEFAULT_SECTION_DESIGN, 'row', null, {
+      inheritSurface: true,
+    });
+    expect(styles.style['--sec-bg']).toBeUndefined();
+    expect(styles.style['--sec-text']).toBeUndefined();
+    expect(styles.style['--sec-heading-color']).toBeUndefined();
+  });
+
+  it('still paints once somebody chooses a preset or a colour', () => {
+    const dark = buildSectionStyles(parseSectionDesign({ preset: 'dark' }), 'row', null, {
+      inheritSurface: true,
+    });
+    expect(dark.style['--sec-bg']).toBe('rgb(var(--brand-secondary))');
+
+    const chosen = buildSectionStyles(
+      parseSectionDesign({ colors: { background: '#112233' } }),
+      'row',
+      null,
+      { inheritSurface: true },
+    );
+    expect(chosen.style['--sec-bg']).toBe('#112233');
+  });
+
+  it('leaves a page section exactly as it was', () => {
+    const page = buildSectionStyles(DEFAULT_SECTION_DESIGN, 'row');
+    expect(page.style['--sec-bg']).toBe('rgb(var(--brand-background))');
+    expect(page.style['--sec-text']).toBe('rgb(var(--brand-muted))');
   });
 });

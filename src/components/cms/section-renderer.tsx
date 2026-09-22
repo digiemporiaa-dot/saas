@@ -378,7 +378,13 @@ export async function SectionRenderer({
       ? await getMedia(design.background.imageId)
       : null;
 
-  const styles = buildSectionStyles(design, section.id, backgroundMedia?.url ?? null);
+  /*
+   * The footer paints its own surface, so a row left at the default preset
+   * inherits it instead of covering it with the page's background.
+   */
+  const styles = buildSectionStyles(design, section.id, backgroundMedia?.url ?? null, {
+    inheritSurface: Boolean(footer),
+  });
   const ctx: BlockContext = {
     sectionId: section.id,
     country,
