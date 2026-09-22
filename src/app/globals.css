@@ -268,9 +268,14 @@
     @apply text-[0.975rem] leading-relaxed text-muted;
   }
   .prose-cms > * + * { @apply mt-4; }
+  .prose-cms h1 { @apply mt-10 text-3xl font-bold text-content sm:text-4xl; }
   .prose-cms h2 { @apply mt-10 text-2xl font-bold text-content sm:text-3xl; }
   .prose-cms h3 { @apply mt-8 text-xl font-semibold text-content; }
   .prose-cms h4 { @apply mt-6 text-lg font-semibold text-content; }
+  .prose-cms h5 { @apply mt-6 text-base font-semibold text-content; }
+  .prose-cms h6 {
+    @apply mt-6 text-sm font-semibold uppercase tracking-wide text-content;
+  }
   .prose-cms p { @apply text-muted; }
   .prose-cms a { @apply font-medium text-brand underline underline-offset-4 hover:no-underline; }
   .prose-cms ul { @apply list-disc space-y-2 pl-5; }
@@ -290,6 +295,24 @@
   .prose-cms th, .prose-cms td { @apply border border-hairline px-3 py-2 text-left; }
   .prose-cms th { @apply bg-muted/5 font-semibold text-content; }
   .prose-cms hr { @apply my-10 border-hairline; }
+
+  /* -------------------------------------------------------------------------
+   * Alignment and size, from the editor's toolbar.
+   *
+   * Classes rather than inline `style`, because `style` is stripped by the
+   * sanitiser on the way in: a control that produced one would silently do
+   * nothing. Defined here rather than relying on a Tailwind utility surviving
+   * in the bundle, since nothing in the source ever spells these out.
+   * ---------------------------------------------------------------------- */
+  .prose-cms .align-left { text-align: left; }
+  .prose-cms .align-center { text-align: center; }
+  .prose-cms .align-right { text-align: right; }
+  .prose-cms .align-justify { text-align: justify; }
+
+  .prose-cms .size-sm { font-size: 0.875em; }
+  .prose-cms .size-md { font-size: 1em; }
+  .prose-cms .size-lg { font-size: 1.25em; }
+  .prose-cms .size-xl { font-size: 1.5em; }
 }
 
 @layer utilities {
