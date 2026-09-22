@@ -149,6 +149,20 @@ const productPriceBoxSchema = z.object({
       'Prices exclude applicable taxes. You receive the same product with local billing and support.',
     ),
   sticky: bool(true),
+
+  /*
+   * An enquiry form inside the box, under or over the price.
+   *
+   * Off by default, so every price box that exists today is unchanged. A blank
+   * `formSlug` means the product's own enquiry form — the one the button
+   * already opens — so switching this on is usually the only decision to make,
+   * and a box that follows the product keeps following it when the product's
+   * form is changed.
+   */
+  showForm: bool(false),
+  formSlug: z.string().max(120).catch('').default(''),
+  formHeading: heading(''),
+  formPosition: z.enum(['below', 'above']).catch('below').default('below'),
 });
 
 // ---------------------------------------------------------------------------
@@ -473,6 +487,39 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
         help: 'Follows Products → Design when that is switched off.',
       },
       { kind: 'textarea', name: 'note', label: 'Small print', rows: 3 },
+      {
+        kind: 'boolean',
+        name: 'showForm',
+        label: 'Show an enquiry form in the box',
+        width: 'half',
+      },
+      {
+        kind: 'select',
+        name: 'formPosition',
+        label: 'Where the form sits',
+        width: 'half',
+        showWhen: { field: 'showForm', equals: [true] },
+        options: [
+          { label: 'Below the price', value: 'below' },
+          { label: 'Above the price', value: 'above' },
+        ],
+      },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form',
+        width: 'half',
+        showWhen: { field: 'showForm', equals: [true] },
+        help: "Leave empty to use the product's own enquiry form.",
+      },
+      {
+        kind: 'text',
+        name: 'formHeading',
+        label: 'Form heading',
+        width: 'half',
+        showWhen: { field: 'showForm', equals: [true] },
+        placeholder: 'Optional',
+      },
     ],
   },
 };

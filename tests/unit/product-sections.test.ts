@@ -79,6 +79,46 @@ describe('product surfaces', () => {
     }
   });
 
+  it('keeps the price box exactly as it was until the form is switched on', () => {
+    const parse = (raw: unknown) =>
+      parseBlockContent('productPriceBox', raw) as Record<string, unknown>;
+
+    // Off by default: every price box already on a live product is unchanged.
+    expect(parse({}).showForm).toBe(false);
+    // Blank means the product's own enquiry form — the one the button opens —
+    // so switching it on is usually the only decision to make.
+    expect(parse({}).formSlug).toBe('');
+    expect(parse({}).formPosition).toBe('below');
+    expect(parse({}).formHeading).toBe('');
+  });
+
+  it('takes a chosen form and a position, and refuses anything else', () => {
+    const parse = (raw: unknown) =>
+      parseBlockContent('productPriceBox', raw) as Record<string, unknown>;
+
+    expect(parse({ showForm: true, formSlug: 'enquiry' }).formSlug).toBe('enquiry');
+    expect(parse({ formPosition: 'above' }).formPosition).toBe('above');
+    // A corrupt position still renders the box rather than throwing.
+    for (const attack of ['sideways', '', null, 7, true]) {
+      expect(parse({ formPosition: attack }).formPosition, String(attack)).toBe('below');
+    }
+  });
+
+  it('offers the price box controls in its editor, gated on the toggle', () => {
+    const fields = PRODUCT_BLOCKS.productPriceBox.fields ?? [];
+    const named = (name: string) => fields.find((field) => field.name === name);
+
+    expect(named('showForm')?.kind).toBe('boolean');
+    // Picked from the forms that exist, never typed by hand.
+    expect(named('formSlug')?.kind).toBe('form');
+
+    // The three that only make sense once the form is on stay out of the way.
+    for (const name of ['formSlug', 'formHeading', 'formPosition']) {
+      expect(named(name)?.showWhen, name).toEqual({ field: 'showForm', equals: [true] });
+    }
+    expect(named('showForm')?.showWhen).toBeUndefined();
+  });
+
   it('parses each product block to usable defaults', () => {
     for (const type of Object.keys(PRODUCT_BLOCKS)) {
       const content = parseBlockContent(type, {}) as Record<string, unknown>;

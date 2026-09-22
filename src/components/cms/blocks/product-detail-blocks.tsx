@@ -12,11 +12,13 @@ import type {
 } from '@/lib/cms/product-blocks';
 import { RATIO_CSS } from '@/lib/cms/product-settings';
 import { selectProducts } from '@/lib/services/products';
+import { getPublicForm } from '@/lib/services/forms';
 import { formatMoney } from '@/lib/utils/money';
 import { countryPath } from '@/lib/country/routing';
 import { cn } from '@/lib/utils/cn';
 import { ProductCta } from '@/components/products/product-cta';
 import { ProductCard } from '@/components/products/product-card';
+import { PublicFormRenderer } from '@/components/forms/public-form';
 import { RichText, SectionHeading, type BlockContext } from './shared';
 
 /**
@@ -487,7 +489,7 @@ export async function ProductRelatedBlock({
   );
 }
 
-export function ProductPriceBoxBlock({
+export async function ProductPriceBoxBlock({
   content,
   ctx,
 }: {
@@ -500,8 +502,47 @@ export function ProductPriceBoxBlock({
 
   const specs = content.showSpecs ? product.specs : [];
 
+  /*
+   * The form the box asks for, or the product's own enquiry form when it names
+   * none — the same one the button opens, so a box left on the default keeps
+   * following the product. A form that has been switched off or belongs to
+   * another market simply does not render; the price and the button are still
+   * the point of this box.
+   */
+  const formSlug = content.showForm ? content.formSlug || product.ctaFormSlug : '';
+  const form = formSlug ? await getPublicForm(formSlug, ctx.country.id) : null;
+
+  const formBody = form ? (
+    <>
+      {content.formHeading ? (
+        <p className="mb-3 font-heading text-sm font-semibold text-content">
+          {content.formHeading}
+        </p>
+      ) : null}
+      <PublicFormRenderer
+        form={form}
+        productId={product.id}
+        /* A sidebar is narrow, so the grid collapses unless the form's own
+           design asks for more. */
+        compact
+        ctaLocation="product-price-box"
+        /* Shown so the enquiry is unambiguous. What the server records is
+           resolved from productId, never from here. */
+        context={{
+          product_id: product.id,
+          product_name: product.name,
+          product_slug: product.slug,
+          plan: product.name,
+        }}
+      />
+    </>
+  ) : null;
+
   return (
     <div className="rounded-2xl border border-hairline bg-surface p-6 shadow-sm">
+      {content.formPosition === 'above' && formBody ? (
+        <div className="mb-6 border-b border-hairline pb-6">{formBody}</div>
+      ) : null}
       {content.showMonthly && product.monthlyPrice ? (
         <>
           <p className="flex items-baseline gap-1.5">
@@ -581,6 +622,10 @@ export function ProductPriceBoxBlock({
         <p className="mt-6 text-xs leading-relaxed text-muted">
           {content.note.replace('{site}', siteName)}
         </p>
+      ) : null}
+
+      {content.formPosition === 'below' && formBody ? (
+        <div className="mt-6 border-t border-hairline pt-6">{formBody}</div>
       ) : null}
 
       {/* The sticky behaviour itself is applied by the column wrapper; this only
