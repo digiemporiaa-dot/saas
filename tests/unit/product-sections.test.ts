@@ -96,6 +96,15 @@ describe('the built-in arrangement', () => {
     const [header, media] = synthesiseProductSections('DETAIL');
     const headerContent = header.content as Record<string, unknown>;
 
+    // Whether a product follows the built-in arrangement or has its own saved
+    // sections, the pairing is the block's default rather than something the
+    // seed switches on — so both render it.
+    const blockDefault = parseBlockContent('productHeader', {}) as Record<string, unknown>;
+    expect(blockDefault.showImage).toBe(true);
+    expect((parseBlockContent('productMedia', {}) as Record<string, unknown>).showMainImage).toBe(
+      false,
+    );
+
     expect(headerContent.showImage).toBe(true);
     expect(headerContent.imagePosition).toBe('left');
     expect(headerContent.imageWidth).toBe('250px');

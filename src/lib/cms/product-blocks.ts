@@ -41,13 +41,16 @@ const productHeaderSchema = z.object({
   /**
    * The product's image, beside the name rather than under it.
    *
-   * Off by default, because the page already has a "Product images" section
-   * and two copies of one image is not a layout anyone asked for. Turning it
-   * on is the pairing a catalogue page usually wants — the mark on one side,
-   * the name and summary on the other — and the images section is then hidden
-   * or left to the gallery alone.
+   * On by default: the opening pair — the product's mark on one side, its
+   * category, name and summary on the other — is what a catalogue page is
+   * for, and it is the arrangement this one is designed around. The "Product
+   * images" section below defaults to the gallery alone for the same reason,
+   * so one picture never appears twice.
+   *
+   * Both are ordinary toggles. A page that wants the image underneath again
+   * turns this off and turns the main image back on down there.
    */
-  showImage: bool(false),
+  showImage: bool(true),
   imagePosition: z.enum(['left', 'right']).catch('left').default('left'),
   /** The side the image occupies. Square by default, so 250px is 250 × 250. */
   imageWidth: z.string().max(16).catch('250px').default('250px'),
@@ -61,7 +64,11 @@ const productHeaderSchema = z.object({
 });
 
 const productMediaSchema = z.object({
-  showMainImage: bool(true),
+  /**
+   * Off by default, because the header carries the main image. Left on
+   * alongside it, the same picture renders twice, once under the other.
+   */
+  showMainImage: bool(false),
   showGallery: bool(true),
   /** 0 keeps every gallery image an administrator attached. */
   galleryLimit: z.coerce.number().int().min(0).max(24).catch(0).default(0),
