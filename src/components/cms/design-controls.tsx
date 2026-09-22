@@ -5,6 +5,8 @@ import { Link2, Unlink } from 'lucide-react';
 import { LENGTH_UNITS, splitLength, joinLength, type LengthUnit, type BoxValue } from '@/lib/cms/design';
 import { Input, Select, Label } from '@/components/ui/field';
 import { cn } from '@/lib/utils/cn';
+import { HEX_COLOR, parseColor, composeColor } from '@/lib/cms/color';
+import { OpacitySlider, SWATCH_CHECKS } from './color-opacity';
 
 /**
  * Number + unit control.
@@ -146,7 +148,14 @@ export function BoxInput({
   );
 }
 
-/** Hex text input paired with a native colour picker, kept in sync. */
+/**
+ * Hex text input paired with a native colour picker, kept in sync, plus the
+ * opacity the picker itself cannot express.
+ *
+ * Opacity is part of the colour — `#0061FF80` — rather than a field of its
+ * own, so no section, block or design record grows a second key for it and
+ * nothing has a value to keep in step with another.
+ */
 export function ColorInput({
   label,
   value,
@@ -162,19 +171,36 @@ export function ColorInput({
   hint?: string;
   allowEmpty?: boolean;
 }) {
-  const isValid = /^#[0-9a-fA-F]{6}$/.test(value);
+  const parsed = parseColor(value);
+  const isValid = HEX_COLOR.test(value);
 
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id}>{label}</Label>
       <div className="flex items-center gap-2">
-        <input
-          type="color"
-          value={isValid ? value : '#000000'}
-          onChange={(e) => onChange(e.target.value.toUpperCase())}
-          aria-label={`${label} colour picker`}
-          className="h-10 w-12 shrink-0 cursor-pointer rounded-lg border border-hairline bg-surface p-1"
-        />
+        {/* Chequers behind the swatch, so a transparent colour reads as
+            transparent rather than as a paler one. */}
+        <span
+          className="relative h-10 w-12 shrink-0 overflow-hidden rounded-lg border border-hairline"
+          style={SWATCH_CHECKS}
+        >
+          <input
+            type="color"
+            value={parsed?.hex ?? '#000000'}
+            onChange={(e) =>
+              onChange(composeColor(e.target.value.toUpperCase(), parsed?.alpha ?? 100))
+            }
+            aria-label={`${label} colour picker`}
+            className="absolute inset-0 h-full w-full cursor-pointer border-0 bg-transparent p-1"
+          />
+          {parsed && parsed.alpha < 100 ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-0"
+              style={{ background: value }}
+            />
+          ) : null}
+        </span>
         <Input
           id={id}
           value={value}
@@ -194,10 +220,11 @@ export function ColorInput({
           </button>
         ) : null}
       </div>
+      <OpacitySlider id={`${id}-opacity`} value={value} onChange={onChange} />
       {hint ? <p className="text-xs text-muted">{hint}</p> : null}
       {value !== '' && !isValid ? (
         <p className="text-xs font-medium text-red-600" role="alert">
-          Use a 6-digit hex colour such as #0061FF.
+          Use a hex colour such as #0061FF, or #0061FF80 for one with opacity.
         </p>
       ) : null}
     </div>

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normaliseColor } from './color';
 import { normaliseLength } from './design';
 import { SHADOWS, SHADOW_CSS, IMAGE_RATIOS, RATIO_CSS } from './blog-settings';
 
@@ -32,7 +33,7 @@ const length = z.preprocess(normaliseLength, z.string());
 const hex = z
   .string()
   .trim()
-  .transform((v) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : ''))
+  .transform((v) => normaliseColor(v))
   .catch('')
   .default('');
 

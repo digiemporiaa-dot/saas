@@ -304,6 +304,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Primary"
                       name="colorPrimary"
+                      allowOpacity={false}
                       value={str('colorPrimary')}
                       error={errors.colorPrimary}
                       onChange={(v) => set('colorPrimary', v)}
@@ -311,6 +312,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Secondary"
                       name="colorSecondary"
+                      allowOpacity={false}
                       value={str('colorSecondary')}
                       error={errors.colorSecondary}
                       onChange={(v) => set('colorSecondary', v)}
@@ -318,6 +320,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Accent"
                       name="colorAccent1"
+                      allowOpacity={false}
                       value={str('colorAccent1')}
                       error={errors.colorAccent1}
                       onChange={(v) => set('colorAccent1', v)}
@@ -325,6 +328,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Accent 2"
                       name="colorAccent2"
+                      allowOpacity={false}
                       value={str('colorAccent2')}
                       error={errors.colorAccent2}
                       onChange={(v) => set('colorAccent2', v)}
@@ -332,6 +336,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Background"
                       name="colorBackground"
+                      allowOpacity={false}
                       value={str('colorBackground')}
                       error={errors.colorBackground}
                       onChange={(v) => set('colorBackground', v)}
@@ -339,6 +344,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Text"
                       name="colorText"
+                      allowOpacity={false}
                       value={str('colorText')}
                       error={errors.colorText}
                       onChange={(v) => set('colorText', v)}
@@ -346,6 +352,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Muted text"
                       name="colorMuted"
+                      allowOpacity={false}
                       value={str('colorMuted')}
                       error={errors.colorMuted}
                       onChange={(v) => set('colorMuted', v)}
@@ -353,6 +360,7 @@ export function WebsiteSettingsForm({
                     <ColorField
                       label="Borders"
                       name="colorBorder"
+                      allowOpacity={false}
                       value={str('colorBorder')}
                       error={errors.colorBorder}
                       onChange={(v) => set('colorBorder', v)}

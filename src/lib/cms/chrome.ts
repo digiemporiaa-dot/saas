@@ -13,20 +13,22 @@
  * empty or unusable value is not "transparent" or "0" — it is "leave it alone".
  */
 
+import { normaliseColor } from './color';
+
 /** A CSS length the admin may type. Anything else is ignored. */
 const LENGTH = /^-?\d+(\.\d+)?(px|%|rem|em|vw|vh|ch)$/;
-/** #RGB or #RRGGBB, with or without the hash. */
-const HEX = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i;
 
 export function cssLength(value: string | null | undefined): string | null {
   const trimmed = (value ?? '').trim();
   return LENGTH.test(trimmed) ? trimmed : null;
 }
 
+/**
+ * A colour, with its opacity inside it: `#RRGGBB` or `#RRGGBBAA`. Null for
+ * anything else, which leaves whatever the component already looked like.
+ */
 export function cssColor(value: string | null | undefined): string | null {
-  const trimmed = (value ?? '').trim();
-  if (!HEX.test(trimmed)) return null;
-  return trimmed.startsWith('#') ? trimmed.toUpperCase() : `#${trimmed.toUpperCase()}`;
+  return normaliseColor(value) || null;
 }
 
 export function cssWeight(value: string | null | undefined): string | null {

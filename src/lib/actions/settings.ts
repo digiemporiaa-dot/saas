@@ -10,6 +10,7 @@ import { encryptSecret } from '@/lib/utils/crypto';
 import { verifySmtp, sendMail } from '@/lib/email/mailer';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { CMS_ICON_NAMES } from '@/components/ui/icons';
+import { HEX_COLOR } from '@/lib/cms/color';
 
 const optional = (max: number) =>
   z
@@ -20,6 +21,14 @@ const optional = (max: number) =>
     .nullable()
     .transform((v) => (v ? v : null));
 
+/*
+ * The eight palette colours, which are the one place opacity does not belong.
+ *
+ * They are published as `R G B` triples for Tailwind's own alpha modifier —
+ * `bg-brand/10`, `text-brand/70` and the rest — so an opacity inside one would
+ * have nowhere to go in `rgb(var(--brand-primary) / <alpha-value>)` and would
+ * quietly do nothing. Every other colour on the site takes one.
+ */
 const hexColor = z
   .string()
   .trim()
@@ -65,13 +74,21 @@ const optionalUnitlessNumber = optionalToken(NUMBER_RE, 'Use a plain number such
 const optionalFontSize = optionalToken(LENGTH_RE, 'Use a size like 15px or 0.95rem');
 /** A size somebody may leave blank, meaning "keep what it looks like now". */
 const optionalLength = optionalToken(LENGTH_RE, 'Use a value like 72px or 4.5rem');
-/** A colour somebody may leave blank, for the same reason. */
+/**
+ * A colour somebody may leave blank, for the same reason.
+ *
+ * Opacity lives inside the colour — `#0061FF80` — so there is no second field
+ * to keep in step with it and nothing to store twice.
+ */
 const optionalColor = z
   .string()
   .trim()
   .optional()
   .transform((v) => v ?? '')
-  .refine((v) => v === '' || /^#[0-9a-fA-F]{6}$/.test(v), 'Use a 6-digit hex colour like #0061FF');
+  .refine(
+    (v) => v === '' || HEX_COLOR.test(v),
+    'Use a hex colour like #0061FF, or #0061FF80 for one with opacity',
+  );
 /** A weight somebody may leave blank. */
 const optionalWeight = optionalToken(/^[1-9]00$/, 'Choose a weight between 100 and 900');
 const letterSpacing = (fallback: string) =>

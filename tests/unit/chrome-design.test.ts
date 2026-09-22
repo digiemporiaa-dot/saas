@@ -36,7 +36,8 @@ describe('what counts as a value', () => {
   it('takes a hex colour, with or without the hash, and normalises it', () => {
     expect(cssColor('#0061ff')).toBe('#0061FF');
     expect(cssColor('0061ff')).toBe('#0061FF');
-    expect(cssColor(' #FFF ')).toBe('#FFF');
+    // `#FFF` is `#FFFFFF`: one canonical spelling reaches the stylesheet.
+    expect(cssColor(' #FFF ')).toBe('#FFFFFF');
   });
 
   it('refuses a colour that is not hex', () => {
@@ -45,6 +46,12 @@ describe('what counts as a value', () => {
     for (const value of ['red', 'rgb(0 0 0)', '#12345', 'url(x)', '', null]) {
       expect(cssColor(value), String(value)).toBeNull();
     }
+  });
+
+  it('takes an opacity inside the colour', () => {
+    expect(cssColor('#0061FF80')).toBe('#0061FF80');
+    // Fully opaque is written back without the redundant FF.
+    expect(cssColor('#0061FFFF')).toBe('#0061FF');
   });
 
   it('takes a weight in range and nothing else', () => {

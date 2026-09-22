@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normaliseColor } from './color';
 import { panelDesignSchema } from './design';
 import { linkFields, type BlockDefinition } from './block-types';
 import type { FieldDescriptor } from './fields';
@@ -316,7 +317,7 @@ const dividerSchema = z.object({
   color: z
     .string()
     .trim()
-    .transform((v) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : ''))
+    .transform((v) => normaliseColor(v))
     .catch('')
     .default(''),
   width: z.enum(['full', 'content', 'short']).catch('full').default('full'),
@@ -419,13 +420,13 @@ const widgetBase = {
   headingColor: z
     .string()
     .trim()
-    .transform((v) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : ''))
+    .transform((v) => normaliseColor(v))
     .catch('')
     .default(''),
   linkColor: z
     .string()
     .trim()
-    .transform((v) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : ''))
+    .transform((v) => normaliseColor(v))
     .catch('')
     .default(''),
 };

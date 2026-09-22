@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normaliseColor, parseColor } from './color';
 
 /**
  * Universal section design configuration.
@@ -73,10 +74,15 @@ const boxSchema = z.object({
 export type BoxValue = z.infer<typeof boxSchema>;
 export const EMPTY_BOX: BoxValue = { top: '', right: '', bottom: '', left: '' };
 
+/*
+ * A colour, with its opacity inside it: `#RRGGBB` or `#RRGGBBAA`. Anything
+ * else becomes `''`, which means "inherit" everywhere this is read — never
+ * black, which is what a colour nobody chose must not silently become.
+ */
 const hex = z
   .string()
   .trim()
-  .transform((v) => (/^#[0-9a-fA-F]{6}$/.test(v) ? v.toUpperCase() : ''))
+  .transform((v) => normaliseColor(v))
   .default('');
 
 /** Everything that can differ between desktop, tablet and mobile. */
@@ -373,14 +379,23 @@ export const WIDTH_PRESET_VALUES: Record<Exclude<WidthMode, 'custom' | 'full'>, 
   wide: '80rem',
 };
 
+/**
+ * A colour at a given opacity, for the overlay controls that set one
+ * separately from the colour.
+ *
+ * Where the colour already carries its own opacity the two multiply, which is
+ * what somebody who dimmed a colour and then dimmed the overlay means.
+ */
 function hexToRgba(value: string, alpha: number): string {
-  const match = /^#([0-9a-f]{6})$/i.exec(value);
-  if (!match) return 'transparent';
-  const digits = match[1]!;
+  const parsed = parseColor(value);
+  if (!parsed) return 'transparent';
+
+  const digits = parsed.hex.slice(1);
   const r = parseInt(digits.slice(0, 2), 16);
   const g = parseInt(digits.slice(2, 4), 16);
   const b = parseInt(digits.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${Math.min(Math.max(alpha, 0), 100) / 100})`;
+  const combined = (Math.min(Math.max(alpha, 0), 100) / 100) * (parsed.alpha / 100);
+  return `rgba(${r}, ${g}, ${b}, ${combined})`;
 }
 
 /** Background colour + text colour implied by a preset, before overrides. */
