@@ -30,3 +30,23 @@ export async function uniqueSlug(
   }
   return candidate;
 }
+
+/**
+ * The slug something had before it was retired.
+ *
+ * Retiring a record renames its slug out of the way — `dropbox-standard`
+ * becomes `dropbox-standard-deleted-1758...` — so the name is free for
+ * whatever replaces it. Restoring reverses that: the URL a product is known
+ * by, the one in every link and every search result, is part of it, and
+ * bringing it back under a mangled name would be a different record wearing
+ * its face.
+ *
+ * The suffix is generated, never typed, so stripping it cannot eat a slug an
+ * administrator wrote: `-deleted-` followed by digits to the end of the string
+ * is not a slug anyone chooses. A slug that is nothing else is left alone,
+ * because an empty slug is not a URL.
+ */
+export function originalSlug(slug: string): string {
+  const restored = slug.replace(/-deleted-\d+$/, '');
+  return restored || slug;
+}

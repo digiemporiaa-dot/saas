@@ -115,6 +115,7 @@ export const ADMIN_NAV: AdminNavModule[] = [
           '/admin/products/brands',
           '/admin/products/order',
           '/admin/products/design',
+          '/admin/products/trash',
         ],
       },
       {
@@ -140,6 +141,12 @@ export const ADMIN_NAV: AdminNavModule[] = [
         href: '/admin/products/design',
         permission: 'products.view',
         description: 'Card style, image sizes, page layout and type',
+      },
+      {
+        label: 'Removed Products',
+        href: '/admin/products/trash',
+        permission: 'products.view',
+        description: 'Restore something taken out of the catalogue',
       },
     ],
   },

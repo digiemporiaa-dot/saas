@@ -7,7 +7,7 @@ import { prisma } from '@/lib/db/prisma';
 import { authorize } from '@/lib/auth/guards';
 import { recordAudit } from '@/lib/services/audit';
 import { productInputSchema, productCategorySchema, brandSchema } from '@/lib/validation/product';
-import { uniqueSlug, slugify } from '@/lib/utils/slug';
+import { uniqueSlug, slugify, originalSlug } from '@/lib/utils/slug';
 import { toDecimal } from '@/lib/utils/money';
 import { sanitizeHtml, sanitizeText } from '@/lib/utils/sanitize';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
@@ -642,6 +642,132 @@ async function withdrawFromMarket(productId: string, countryId: string): Promise
 
     return true;
   });
+}
+
+/**
+ * Puts a removed product back.
+ *
+ * The market's configuration was archived rather than destroyed, so this is
+ * the undo it was archived for: the market offers the product again, and if
+ * the shared row had been retired — which only happens once no market wants
+ * it — that comes back too, under the URL it had.
+ *
+ * It comes back as a draft in this market, never straight to the website. A
+ * restore is someone recovering from a mistake, not a decision to publish, and
+ * those are not the same click.
+ */
+export async function restoreProduct(productId: string): Promise<ActionResult> {
+  try {
+    const user = await authorize('products.delete');
+    const scope = await scopeForUser(user);
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true, slug: true, deletedAt: true },
+    });
+    if (!product) return failure('That product no longer exists.');
+
+    const slug = product.deletedAt
+      ? await uniqueSlug(originalSlug(product.slug), async (candidate) => {
+          const clash = await prisma.product.findFirst({
+            where: { slug: candidate, id: { not: productId } },
+            select: { id: true },
+          });
+          return Boolean(clash);
+        })
+      : product.slug;
+
+    await prisma.$transaction(async (tx) => {
+      if (product.deletedAt) {
+        await tx.product.update({
+          where: { id: productId },
+          data: { deletedAt: null, status: 'DRAFT', slug, updatedById: user.id },
+        });
+      }
+
+      /*
+       * The market's own row. A product retired everywhere may have no row for
+       * the market doing the restoring — it was removed from that one first —
+       * so one is created rather than leaving a restored product that appears
+       * in no catalogue at all.
+       */
+      await tx.productCountry.upsert({
+        where: { productId_countryId: { productId, countryId: scope.country.id } },
+        update: { deletedAt: null, status: 'ARCHIVED' },
+        create: {
+          productId,
+          countryId: scope.country.id,
+          currency: scope.country.currency,
+          status: 'ARCHIVED',
+        },
+      });
+    });
+
+    await recordAudit({
+      actor: user,
+      action: 'restored',
+      entity: 'Product',
+      entityId: productId,
+      summary: `Restored product “${product.name}” to ${scope.country.name}`,
+      after: { slug },
+    });
+
+    revalidatePath('/admin/products');
+    revalidatePath('/admin/products/trash');
+    await revalidateProduct(slug);
+    return success(undefined, `Restored to ${scope.country.name} as a draft.`);
+  } catch (error) {
+    return toActionError(error);
+  }
+}
+
+/**
+ * Destroys a removed product for good.
+ *
+ * Refused while a lead points at it. Leads carry the product they were about,
+ * and that attribution is the reason a deleted product is kept at all — a
+ * purge that quietly emptied the product column of last quarter's enquiries
+ * would be data loss dressed up as tidying. Everything else a product owns —
+ * its market rows, variants, sections and gallery links — goes with it.
+ */
+export async function purgeProduct(productId: string): Promise<ActionResult> {
+  try {
+    const user = await authorize('products.delete');
+
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true, slug: true, deletedAt: true },
+    });
+    if (!product) return failure('That product no longer exists.');
+    if (!product.deletedAt) {
+      return failure('Remove the product from every market before deleting it for good.');
+    }
+
+    const leads = await prisma.lead.count({ where: { productId } });
+    if (leads > 0) {
+      return failure(
+        `${leads} lead(s) are attributed to this product, so it cannot be deleted for good. ` +
+          'It stays here, out of the catalogue, and keeps that attribution.',
+      );
+    }
+
+    await prisma.product.delete({ where: { id: productId } });
+
+    await recordAudit({
+      actor: user,
+      action: 'purged',
+      entity: 'Product',
+      entityId: productId,
+      summary: `Permanently deleted product “${product.name}”`,
+      before: { name: product.name, slug: originalSlug(product.slug) },
+    });
+
+    revalidatePath('/admin/products');
+    revalidatePath('/admin/products/trash');
+    return success(undefined, 'Deleted for good.');
+  } catch (error) {
+    return toActionError(error);
+  }
 }
 
 // ---------------------------------------------------------------------------

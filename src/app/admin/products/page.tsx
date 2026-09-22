@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Plus, Tag, ArrowUpDown, Building2 } from 'lucide-react';
+import { Plus, Tag, ArrowUpDown, Building2, Trash2 } from 'lucide-react';
 import { prisma } from '@/lib/db/prisma';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { AdminPageHeader } from '@/components/admin/page-header';
@@ -226,6 +226,11 @@ export default async function ProductsAdmin({
                 <Link href="/admin/products/categories" className={buttonClasses('outline', 'md')}>
                   <Tag className="h-4 w-4" aria-hidden="true" />
                   Categories
+                </Link>
+                {/* Where a removed product waits, and where its URL comes back from. */}
+                <Link href="/admin/products/trash" className={buttonClasses('outline', 'md')}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Removed
                 </Link>
               </>
             ) : null}
