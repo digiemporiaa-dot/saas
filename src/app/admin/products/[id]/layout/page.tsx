@@ -6,6 +6,7 @@ import type { ProductSurface } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { getProductSectionRows } from '@/lib/services/product-cms';
+import { parseBlockContent } from '@/lib/cms/blocks';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { ProductLayoutBuilder } from '@/components/admin/products/product-layout-builder';
 import type { BuilderSection } from '@/components/cms/section-builder';
@@ -48,7 +49,7 @@ export default async function ProductLayoutAdmin({
       name: row.name,
       isVisible: row.isVisible,
       sortOrder: row.sortOrder,
-      content: (row.content ?? {}) as Record<string, unknown>,
+      content: parseBlockContent(row.blockType, row.content),
       settings: (row.settings ?? {}) as Record<string, unknown>,
     }));
 

@@ -60,9 +60,17 @@ export async function addFooterSection(input: unknown): Promise<ActionResult<{ i
       return failure('That block cannot be added to a footer.');
     }
 
+    // Adding to a footer nobody has opened materialises it first, so the new
+    // row joins the arrangement rather than replacing it.
+    await materialiseFooter(country.id);
+
     /*
      * A singleton block is part of the footer's anatomy — one bottom row — so
      * adding a second is rejected rather than silently producing two.
+     *
+     * Counted after the arrangement exists, never before: the built-in footer
+     * already carries the bottom row, so a count taken while the footer was
+     * still empty would wave through a second one.
      */
     if (definition.singleton) {
       const existing = await prisma.footerSection.count({
@@ -70,10 +78,6 @@ export async function addFooterSection(input: unknown): Promise<ActionResult<{ i
       });
       if (existing > 0) return failure(`“${definition.label}” is already in this footer.`);
     }
-
-    // Adding to a footer nobody has opened materialises it first, so the new
-    // row joins the arrangement rather than replacing it.
-    await materialiseFooter(country.id);
 
     const last = await prisma.footerSection.findFirst({
       where: { countryId: country.id },

@@ -72,6 +72,28 @@ describe('product surfaces', () => {
     }
   });
 
+  /*
+   * What the builder shows has to be what the page renders. A stored row holds
+   * only the keys that were written the last time somebody saved it, so the
+   * builder parses it through the block schema the way the renderer does —
+   * otherwise a switch nobody turned off reads as off, and saving writes that
+   * reading back as fact.
+   */
+  it('fills a partial row in from the schema, so the editor sees what renders', () => {
+    const box = parseBlockContent('productPriceBox', {}) as Record<string, unknown>;
+    expect(box.showMonthly).toBe(true);
+    expect(box.showCta).toBe(true);
+    expect(box.showSpecs).toBe(true);
+
+    // A value that was actually chosen survives; only the absent keys default.
+    const chosen = parseBlockContent('productPriceBox', { showAnnual: false }) as Record<
+      string,
+      unknown
+    >;
+    expect(chosen.showAnnual).toBe(false);
+    expect(chosen.showMonthly).toBe(true);
+  });
+
   it('lets the product name be any heading level, and refuses anything else', () => {
     const parse = (raw: unknown) =>
       parseBlockContent('productHeader', raw) as Record<string, unknown>;

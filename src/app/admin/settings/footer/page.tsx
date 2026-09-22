@@ -4,6 +4,7 @@ import { Eye, Palette } from 'lucide-react';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { getAdminCountryScope } from '@/lib/country/admin';
 import { getFooterSectionRows } from '@/lib/services/footer-cms';
+import { parseBlockContent } from '@/lib/cms/blocks';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { FooterBuilder } from '@/components/admin/settings/footer-builder';
 import type { BuilderSection } from '@/components/cms/section-builder';
@@ -31,7 +32,7 @@ export default async function FooterAdmin() {
     name: row.name,
     isVisible: row.isVisible,
     sortOrder: row.sortOrder,
-    content: (row.content ?? {}) as Record<string, unknown>,
+    content: parseBlockContent(row.blockType, row.content),
     settings: (row.settings ?? {}) as Record<string, unknown>,
   }));
 

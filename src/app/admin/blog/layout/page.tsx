@@ -8,6 +8,7 @@ import { AdminPageHeader } from '@/components/admin/page-header';
 import { BlogLayoutBuilder } from '@/components/admin/blog/blog-layout-builder';
 import type { BuilderSection } from '@/components/cms/section-builder';
 import { buttonClasses } from '@/components/ui/button';
+import { parseBlockContent } from '@/lib/cms/blocks';
 
 export const metadata: Metadata = { title: 'Blog layout' };
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export default async function BlogLayoutAdmin() {
       name: row.name,
       isVisible: row.isVisible,
       sortOrder: row.sortOrder,
-      content: (row.content ?? {}) as Record<string, unknown>,
+      content: parseBlockContent(row.blockType, row.content),
       settings: (row.settings ?? {}) as Record<string, unknown>,
     }));
 

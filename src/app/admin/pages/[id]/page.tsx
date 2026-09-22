@@ -16,6 +16,7 @@ import { buttonClasses } from '@/components/ui/button';
 import type { FieldValues } from '@/components/cms/field-renderer';
 import { getCountryById, getDefaultCountry, listActiveCountries } from '@/lib/country/registry';
 import { countryPath } from '@/lib/country/routing';
+import { parseBlockContent } from '@/lib/cms/blocks';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,7 +88,7 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
     name: section.name,
     isVisible: section.isVisible,
     sortOrder: section.sortOrder,
-    content: (section.content ?? {}) as FieldValues,
+    content: parseBlockContent(section.blockType, section.content) as FieldValues,
     settings: (section.settings ?? {}) as FieldValues,
   }));
 

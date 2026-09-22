@@ -15,6 +15,7 @@ import { ContentStatusBadge } from '@/components/admin/lead-status-badge';
 import { buttonClasses } from '@/components/ui/button';
 import { getCountryById, getDefaultCountry, listActiveCountries } from '@/lib/country/registry';
 import { countryPath } from '@/lib/country/routing';
+import { parseBlockContent } from '@/lib/cms/blocks';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,7 +118,7 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
     name: row.name,
     isVisible: row.isVisible,
     sortOrder: row.sortOrder,
-    content: (row.content ?? {}) as Record<string, unknown>,
+    content: parseBlockContent(row.blockType, row.content),
     settings: (row.settings ?? {}) as Record<string, unknown>,
   }));
 

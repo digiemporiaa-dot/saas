@@ -106,10 +106,18 @@ export async function addProductSection(input: {
       return failure('That block cannot be added here.');
     }
 
+    // Adding to a surface that has never been opened materialises it first, so
+    // the new section joins the arrangement rather than replacing it.
+    await materialiseProductSurface(product.id, surface);
+
     /*
      * A singleton block is part of the page's anatomy — one header, one price
      * box — so adding a second is rejected rather than silently producing two
      * titles for one product.
+     *
+     * Counted after the arrangement exists, never before: the built-in one
+     * already carries the header and the price box, so a count taken while the
+     * surface was still empty would wave through a second of either.
      */
     if (definition.singleton) {
       const existing = await prisma.productSection.count({
@@ -117,10 +125,6 @@ export async function addProductSection(input: {
       });
       if (existing > 0) return failure(`“${definition.label}” is already on this layout.`);
     }
-
-    // Adding to a surface that has never been opened materialises it first, so
-    // the new section joins the arrangement rather than replacing it.
-    await materialiseProductSurface(product.id, surface);
 
     const last = await prisma.productSection.findFirst({
       where: { productId: product.id, surface },
