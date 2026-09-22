@@ -96,7 +96,6 @@ export async function ProductSurface({
 
   const { layout } = settings;
   const withSidebar = layout.sidebarEnabled && sidebar.some((section) => section.isVisible);
-  const sidebarFirst = layout.sidebarPosition === 'left';
 
   return (
     <div
@@ -109,35 +108,27 @@ export async function ProductSurface({
       >
         <div
           className={cn(
-            'grid gap-12 lg:gap-16',
-            withSidebar && 'lg:[grid-template-columns:var(--product-columns)]',
+            'product-layout',
+            !withSidebar && 'product-layout--no-sidebar',
+            withSidebar && layout.sidebarPosition === 'left' && 'product-layout--left',
+            withSidebar && layout.mobileSidebar === 'above' && 'product-layout--aside-above',
+            withSidebar && layout.mobileSidebar === 'hidden' && 'product-layout--aside-hidden',
           )}
-          style={
-            withSidebar
-              ? ({
-                  ['--product-columns' as string]: sidebarFirst
-                    ? 'var(--product-sidebar-width, 33%) 1fr'
-                    : '1fr var(--product-sidebar-width, 33%)',
-                  gap: 'var(--product-sidebar-gap)',
-                } as React.CSSProperties)
-              : undefined
-          }
         >
-          {withSidebar && sidebarFirst ? (
-            <ProductAside sections={sidebar} ctx={ctx} sticky={layout.sidebarSticky} mobile={layout.mobileSidebar} />
-          ) : null}
-
           {/* A flex column rather than `space-y`, so the gap between sections
               is one CSS variable the design screen can set. */}
           <div
-            className="flex min-w-0 flex-col"
+            className="product-layout__main flex flex-col"
             style={{ gap: 'var(--product-section-gap, 3rem)' }}
           >
             <SectionList sections={detail} product={ctx} country={country} container={false} />
           </div>
 
-          {withSidebar && !sidebarFirst ? (
-            <ProductAside sections={sidebar} ctx={ctx} sticky={layout.sidebarSticky} mobile={layout.mobileSidebar} />
+          {/* The sidebar follows the content in the markup as well as in the
+              grid, so a phone reads the product first whichever column the
+              sidebar takes on a wide screen. */}
+          {withSidebar ? (
+            <ProductAside sections={sidebar} ctx={ctx} sticky={layout.sidebarSticky} />
           ) : null}
         </div>
       </div>
@@ -171,29 +162,24 @@ export async function ProductSurface({
  * Sticky and mobile placement are design settings rather than per-section
  * ones: a price box that sticks on one product and not another is an
  * inconsistency a visitor notices, and neither is worth a control on every
- * widget.
+ * widget. Both live in `.product-layout` in globals.css, where the phone
+ * placement is a row of the grid rather than a stack of order utilities.
  */
 function ProductAside({
   sections,
   ctx,
   sticky,
-  mobile,
 }: {
   sections: RenderableSection[];
   ctx: ProductRenderContext;
   sticky: boolean;
-  mobile: 'below' | 'above' | 'hidden';
 }) {
   return (
     <aside
       className={cn(
-        'space-y-6',
-        mobile === 'hidden' && 'hidden lg:block',
-        // Ordering only applies while the grid is a single column.
-        mobile === 'above' ? 'order-first lg:order-none' : 'order-last lg:order-none',
-        sticky && 'lg:sticky lg:self-start',
+        'product-layout__aside space-y-6',
+        sticky && 'product-layout__aside--sticky',
       )}
-      style={sticky ? { top: 'var(--product-sticky-offset, 96px)' } : undefined}
     >
       <SectionList
         sections={sections}

@@ -1114,6 +1114,51 @@
     .blog-layout__aside--sticky { position: static; }
   }
 
+  /* --- product content / sidebar layout ----------------------------------
+     Named areas rather than source order, so the column the sidebar takes on a
+     wide screen is a grid decision and the markup stays in reading order. */
+  .product-layout {
+    display: grid;
+    gap: var(--product-sidebar-gap, 3rem);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "main" "aside";
+    align-items: start;
+  }
+  .product-layout--no-sidebar { grid-template-areas: "main"; }
+  .product-layout__main { grid-area: main; min-width: 0; }
+  .product-layout__aside { grid-area: aside; min-width: 0; }
+
+  @media (min-width: 1024px) {
+    .product-layout {
+      gap: var(--product-sidebar-gap, 4rem);
+      grid-template-columns: minmax(0, 1fr) minmax(0, var(--product-sidebar-width, 33%));
+      grid-template-areas: "main aside";
+    }
+    .product-layout--left {
+      grid-template-columns: minmax(0, var(--product-sidebar-width, 33%)) minmax(0, 1fr);
+      grid-template-areas: "aside main";
+    }
+    .product-layout--no-sidebar {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: "main";
+    }
+    .product-layout__aside--sticky {
+      position: sticky;
+      top: var(--product-sticky-offset, 96px);
+    }
+  }
+
+  /*
+    On a phone the sidebar is the last row of the page. A visitor arriving from
+    a search result should meet the product before the price box, so the column
+    that was beside the content ends up under it. "Above" puts it back on top,
+    "hidden" drops it.
+  */
+  @media (max-width: 1023px) {
+    .product-layout--aside-above { grid-template-areas: "aside" "main"; }
+    .product-layout--aside-hidden .product-layout__aside { display: none; }
+  }
+
   /* Sections inside the article column are stacked, not full-width bands. */
   .cms-article-column .cms-section {
     padding-top: var(--sec-pt, 0);
