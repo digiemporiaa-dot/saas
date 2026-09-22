@@ -190,29 +190,38 @@ export async function seedAdmin() {
 }
 
 export async function seedSettings() {
+  /*
+   * Annotated rather than inlined, so a field the schema no longer has fails
+   * the typecheck here.
+   *
+   * `upsert`'s `create` is an XOR of the checked and unchecked input types, and
+   * TypeScript does not apply excess-property checking across a union — so a
+   * column removed from the schema stayed in this literal, compiled clean, and
+   * failed at `RUN_SEED` time on the deployment server. A plain annotated const
+   * gets the check.
+   */
+  const siteSeed: Prisma.WebsiteSettingsUncheckedCreateInput = {
+    id: 'singleton',
+    siteName: 'CloudShelf',
+    siteTitle: 'Authorised Dropbox Reseller',
+    siteDescription:
+      'Dropbox Business and Enterprise licences with local billing, guided migration and named support.',
+    siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
+    contactEmail: 'sales@example.com',
+    contactPhone: '+91 80 4718 0000',
+    address: '2nd Floor, Prestige Tower, Bengaluru 560001, India',
+    linkedinUrl: 'https://www.linkedin.com/',
+    announcementEnabled: true,
+    announcementText: 'Free migration for teams moving from Google Drive or Box — until 31 March.',
+    announcementUrl: '/contact',
+    headerCtaLabel: 'Talk to Sales',
+    headerCtaUrl: '/contact',
+  };
+
   await prisma.websiteSettings.upsert({
     where: { id: 'singleton' },
     update: {},
-    create: {
-      id: 'singleton',
-      siteName: 'CloudShelf',
-      siteTitle: 'Authorised Dropbox Reseller',
-      siteDescription:
-        'Dropbox Business and Enterprise licences with local billing, guided migration and named support.',
-      siteUrl: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-      contactEmail: 'sales@example.com',
-      contactPhone: '+91 80 4718 0000',
-      address: '2nd Floor, Prestige Tower, Bengaluru 560001, India',
-      linkedinUrl: 'https://www.linkedin.com/',
-      announcementEnabled: true,
-      announcementText: 'Free migration for teams moving from Google Drive or Box — until 31 March.',
-      announcementUrl: '/contact',
-      headerCtaLabel: 'Talk to Sales',
-      headerCtaUrl: '/contact',
-      footerDescription:
-        'An authorised Dropbox reseller. Licences, migration, onboarding and support for teams of every size.',
-      copyrightText: '© CloudShelf. Dropbox is a trademark of Dropbox, Inc.',
-    },
+    create: siteSeed,
   });
 
   await prisma.seoSettings.upsert({
