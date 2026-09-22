@@ -468,6 +468,161 @@
   button.site-nav-link.is-active { color: var(--header-link-active, rgb(var(--brand-primary))); }
 
   /* -------------------------------------------------------------------------
+   * Footer
+   *
+   * Every value below carries the built-in footer as its fallback, so a site
+   * that has never opened the Footer screen renders exactly this and a field
+   * left blank there changes nothing.
+   * ---------------------------------------------------------------------- */
+  .site-footer {
+    background: var(--footer-bg, rgb(var(--brand-background)));
+    color: var(--footer-text, rgb(var(--brand-muted)));
+  }
+
+  .site-footer__inner {
+    width: 100%;
+    max-width: var(--footer-width, 80rem);
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .site-footer__inner { padding-inline: 1.5rem; }
+  }
+
+  .site-footer__grid {
+    display: grid;
+    align-items: start;
+    padding-block: var(--footer-padding-y, 3.5rem);
+    column-gap: var(--footer-column-gap, 2.5rem);
+    row-gap: var(--footer-row-gap, 2.5rem);
+    grid-template-columns: var(--footer-cols, repeat(4, minmax(0, 1fr)));
+  }
+
+  @media (max-width: 1023px) {
+    .site-footer__grid {
+      grid-template-columns: var(--footer-cols-tablet, repeat(2, minmax(0, 1fr)));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .site-footer__grid {
+      grid-template-columns: var(--footer-cols-mobile, minmax(0, 1fr));
+    }
+  }
+
+  .site-footer__wordmark {
+    font-family: var(--font-heading, inherit);
+    font-size: 1.375rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: var(--footer-heading, rgb(var(--brand-text)));
+  }
+
+  .site-footer__lede {
+    margin-top: 1.25rem;
+    max-width: 22rem;
+    font-size: 0.9375rem;
+    line-height: 1.6;
+  }
+
+  .site-footer__heading {
+    font-family: var(--font-heading, inherit);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--footer-heading, rgb(var(--brand-text)));
+  }
+
+  .site-footer__links {
+    margin-top: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    font-size: 0.9375rem;
+    list-style: none;
+  }
+
+  .site-footer__link {
+    color: var(--footer-link, inherit);
+    transition: color 0.15s ease;
+  }
+  .site-footer__link:hover { color: var(--footer-link-hover, rgb(var(--brand-primary))); }
+
+  .site-footer__contact {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .site-footer__contact-icon {
+    height: 1.125rem;
+    width: 1.125rem;
+    flex-shrink: 0;
+    color: var(--footer-icon, rgb(var(--brand-primary)));
+  }
+
+  /* --- social icons ------------------------------------------------------ */
+  .site-footer__socials {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    list-style: none;
+  }
+
+  .site-footer__social {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: var(--footer-social-size, 2.5rem);
+    width: var(--footer-social-size, 2.5rem);
+    border-radius: 9999px;
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+  }
+  .site-footer__social:hover { color: var(--footer-link-hover, rgb(var(--brand-primary))); }
+
+  /*
+    Tinted from the footer's own text colour rather than from a fixed white or
+    black, so one rule reads on a pale footer and on a dark one.
+  */
+  .site-footer__social--outline {
+    border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  }
+  .site-footer__social--outline:hover {
+    border-color: color-mix(in srgb, currentColor 45%, transparent);
+  }
+  .site-footer__social--filled {
+    background: color-mix(in srgb, currentColor 10%, transparent);
+  }
+  .site-footer__social--filled:hover {
+    background: color-mix(in srgb, currentColor 20%, transparent);
+  }
+
+  /* --- the bottom bar ---------------------------------------------------- */
+  .site-footer__rule {
+    height: 1px;
+    background: var(--footer-divider, rgb(var(--brand-border)));
+    max-width: var(--footer-width, 80rem);
+    margin-inline: auto;
+  }
+
+  /* From one edge of the screen to the other, past the column it sits under. */
+  .site-footer__rule--bleed {
+    max-width: none;
+  }
+
+  .site-footer__bottom {
+    display: flex;
+    padding-block: 1.5rem;
+    font-size: 0.875rem;
+  }
+  .site-footer__bottom[data-align='center'] { justify-content: center; text-align: center; }
+  .site-footer__bottom[data-align='left'] { justify-content: flex-start; }
+  .site-footer__bottom[data-align='between'] { justify-content: space-between; }
+
+  /* -------------------------------------------------------------------------
    * Form design engine
    *
    * One stylesheet for every form on the site — lead, contact, popup, hero,

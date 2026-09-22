@@ -8,6 +8,7 @@ import {
 } from "@/lib/services/navigation";
 import { MaintenanceNotice } from "@/components/public/maintenance-notice";
 import { SiteHeader } from "@/components/public/site-header";
+import { SiteFooter } from "@/components/public/site-footer";
 import { PopupHost } from "@/components/public/popup-host";
 import { JsonLd } from "@/components/seo/json-ld";
 import { organizationSchema, websiteSchema } from "@/lib/seo/structured-data";
@@ -132,6 +133,7 @@ export default async function PublicLayout({
       <main id="main" className="min-h-[60vh]">
         {children}
       </main>
+      {chrome.showFooter ? <SiteFooter settings={site} local={local} country={country} /> : null}
       <PopupHost
         basePath={countryPath(country)}
         popups={visiblePopups.map((p) => ({

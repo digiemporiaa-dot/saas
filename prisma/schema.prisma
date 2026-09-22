@@ -1371,6 +1371,28 @@ model ProductSection {
 /// Presentation groups are stored as validated JSON rather than as columns so
 /// the controls can grow without a migration per control — the same approach
 /// `BlogSettings`, `PageSection.settings` and `Form.design` already use.
+/// The site footer, as one row.
+///
+/// Deliberately not a builder. The footer that came before this was a list of
+/// CMS blocks with its own screen, its own registry entries and a second set
+/// of switches on the settings form, and the three of them disagreed often
+/// enough that nobody could tell which one a change had gone into. This is
+/// one row, read by one component, edited on one screen.
+///
+/// Two JSON documents rather than thirty columns: `content` is what the footer
+/// says and `design` is what it looks like, each parsed by its own schema on
+/// the way out, so adding a field is a schema change and not a migration.
+model FooterSettings {
+  id String @id @default("singleton")
+
+  /// Brand, link columns, the contact column and the bottom bar.
+  content Json @default("{}")
+  /// Colours, spacing, widths and the social icon style.
+  design  Json @default("{}")
+
+  updatedAt DateTime @updatedAt
+}
+
 model ProductSettings {
   id String @id @default("singleton")
 
