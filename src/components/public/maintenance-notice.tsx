@@ -17,7 +17,7 @@ export function MaintenanceNotice({
   return (
     <main
       id="main"
-      className="flex min-h-screen flex-col items-center justify-center px-6 py-16 text-center"
+      className="flex min-h-dvh flex-col items-center justify-center px-6 py-16 text-center"
     >
       {logoUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- no layout shift budget on a standalone holding page

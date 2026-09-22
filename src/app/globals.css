@@ -197,6 +197,23 @@
     @apply text-balance;
   }
 
+  /*
+   * A word longer than the screen breaks rather than widening the page.
+   *
+   * The content here is somebody else's: a product name with no spaces, a
+   * customer's email, a pasted URL in a paragraph. At a heading's size, one of
+   * those is wider than a phone on its own, and the page then scrolls sideways
+   * for the sake of a single word.
+   *
+   * `overflow-wrap` only breaks a word that has nowhere else to go, so
+   * ordinary text wraps at its spaces exactly as before. `break-all`, which
+   * would break every word wherever it happened to land, is deliberately not
+   * what this is.
+   */
+  h1, h2, h3, h4, h5, h6, p, li, dd, dt, td, th, figcaption, blockquote, label {
+    overflow-wrap: break-word;
+  }
+
   :focus-visible {
     @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-surface;
   }

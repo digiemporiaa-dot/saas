@@ -130,10 +130,20 @@ function MegaPanel({
   return (
     <div
       className={cn(
-        'absolute top-full w-screen px-4 pt-2',
+        'absolute top-full px-4 pt-2',
         item.megaAlign === 'left' ? 'left-0' : 'left-1/2 -translate-x-1/2',
       )}
-      style={{ maxWidth: full ? undefined : width }}
+      /*
+       * Clamped to the viewport rather than `w-screen`.
+       *
+       * `100vw` includes the vertical scrollbar, so a panel that wide put a
+       * horizontal scrollbar on every page that had one — about fifteen pixels
+       * of nothing, on the widest screens as well as the narrow ones.
+       */
+      style={{
+        width: full ? 'calc(100vw - 2rem)' : `min(${width}, calc(100vw - 2rem))`,
+        maxWidth: 'calc(100vw - 2rem)',
+      }}
     >
       <div
         className="animate-slide-up mx-auto rounded-xl border border-hairline bg-surface p-6 shadow-xl"

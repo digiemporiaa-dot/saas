@@ -10,7 +10,7 @@ import Link from 'next/link';
  */
 export default function Forbidden() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/[0.04] px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center bg-muted/[0.04] px-4 py-12">
       <div className="w-full max-w-md text-center">
         <p className="font-heading text-sm font-semibold uppercase tracking-wide text-muted">
           403

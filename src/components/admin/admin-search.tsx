@@ -235,7 +235,7 @@ export function AdminSearch({
 
       {open ? (
         <div
-          className="fixed inset-0 z-modal flex items-start justify-center p-4 pt-[10vh] sm:pt-[15vh]"
+          className="fixed inset-0 z-modal flex items-start justify-center p-4 pt-[10dvh] sm:pt-[15dvh]"
           role="dialog"
           aria-modal="true"
           aria-label="Command palette"
@@ -247,7 +247,7 @@ export function AdminSearch({
           />
 
           <div
-            className="relative flex max-h-[70vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-2xl"
+            className="relative flex max-h-[70dvh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-hairline bg-surface shadow-2xl"
             onKeyDown={onKeyDown}
           >
             <div className="flex shrink-0 items-center gap-3 border-b border-hairline px-4">

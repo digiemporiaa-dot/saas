@@ -193,8 +193,8 @@ function Summary({
       </div>
 
       {rows.length > 0 ? (
-        <div className="overflow-hidden rounded-lg border border-hairline">
-          <table className="w-full text-sm">
+        <div className="scroll-x rounded-lg border border-hairline">
+          <table className="w-full min-w-[26rem] text-sm">
             <thead className="bg-muted/[0.03] text-xs uppercase tracking-wide text-muted">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left font-medium">

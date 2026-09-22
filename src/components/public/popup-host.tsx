@@ -148,7 +148,12 @@ export function PopupHost({
         role="dialog"
         aria-modal="true"
         aria-label={active.heading ?? 'Offer'}
-        className="relative z-10 w-full max-w-lg animate-slide-up overflow-hidden rounded-2xl bg-surface shadow-2xl"
+        /*
+         * Bounded by the screen, not by its own content: a popup with an image
+         * and a paragraph is taller than a phone in landscape, and one that
+         * cannot scroll simply loses its button off the bottom.
+         */
+        className="relative z-10 flex max-h-[92dvh] w-full max-w-lg animate-slide-up flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl"
       >
         <button
           type="button"
@@ -164,12 +169,12 @@ export function PopupHost({
           <img
             src={active.imageUrl}
             alt={active.imageAlt ?? ''}
-            className="h-40 w-full object-cover"
+            className="h-40 w-full shrink-0 object-cover"
             loading="lazy"
           />
         ) : null}
 
-        <div className="space-y-4 p-6">
+        <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           {active.heading ? (
             <h2 className="font-heading text-xl font-bold text-content">{active.heading}</h2>
           ) : null}

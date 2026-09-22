@@ -16,7 +16,7 @@ export default async function LoginPage({
   const [params, site] = await Promise.all([searchParams, getWebsiteSettings()]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/[0.04] px-4 py-12">
+    <div className="flex min-h-dvh items-center justify-center bg-muted/[0.04] px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <Link href="/" className="inline-flex items-center gap-2">

@@ -227,7 +227,7 @@ export function SectionWorkspace({
 
       <div
         className={cn(
-          'grid gap-4 lg:h-[calc(100vh-13rem)] lg:grid-cols-[18rem_1fr] lg:gap-3',
+          'grid gap-4 lg:h-[calc(100dvh-13rem)] lg:grid-cols-[18rem_1fr] lg:gap-3',
           className,
         )}
       >

@@ -85,7 +85,7 @@ export function Dialog({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative z-10 flex max-h-[92vh] w-full animate-slide-up flex-col rounded-t-2xl bg-surface shadow-2xl sm:rounded-2xl',
+          'relative z-10 flex max-h-[92dvh] w-full animate-slide-up flex-col rounded-t-2xl bg-surface shadow-2xl sm:rounded-2xl',
           sizes[size],
         )}
       >
