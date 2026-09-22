@@ -18,7 +18,7 @@ export default async function ProductCategories() {
   const rows = await prisma.productCategory.findMany({
     // Only what this market offers. The rows are shared, so an unfiltered
     // list would show another market's categories and invite removing them.
-    where: { countries: { some: { countryId: scope.country.id } } },
+    where: { deletedAt: null, countries: { some: { countryId: scope.country.id } } },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: {
       id: true,

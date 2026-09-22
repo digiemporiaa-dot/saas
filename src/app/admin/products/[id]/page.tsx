@@ -59,10 +59,15 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
       },
     }),
     prisma.productCategory.findMany({
+      where: { deletedAt: null },
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       select: { id: true, name: true },
     }),
-    prisma.brand.findMany({ orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }], select: { id: true, name: true } }),
+    prisma.brand.findMany({
+      where: { deletedAt: null },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: { id: true, name: true },
+    }),
     prisma.form.findMany({
       where: { deletedAt: null },
       orderBy: { name: 'asc' },

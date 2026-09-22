@@ -119,10 +119,12 @@ export default async function ProductsAdmin({
     }),
     prisma.product.count({ where }),
     prisma.productCategory.findMany({
+      where: { deletedAt: null },
       orderBy: { sortOrder: 'asc' },
       select: { id: true, name: true },
     }),
     prisma.brand.findMany({
+      where: { deletedAt: null },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),

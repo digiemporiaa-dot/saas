@@ -19,7 +19,7 @@ export default async function BrandsAdmin() {
 
   const brands = await prisma.brand.findMany({
     // Only what this market carries. See the categories screen.
-    where: { countries: { some: { countryId: scope.country.id } } },
+    where: { deletedAt: null, countries: { some: { countryId: scope.country.id } } },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     include: {
       logo: { select: { url: true } },

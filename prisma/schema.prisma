@@ -755,14 +755,17 @@ model ProductCategory {
   sortOrder   Int     @default(0)
   imageId     String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete. See `Brand.deletedAt` — same reasoning, same recycle bin.
+  deletedAt DateTime?
 
   image     Media?                   @relation("CategoryImage", fields: [imageId], references: [id], onDelete: SetNull)
   products  Product[]
   countries ProductCategoryCountry[]
 
   @@index([slug])
+  @@index([deletedAt])
 }
 
 /// Which markets offer a product category.
@@ -845,8 +848,12 @@ model Brand {
   sortOrder   Int     @default(0)
   logoId      String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  /// Soft delete. A removed brand waits in the recycle bin rather than being
+  /// destroyed, so a mistake costs nothing to undo and the products that point
+  /// at it keep pointing at it.
+  deletedAt DateTime?
 
   logo      Media?         @relation("BrandLogo", fields: [logoId], references: [id], onDelete: SetNull)
   products  Product[]
@@ -854,6 +861,7 @@ model Brand {
 
   @@index([slug])
   @@index([sortOrder])
+  @@index([deletedAt])
 }
 
 model Product {

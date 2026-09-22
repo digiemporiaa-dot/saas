@@ -57,6 +57,7 @@ export async function listProductCategoryOptions(): Promise<PickerOption[]> {
   // full product permissions.
   if (!userCan(user, 'products.view') && !userCan(user, 'pages.edit')) return [];
   const rows = await prisma.productCategory.findMany({
+    where: { deletedAt: null },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: { id: true, name: true },
   });
@@ -68,6 +69,7 @@ export async function listBrandOptions(): Promise<PickerOption[]> {
   const user = await getCurrentUser();
   if (!userCan(user, 'products.view') && !userCan(user, 'pages.edit')) return [];
   const rows = await prisma.brand.findMany({
+    where: { deletedAt: null },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: { id: true, name: true, _count: { select: { products: true } } },
   });

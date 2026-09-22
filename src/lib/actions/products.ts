@@ -968,9 +968,13 @@ export async function deleteProductCategory(categoryId: string): Promise<ActionR
     if (!category) return failure('That category no longer exists.');
 
     const outcome = await removeFrom('PRODUCT_CATEGORY', categoryId, scope.country.id, {
-      // Products survive either way: the relation is set to null by the schema.
+      // Retired rather than destroyed. See `deleteBrand` — same reasoning,
+      // same recycle bin, and the products keep their category either way.
       retireWhenUnused: async (tx) => {
-        await tx.productCategory.delete({ where: { id: categoryId } });
+        await tx.productCategory.update({
+          where: { id: categoryId },
+          data: { deletedAt: new Date(), slug: `${category.slug}-deleted-${Date.now()}` },
+        });
       },
     });
 
@@ -984,7 +988,7 @@ export async function deleteProductCategory(categoryId: string): Promise<ActionR
       entity: 'ProductCategory',
       entityId: categoryId,
       summary: outcome.retired
-        ? `Removed category “${category.name}” from ${scope.country.name}; no market used it, so it was deleted`
+        ? `Removed category “${category.name}” from ${scope.country.name}; no market used it, so it went to the recycle bin`
         : `Removed category “${category.name}” from ${scope.country.name} (${outcome.remaining} other market(s) keep it)`,
     });
 
@@ -993,7 +997,7 @@ export async function deleteProductCategory(categoryId: string): Promise<ActionR
     return success(
       undefined,
       outcome.retired
-        ? 'Category removed. No other market used it, so it has been deleted.'
+        ? 'Category removed. No other market used it, so it is in the recycle bin.'
         : `Removed from ${scope.country.name}. ${outcome.remaining} other market(s) still use it.`,
     );
   } catch (error) {
@@ -1228,9 +1232,17 @@ export async function deleteBrand(brandId: string): Promise<ActionResult> {
     if (!brand) return failure('That brand no longer exists.');
 
     const outcome = await removeFrom('BRAND', brandId, scope.country.id, {
-      // Products survive: the relation is SET NULL, so nothing is cascaded away.
+      /*
+       * No market carries it any more, so the shared row is retired — marked
+       * deleted and parked under a freed slug, not destroyed. It waits in the
+       * recycle bin, the products pointing at it keep pointing at it, and the
+       * URL it had is available again immediately.
+       */
       retireWhenUnused: async (tx) => {
-        await tx.brand.delete({ where: { id: brandId } });
+        await tx.brand.update({
+          where: { id: brandId },
+          data: { deletedAt: new Date(), slug: `${brand.slug}-deleted-${Date.now()}` },
+        });
       },
     });
 
@@ -1244,7 +1256,7 @@ export async function deleteBrand(brandId: string): Promise<ActionResult> {
       entity: 'Brand',
       entityId: brandId,
       summary: outcome.retired
-        ? `Removed brand “${brand.name}” from ${scope.country.name}; no market carried it, so it was deleted`
+        ? `Removed brand “${brand.name}” from ${scope.country.name}; no market carried it, so it went to the recycle bin`
         : `Removed brand “${brand.name}” from ${scope.country.name} (${outcome.remaining} other market(s) keep it)`,
     });
 
@@ -1254,10 +1266,8 @@ export async function deleteBrand(brandId: string): Promise<ActionResult> {
     return success(
       undefined,
       outcome.retired
-        ? `Brand removed. No other market carried it, so it has been deleted${
-            brand._count.products > 0
-              ? `; ${brand._count.products} product(s) no longer have a brand`
-              : ''
+        ? `Brand removed. No other market carried it, so it is in the recycle bin${
+            brand._count.products > 0 ? `, with its ${brand._count.products} product(s)` : ''
           }.`
         : `Removed from ${scope.country.name}. ${outcome.remaining} other market(s) still carry it.`,
     );

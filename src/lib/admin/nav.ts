@@ -66,6 +66,7 @@ export const ADMIN_NAV: AdminNavModule[] = [
         href: '/admin/pages',
         permission: 'pages.view',
         description: 'Build and publish website pages',
+        notMatches: ['/admin/pages/categories'],
       },
       {
         label: 'Page Categories',
@@ -97,6 +98,12 @@ export const ADMIN_NAV: AdminNavModule[] = [
         href: '/admin/settings/design',
         permission: 'settings.manage',
         description: 'Colours, typography, buttons and layout',
+      },
+      {
+        label: 'Recycle Bin',
+        href: '/admin/trash',
+        permission: 'pages.view',
+        description: 'Restore a deleted page, article, category or brand',
       },
     ],
   },
