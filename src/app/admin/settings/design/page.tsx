@@ -35,7 +35,7 @@ export default async function WebsiteDesignAdmin() {
     <div className="mx-auto max-w-4xl">
       <AdminPageHeader
         title="Website design"
-        description="Colours, fonts, buttons and layout for the whole website. Every CMS section can override these individually."
+        description="Colours, fonts, buttons, layout, and the header and footer. Every CMS section can override these individually."
         actions={
           <Link
             href="/"
@@ -51,7 +51,7 @@ export default async function WebsiteDesignAdmin() {
       <WebsiteSettingsForm
         initial={initial}
         canEdit={userCan(user, 'settings.manage')}
-        only={['theme', 'typography', 'design']}
+        only={['theme', 'typography', 'design', 'header', 'footer']}
       />
     </div>
   );

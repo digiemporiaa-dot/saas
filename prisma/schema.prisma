@@ -1950,6 +1950,11 @@ model NavigationItem {
   icon           String?
   openInNewTab   Boolean     @default(false)
   isHighlighted  Boolean     @default(false)
+  /// Renders this item's children as a full-width panel of columns rather than
+  /// a single dropdown list. A child then becomes a column heading and its own
+  /// children become the links under it.
+  megaMenu       Boolean     @default(false)
+  megaColumns    Int         @default(3)
   sortOrder      Int         @default(0)
   isVisible      Boolean     @default(true)
 
@@ -2047,11 +2052,59 @@ model WebsiteSettings {
   /// "left" (the original), "center" or "right".
   headerMenuAlign         String  @default("left")
 
+  /// Header appearance. Every one of these is blank or "" by default, which
+  /// means "whatever the header already looked like" — the renderer only
+  /// emits a CSS variable for a value somebody actually set, so a site that
+  /// never opens this screen is untouched by it.
+  headerHeight           String  @default("")
+  headerHeightMobile     String  @default("")
+  headerWidth            String  @default("")
+  headerBg               String  @default("")
+  headerText             String  @default("")
+  headerLinkHover        String  @default("")
+  headerLinkActive       String  @default("")
+  headerBorderColor      String  @default("")
+  headerBorder           Boolean @default(true)
+  headerSticky           Boolean @default(true)
+  headerShadow           String  @default("none")
+  headerMenuGap          String  @default("")
+  headerMenuSize         String  @default("")
+  headerMenuWeight       String  @default("")
+  headerMenuTransform    String  @default("none")
+  headerLogoHeight       String  @default("")
+  headerLogoHeightMobile String  @default("")
+  headerLogoMaxWidth     String  @default("")
+  announcementBgColor    String  @default("")
+  announcementTextColor  String  @default("")
+
+  /// The header buttons: an icon from the shipped set, which side it sits on,
+  /// and which button style each one uses.
+  headerCtaIcon              String @default("")
+  headerCtaIconSide          String @default("left")
+  headerCtaVariant           String @default("primary")
+  headerSecondaryCtaIcon     String @default("")
+  headerSecondaryCtaIconSide String @default("left")
+  headerSecondaryCtaVariant  String @default("ghost")
+
   // Footer
   footerDescription       String? @db.Text
   footerNewsletterEnabled Boolean @default(false)
   footerNewsletterFormId  String?
   copyrightText           String?
+
+  /// Footer appearance. Blank means the footer it already had — the dark
+  /// brand-secondary panel — for the same reason as the header above.
+  footerBg           String @default("")
+  footerText         String @default("")
+  footerHeadingColor String @default("")
+  footerLinkColor    String @default("")
+  footerLinkHover    String @default("")
+  footerBorderColor  String @default("")
+  footerPaddingY     String @default("")
+  footerWidth        String @default("")
+  footerColumnGap    String @default("")
+  footerLogoHeight   String @default("")
+  footerSocialSize   String @default("")
 
   // Layout — global defaults every section can override
   containerWidth       String @default("72rem")

@@ -10,6 +10,7 @@ import { sanitizeText, safeUrl } from '@/lib/utils/sanitize';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { resolveActionCountry } from '@/lib/country/admin';
 import { assertCountryAccess } from '@/lib/country/access';
+import { CMS_ICON_NAMES } from '@/components/ui/icons';
 
 const menuSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(120),
@@ -120,8 +121,13 @@ const itemSchema = z.object({
   blogPostId: z.string().max(40).optional().nullable(),
   blogCategoryId: z.string().max(40).optional().nullable(),
   description: z.string().max(200).optional().nullable(),
+  /** An icon this app ships, shown in dropdowns and mega menus. */
+  icon: z.string().max(40).optional().nullable(),
   openInNewTab: z.boolean().default(false),
   isHighlighted: z.boolean().default(false),
+  /** Render this item's children as a panel of columns rather than a list. */
+  megaMenu: z.boolean().default(false),
+  megaColumns: z.coerce.number().int().min(1).max(5).catch(3).default(3),
   isVisible: z.boolean().default(true),
   children: z.array(z.lazy((): z.ZodTypeAny => itemSchema)).max(30).default([]),
 });
@@ -141,8 +147,11 @@ type ItemInput = {
   blogPostId?: string | null;
   blogCategoryId?: string | null;
   description?: string | null;
+  icon?: string | null;
   openInNewTab: boolean;
   isHighlighted: boolean;
+  megaMenu: boolean;
+  megaColumns: number;
   isVisible: boolean;
   children: ItemInput[];
 };
@@ -183,8 +192,13 @@ export async function saveNavigationItems(input: unknown): Promise<ActionResult>
               blogPostId: item.linkType === 'BLOG_POST' ? (item.blogPostId ?? null) : null,
               blogCategoryId: item.linkType === 'BLOG_CATEGORY' ? (item.blogCategoryId ?? null) : null,
               description: item.description ? sanitizeText(item.description) : null,
+              // Only a name from the shipped set is stored; anything else is
+              // no icon, which is what the renderer would show anyway.
+              icon: item.icon && CMS_ICON_NAMES.includes(item.icon) ? item.icon : null,
               openInNewTab: item.openInNewTab,
               isHighlighted: item.isHighlighted,
+              megaMenu: item.megaMenu,
+              megaColumns: item.megaColumns,
               isVisible: item.isVisible,
               sortOrder: (index + 1) * 10,
             },

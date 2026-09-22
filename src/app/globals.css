@@ -429,6 +429,29 @@
   }
 
   /* -------------------------------------------------------------------------
+   * Header and footer colours, from Settings -> Website design.
+   *
+   * Every rule keeps the original value as its own fallback, so a site that
+   * has set none of these renders exactly the chrome it rendered before the
+   * screen existed. The `.site-nav-link` selector is deliberately one class
+   * more specific than the Tailwind colour utility it overrides.
+   * ---------------------------------------------------------------------- */
+  a.site-nav-link { color: var(--header-text, rgb(var(--brand-text))); }
+  a.site-nav-link:hover { color: var(--header-link-hover, rgb(var(--brand-primary))); }
+  a.site-nav-link.is-active { color: var(--header-link-active, rgb(var(--brand-primary))); }
+
+  button.site-nav-link { color: var(--header-text, rgb(var(--brand-text))); }
+  button.site-nav-link:hover { color: var(--header-link-hover, rgb(var(--brand-primary))); }
+  button.site-nav-link.is-active { color: var(--header-link-active, rgb(var(--brand-primary))); }
+
+  .site-footer { background: var(--footer-bg, rgb(var(--brand-secondary))); }
+  .site-footer .site-footer-body { color: var(--footer-text, rgb(255 255 255 / 0.7)); }
+  .site-footer .site-footer-heading { color: var(--footer-heading, #fff); }
+  .site-footer a.site-footer-link { color: var(--footer-link, inherit); }
+  .site-footer a.site-footer-link:hover { color: var(--footer-link-hover, #fff); }
+  .site-footer .site-footer-rule { border-color: var(--footer-border, rgb(255 255 255 / 0.1)); }
+
+  /* -------------------------------------------------------------------------
    * Form design engine
    *
    * One stylesheet for every form on the site — lead, contact, popup, hero,

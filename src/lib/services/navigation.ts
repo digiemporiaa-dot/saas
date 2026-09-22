@@ -10,8 +10,17 @@ export type ResolvedNavItem = {
   label: string;
   href: string;
   description: string | null;
+  /** A name from the shipped icon set, shown in dropdowns and mega menus. */
+  icon: string | null;
   openInNewTab: boolean;
   isHighlighted: boolean;
+  /**
+   * Render this item's children as a panel of columns rather than a list. Each
+   * child then becomes a column heading and its own children the links under
+   * it — the same tree, read one level deeper.
+   */
+  megaMenu: boolean;
+  megaColumns: number;
   children: ResolvedNavItem[];
 };
 
@@ -92,8 +101,13 @@ export const getNavigations = cache(
           label: item.label,
           href: hrefFor(item, country),
           description: item.description,
+          icon: item.icon,
           openInNewTab: item.openInNewTab,
           isHighlighted: item.isHighlighted,
+          // A mega menu with no columns to lay out is a dropdown, so the flag
+          // only counts where there is something to arrange.
+          megaMenu: item.megaMenu,
+          megaColumns: Math.min(Math.max(item.megaColumns, 1), 5),
           children: build(item.id),
         }));
 

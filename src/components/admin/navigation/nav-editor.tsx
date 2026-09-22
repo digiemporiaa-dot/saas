@@ -23,6 +23,7 @@ import { GripVertical, Plus, Trash, ChevronDown, CornerDownRight } from 'lucide-
 import { saveNavigationItems } from '@/lib/actions/navigation';
 import { Card, CardHeader, CardBody } from '@/components/ui/card';
 import { Field, Input, Select, Switch } from '@/components/ui/field';
+import { IconSelect } from '@/components/cms/icon-select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/states';
@@ -48,8 +49,11 @@ export type EditorItem = {
   blogPostId: string;
   blogCategoryId: string;
   description: string;
+  icon: string;
   openInNewTab: boolean;
   isHighlighted: boolean;
+  megaMenu: boolean;
+  megaColumns: number;
   isVisible: boolean;
   children: EditorItem[];
 };
@@ -78,8 +82,11 @@ export function blankItem(): EditorItem {
     blogPostId: '',
     blogCategoryId: '',
     description: '',
+    icon: '',
     openInNewTab: false,
     isHighlighted: false,
+    megaMenu: false,
+    megaColumns: 3,
     isVisible: true,
     children: [],
   };
@@ -156,8 +163,11 @@ export function NavigationEditor({
         blogPostId: item.blogPostId || null,
         blogCategoryId: item.blogCategoryId || null,
         description: item.description || null,
+        icon: item.icon || null,
         openInNewTab: item.openInNewTab,
         isHighlighted: item.isHighlighted,
+        megaMenu: item.megaMenu,
+        megaColumns: item.megaColumns,
         isVisible: item.isVisible,
         children: toPayload(item.children),
       }));
@@ -324,6 +334,7 @@ function SortableItemRow(props: {
                   targets={props.targets}
                   canEdit={props.canEdit}
                   onChange={(patch) => props.onChildChange(child.key, patch)}
+                  isChild
                 />
               ) : null}
             </li>
@@ -413,11 +424,14 @@ function ItemFields({
   targets,
   canEdit,
   onChange,
+  isChild = false,
 }: {
   item: EditorItem;
   targets: NavTargets;
   canEdit: boolean;
   onChange: (patch: Partial<EditorItem>) => void;
+  /** Sub-items cannot open a panel of their own, so they are not offered one. */
+  isChild?: boolean;
 }) {
   return (
     <fieldset disabled={!canEdit} className="space-y-4 border-t border-hairline p-4">
@@ -539,6 +553,19 @@ function ItemFields({
             onChange={(e) => onChange({ description: e.target.value })}
           />
         </Field>
+
+        <Field
+          label="Icon"
+          htmlFor={`${item.key}-icon`}
+          hint="Shown beside the label in dropdowns and mega menus."
+          className="sm:col-span-2"
+        >
+          <IconSelect
+            id={`${item.key}-icon`}
+            value={item.icon}
+            onChange={(next: string) => onChange({ icon: next })}
+          />
+        </Field>
       </div>
 
       <div className="space-y-3 rounded-lg border border-hairline p-3">
@@ -557,6 +584,37 @@ function ItemFields({
           onChange={(next) => onChange({ isHighlighted: next })}
           label="Highlight this item"
         />
+        {/*
+          * A mega menu reads this item's tree one level deeper: each sub-item
+          * becomes a column heading and its own sub-items the links beneath
+          * it. Offered only on a top-level item, because that is the only
+          * place a panel can open.
+          */}
+        {!isChild ? (
+          <>
+            <Switch
+              checked={item.megaMenu}
+              onChange={(next) => onChange({ megaMenu: next })}
+              label="Open as a mega menu"
+              hint="A wide panel of columns instead of a dropdown list. Each sub-item becomes a column heading; add sub-items under it for the links."
+            />
+            {item.megaMenu ? (
+              <Field label="Columns" htmlFor={`${item.key}-mega-columns`}>
+                <Select
+                  id={`${item.key}-mega-columns`}
+                  value={String(item.megaColumns)}
+                  onChange={(e) => onChange({ megaColumns: Number(e.target.value) })}
+                >
+                  {[1, 2, 3, 4, 5].map((count) => (
+                    <option key={count} value={String(count)}>
+                      {count}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            ) : null}
+          </>
+        ) : null}
       </div>
     </fieldset>
   );

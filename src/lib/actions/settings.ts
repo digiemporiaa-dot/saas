@@ -9,6 +9,7 @@ import { sanitizeText, safeUrl } from '@/lib/utils/sanitize';
 import { encryptSecret } from '@/lib/utils/crypto';
 import { verifySmtp, sendMail } from '@/lib/email/mailer';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
+import { CMS_ICON_NAMES } from '@/components/ui/icons';
 
 const optional = (max: number) =>
   z
@@ -62,6 +63,17 @@ const unitlessNumber = (fallback: string) =>
   token(NUMBER_RE, fallback, 'Use a plain number such as 1.5');
 const optionalUnitlessNumber = optionalToken(NUMBER_RE, 'Use a plain number such as 1.2');
 const optionalFontSize = optionalToken(LENGTH_RE, 'Use a size like 15px or 0.95rem');
+/** A size somebody may leave blank, meaning "keep what it looks like now". */
+const optionalLength = optionalToken(LENGTH_RE, 'Use a value like 72px or 4.5rem');
+/** A colour somebody may leave blank, for the same reason. */
+const optionalColor = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => v ?? '')
+  .refine((v) => v === '' || /^#[0-9a-fA-F]{6}$/.test(v), 'Use a 6-digit hex colour like #0061FF');
+/** A weight somebody may leave blank. */
+const optionalWeight = optionalToken(/^[1-9]00$/, 'Choose a weight between 100 and 900');
 const letterSpacing = (fallback: string) =>
   token(TRACKING_RE, fallback, 'Use a value like -0.02em or 1px');
 
@@ -72,6 +84,23 @@ const optionalFontName = z
   .max(80)
   .optional()
   .transform((v) => v ?? '');
+
+/** An icon this app ships, or nothing. Never a name that renders blank. */
+const iconName = z
+  .string()
+  .trim()
+  .optional()
+  .transform((v) => (v ?? '').toLowerCase())
+  .refine((v) => v === '' || CMS_ICON_NAMES.includes(v), 'Choose an icon from the list');
+
+const buttonVariant = z.enum([
+  'primary',
+  'secondary',
+  'outline',
+  'ghost',
+  'subtle',
+  'link',
+]);
 
 const websiteSettingsSchema = z.object({
   siteName: z.string().trim().min(1, 'Site name is required').max(120),
@@ -153,10 +182,66 @@ const websiteSettingsSchema = z.object({
    */
   headerMenuAlign: z.enum(['left', 'center', 'right']).catch('left').default('left'),
 
+  /*
+   * Header appearance. Every size and colour here may be left blank, and blank
+   * means "leave it as it is" rather than zero or transparent — the renderer
+   * emits no variable for it and the component's own value stands. That is
+   * what makes this screen safe to open on a site nobody wants restyled.
+   */
+  headerHeight: optionalLength,
+  headerHeightMobile: optionalLength,
+  headerWidth: optionalLength,
+  headerBg: optionalColor,
+  headerText: optionalColor,
+  headerLinkHover: optionalColor,
+  headerLinkActive: optionalColor,
+  headerBorderColor: optionalColor,
+  headerBorder: z.coerce.boolean().default(true),
+  headerSticky: z.coerce.boolean().default(true),
+  headerShadow: z.enum(['none', 'sm', 'md', 'lg']).catch('none').default('none'),
+  headerMenuGap: optionalLength,
+  headerMenuSize: optionalFontSize,
+  headerMenuWeight: optionalWeight,
+  headerMenuTransform: z
+    .enum(['none', 'uppercase', 'lowercase', 'capitalize'])
+    .catch('none')
+    .default('none'),
+  headerLogoHeight: optionalLength,
+  headerLogoHeightMobile: optionalLength,
+  headerLogoMaxWidth: optionalLength,
+  announcementBgColor: optionalColor,
+  announcementTextColor: optionalColor,
+
+  /*
+   * The header buttons. An icon name is checked against the shipped set here
+   * as well as at render, so a value that would show nothing is rejected while
+   * the administrator is still looking at the field.
+   */
+  headerCtaIcon: iconName,
+  headerCtaIconSide: z.enum(['left', 'right']).catch('left').default('left'),
+  headerCtaVariant: buttonVariant.catch('primary').default('primary'),
+  headerSecondaryCtaIcon: iconName,
+  headerSecondaryCtaIconSide: z.enum(['left', 'right']).catch('left').default('left'),
+  headerSecondaryCtaVariant: buttonVariant.catch('ghost').default('ghost'),
+
   footerDescription: optional(600),
   footerNewsletterEnabled: z.coerce.boolean().default(false),
   footerNewsletterFormId: optional(40),
   copyrightText: optional(300),
+
+  /** Footer appearance. Blank means the footer it already had. */
+  footerBg: optionalColor,
+  footerText: optionalColor,
+  footerHeadingColor: optionalColor,
+  footerLinkColor: optionalColor,
+  footerLinkHover: optionalColor,
+  footerBorderColor: optionalColor,
+  footerPaddingY: optionalLength,
+  footerWidth: optionalLength,
+  footerColumnGap: optionalLength,
+  footerLogoHeight: optionalLength,
+  footerSocialSize: optionalLength,
+
   defaultCurrency: z.string().trim().length(3),
   maintenanceMode: z.coerce.boolean().default(false),
 });
@@ -176,6 +261,8 @@ export async function saveWebsiteSettings(formData: FormData): Promise<ActionRes
       announcementEnabled: raw.announcementEnabled === 'true',
       footerNewsletterEnabled: raw.footerNewsletterEnabled === 'true',
       maintenanceMode: raw.maintenanceMode === 'true',
+      headerBorder: raw.headerBorder !== 'false',
+      headerSticky: raw.headerSticky !== 'false',
     });
 
     // URL-ish fields are normalised through the same guard the renderer uses,

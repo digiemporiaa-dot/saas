@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ChevronDown, Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
-import { buttonClasses } from '@/components/ui/button';
+import { buttonClasses, type ButtonVariant } from '@/components/ui/button';
+import { resolveCmsIcon } from '@/components/ui/icons';
 import type { ResolvedNavItem } from '@/lib/services/navigation';
 import type { MarketOption } from '@/lib/country/switch';
 import { MarketSwitcher } from './market-switcher';
@@ -27,7 +28,135 @@ export type HeaderBrand = {
    * never touched the setting renders the header it already had.
    */
   menuAlign?: 'left' | 'center' | 'right';
+  /**
+   * Header buttons, beyond their label and link: an icon from the shipped set,
+   * the side it sits on, and which button style to use. All optional — a site
+   * that sets none of them gets the primary/ghost pair it always had.
+   */
+  ctaIcon?: string | null;
+  ctaIconSide?: 'left' | 'right';
+  ctaVariant?: ButtonVariant;
+  secondaryCtaIcon?: string | null;
+  secondaryCtaIconSide?: 'left' | 'right';
+  secondaryCtaVariant?: ButtonVariant;
+  /** Whether the header follows the page down. On unless switched off. */
+  sticky?: boolean;
+  /** Whether the hairline under the header is drawn. */
+  border?: boolean;
 };
+
+/**
+ * A header button: label, link, and an optional icon on either side.
+ *
+ * The icon is resolved through `resolveCmsIcon`, so what reaches the page is
+ * always an icon this app ships — a stored value can name one or name nothing,
+ * never bring its own markup.
+ */
+function HeaderButton({
+  label,
+  href,
+  icon,
+  side = 'left',
+  variant,
+  size,
+  className,
+}: {
+  label: string;
+  href: string;
+  icon?: string | null;
+  side?: 'left' | 'right';
+  variant: ButtonVariant;
+  size: 'sm' | 'lg';
+  className?: string;
+}) {
+  const Icon = resolveCmsIcon(icon);
+  return (
+    <Link href={href} className={buttonClasses(variant, size, cn('btn-tokens', className))}>
+      {Icon && side === 'left' ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
+      {label}
+      {Icon && side === 'right' ? <Icon className="h-4 w-4" aria-hidden="true" /> : null}
+    </Link>
+  );
+}
+
+/**
+ * The wide panel a mega-menu item opens.
+ *
+ * A dropdown and a mega menu are the same tree read at different depths, and
+ * the panel handles both shapes rather than demanding one:
+ *
+ * - **Grouped** — where any sub-item has sub-items of its own, each becomes a
+ *   column heading with its links beneath it.
+ * - **Flat** — where none does, the sub-items are simply dealt across the
+ *   columns as links.
+ *
+ * That second case is what makes the switch worth having on a menu that is
+ * only two levels deep: turning it on widens the list into columns instead of
+ * producing a panel of headings with nothing under them.
+ */
+function MegaPanel({ item, columns }: { item: ResolvedNavItem; columns: number }) {
+  const grouped = item.children.some((child) => child.children.length > 0);
+
+  return (
+    <div className="absolute left-1/2 top-full w-screen max-w-5xl -translate-x-1/2 px-4 pt-2">
+      <div
+        className="animate-slide-up rounded-xl border border-hairline bg-surface p-6 shadow-xl"
+        style={{
+          display: 'grid',
+          gap: grouped ? '1.5rem 2rem' : '0.25rem 1rem',
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+        }}
+      >
+        {grouped
+          ? item.children.map((group) => (
+              <div key={group.id} className="min-w-0">
+                <Link
+                  href={group.href}
+                  target={group.openInNewTab ? '_blank' : undefined}
+                  rel={group.openInNewTab ? 'noopener noreferrer' : undefined}
+                  className="block px-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted hover:text-brand"
+                >
+                  {group.label}
+                </Link>
+                {group.children.length > 0 ? (
+                  <ul className="mt-2 space-y-1">
+                    {group.children.map((child) => (
+                      <li key={child.id}>
+                        <NavPanelLink item={child} />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ))
+          : item.children.map((child) => <NavPanelLink key={child.id} item={child} />)}
+      </div>
+    </div>
+  );
+}
+
+/** A link inside a dropdown or a mega-menu column, with its icon and blurb. */
+function NavPanelLink({ item }: { item: ResolvedNavItem }) {
+  const Icon = resolveCmsIcon(item.icon);
+  return (
+    <Link
+      href={item.href}
+      target={item.openInNewTab ? '_blank' : undefined}
+      rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
+      className="flex gap-2.5 rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/[0.06]"
+    >
+      {Icon ? <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" /> : null}
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-content">{item.label}</span>
+        {item.description ? (
+          <span className="mt-0.5 block text-xs leading-relaxed text-muted">
+            {item.description}
+          </span>
+        ) : null}
+      </span>
+    </Link>
+  );
+}
 
 export function SiteHeader({
   nav,
@@ -69,10 +198,23 @@ export function SiteHeader({
   const isActive = (href: string) =>
     href !== '/' && href !== '#' ? pathname === href || pathname.startsWith(`${href}/`) : pathname === href;
 
+  /*
+   * Everything the design screen can change is a CSS variable with the
+   * header's original value as its fallback, so a site that has set nothing
+   * renders exactly the header it rendered before those settings existed.
+   */
   return (
-    <header className="sticky top-0 z-topbar w-full">
+    <header
+      className={cn('top-0 z-topbar w-full', brand.sticky === false ? 'relative' : 'sticky')}
+    >
       {brand.announcement ? (
-        <div className="bg-[rgb(var(--brand-secondary))] px-4 py-2 text-center text-xs text-white sm:text-sm">
+        <div
+          className="px-4 py-2 text-center text-xs sm:text-sm"
+          style={{
+            background: 'var(--announcement-bg, rgb(var(--brand-secondary)))',
+            color: 'var(--announcement-text, #fff)',
+          }}
+        >
           {brand.announcement.url ? (
             <Link href={brand.announcement.url} className="underline-offset-4 hover:underline">
               {brand.announcement.text}
@@ -83,8 +225,26 @@ export function SiteHeader({
         </div>
       ) : null}
 
-      <div className="border-b border-hairline bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75">
-        <nav className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6" aria-label="Main">
+      <div
+        className={cn(
+          'bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/75',
+          brand.border === false ? null : 'border-b',
+        )}
+        style={{
+          background: 'var(--header-bg)',
+          borderColor: 'var(--header-border-color)',
+          boxShadow: 'var(--header-shadow)',
+        }}
+      >
+        <nav
+          className="mx-auto flex items-center gap-6 px-4 sm:px-6"
+          aria-label="Main"
+          style={{
+            height: 'var(--header-height, 4rem)',
+            maxWidth: 'var(--header-width, 80rem)',
+            color: 'var(--header-text)',
+          }}
+        >
           <Link
             href={brand.homeUrl}
             className="flex shrink-0 items-center gap-2"
@@ -92,7 +252,15 @@ export function SiteHeader({
           >
             {brand.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={brand.logoUrl} alt={brand.siteName} className="h-8 w-auto max-w-[10rem] object-contain" />
+              <img
+                src={brand.logoUrl}
+                alt={brand.siteName}
+                className="w-auto object-contain"
+                style={{
+                  height: 'var(--header-logo-height, 2rem)',
+                  maxWidth: 'var(--header-logo-max-width, 10rem)',
+                }}
+              />
             ) : (
               <span className="flex items-center gap-2">
                 <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-white">
@@ -114,11 +282,17 @@ export function SiteHeader({
             */}
           <ul
             className={cn(
-              'hidden items-center gap-1 lg:flex',
+              'hidden items-center lg:flex',
               brand.menuAlign === 'right' ? 'ml-auto' : 'flex-1',
               brand.menuAlign === 'center' && 'justify-center',
               brand.menuAlign === 'right' && 'justify-end',
             )}
+            style={{
+              gap: 'var(--header-menu-gap, 0.25rem)',
+              fontSize: 'var(--header-menu-size)',
+              fontWeight: 'var(--header-menu-weight)',
+              textTransform: 'var(--header-menu-transform, none)' as React.CSSProperties['textTransform'],
+            }}
           >
             {nav.map((item) => (
               <li key={item.id} className="relative">
@@ -133,8 +307,8 @@ export function SiteHeader({
                       aria-haspopup="true"
                       onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
                       className={cn(
-                        'nav-tokens flex items-center gap-1 rounded-lg px-3 py-2 transition-colors',
-                        isActive(item.href) ? 'text-brand' : 'text-content hover:text-brand',
+                        'nav-tokens site-nav-link flex items-center gap-1 rounded-lg px-3 py-2 transition-colors',
+                        isActive(item.href) ? 'is-active text-brand' : 'text-content hover:text-brand',
                       )}
                     >
                       {item.label}
@@ -143,27 +317,19 @@ export function SiteHeader({
                       />
                     </button>
                     {openDropdown === item.id ? (
-                      <div className="absolute left-0 top-full w-[22rem] pt-2">
-                        <ul className="animate-slide-up rounded-xl border border-hairline bg-surface p-2 shadow-xl">
-                          {item.children.map((child) => (
-                            <li key={child.id}>
-                              <Link
-                                href={child.href}
-                                target={child.openInNewTab ? '_blank' : undefined}
-                                rel={child.openInNewTab ? 'noopener noreferrer' : undefined}
-                                className="block rounded-lg px-3 py-2.5 transition-colors hover:bg-muted/[0.06]"
-                              >
-                                <span className="block text-sm font-medium text-content">{child.label}</span>
-                                {child.description ? (
-                                  <span className="mt-0.5 block text-xs leading-relaxed text-muted">
-                                    {child.description}
-                                  </span>
-                                ) : null}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      item.megaMenu ? (
+                        <MegaPanel item={item} columns={item.megaColumns} />
+                      ) : (
+                        <div className="absolute left-0 top-full w-[22rem] pt-2">
+                          <ul className="animate-slide-up rounded-xl border border-hairline bg-surface p-2 shadow-xl">
+                            {item.children.map((child) => (
+                              <li key={child.id}>
+                                <NavPanelLink item={child} />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )
                     ) : null}
                   </div>
                 ) : (
@@ -173,8 +339,8 @@ export function SiteHeader({
                     rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                     className={cn(
-                      'nav-tokens rounded-lg px-3 py-2 transition-colors',
-                      isActive(item.href) ? 'text-brand' : 'text-content hover:text-brand',
+                      'nav-tokens site-nav-link rounded-lg px-3 py-2 transition-colors',
+                      isActive(item.href) ? 'is-active text-brand' : 'text-content hover:text-brand',
                     )}
                   >
                     {item.label}
@@ -194,14 +360,24 @@ export function SiteHeader({
           >
             <MarketSwitcher markets={markets} />
             {brand.secondaryCtaLabel && brand.secondaryCtaUrl ? (
-              <Link href={brand.secondaryCtaUrl} className={buttonClasses('ghost', 'sm', 'btn-tokens')}>
-                {brand.secondaryCtaLabel}
-              </Link>
+              <HeaderButton
+                label={brand.secondaryCtaLabel}
+                href={brand.secondaryCtaUrl}
+                icon={brand.secondaryCtaIcon}
+                side={brand.secondaryCtaIconSide}
+                variant={brand.secondaryCtaVariant ?? 'ghost'}
+                size="sm"
+              />
             ) : null}
             {brand.ctaLabel && brand.ctaUrl ? (
-              <Link href={brand.ctaUrl} className={buttonClasses('primary', 'sm', 'btn-tokens')}>
-                {brand.ctaLabel}
-              </Link>
+              <HeaderButton
+                label={brand.ctaLabel}
+                href={brand.ctaUrl}
+                icon={brand.ctaIcon}
+                side={brand.ctaIconSide}
+                variant={brand.ctaVariant ?? 'primary'}
+                size="sm"
+              />
             ) : null}
           </div>
 
@@ -221,7 +397,8 @@ export function SiteHeader({
       {mobileOpen ? (
         <div
           id="mobile-menu"
-          className="fixed inset-x-0 bottom-0 top-[var(--header-offset,4rem)] z-drawer overflow-y-auto border-t border-hairline bg-surface lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-drawer overflow-y-auto border-t border-hairline bg-surface lg:hidden"
+          style={{ top: 'var(--header-height, 4rem)' }}
         >
           <ul className="space-y-1 px-4 py-4">
             {nav.map((item) => (
@@ -275,14 +452,26 @@ export function SiteHeader({
               </nav>
             ) : null}
             {brand.ctaLabel && brand.ctaUrl ? (
-              <Link href={brand.ctaUrl} className={buttonClasses('primary', 'lg', 'w-full btn-tokens')}>
-                {brand.ctaLabel}
-              </Link>
+              <HeaderButton
+                label={brand.ctaLabel}
+                href={brand.ctaUrl}
+                icon={brand.ctaIcon}
+                side={brand.ctaIconSide}
+                variant={brand.ctaVariant ?? 'primary'}
+                size="lg"
+                className="w-full"
+              />
             ) : null}
             {brand.secondaryCtaLabel && brand.secondaryCtaUrl ? (
-              <Link href={brand.secondaryCtaUrl} className={buttonClasses('outline', 'lg', 'w-full btn-tokens')}>
-                {brand.secondaryCtaLabel}
-              </Link>
+              <HeaderButton
+                label={brand.secondaryCtaLabel}
+                href={brand.secondaryCtaUrl}
+                icon={brand.secondaryCtaIcon}
+                side={brand.secondaryCtaIconSide}
+                variant={brand.secondaryCtaVariant ?? 'outline'}
+                size="lg"
+                className="w-full"
+              />
             ) : null}
           </div>
         </div>

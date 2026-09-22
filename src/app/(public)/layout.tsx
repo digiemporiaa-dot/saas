@@ -18,6 +18,7 @@ import { getCountrySettings } from "@/lib/country/settings";
 import { resolveMarketOptions } from "@/lib/country/switch";
 import { countryPath, contentSlug, countryHref } from "@/lib/country/routing";
 import type { CountryContext } from "@/lib/country/types";
+import type { ButtonVariant } from "@/components/ui/button";
 
 export default async function PublicLayout({
   children,
@@ -108,6 +109,14 @@ export default async function PublicLayout({
             secondaryCtaLabel: site.headerSecondaryCtaLabel,
             secondaryCtaUrl: countryHref(country, site.headerSecondaryCtaUrl),
             menuAlign: (site.headerMenuAlign as 'left' | 'center' | 'right') ?? 'left',
+            sticky: site.headerSticky,
+            border: site.headerBorder,
+            ctaIcon: site.headerCtaIcon,
+            ctaIconSide: site.headerCtaIconSide === 'right' ? 'right' : 'left',
+            ctaVariant: (site.headerCtaVariant || 'primary') as ButtonVariant,
+            secondaryCtaIcon: site.headerSecondaryCtaIcon,
+            secondaryCtaIconSide: site.headerSecondaryCtaIconSide === 'right' ? 'right' : 'left',
+            secondaryCtaVariant: (site.headerSecondaryCtaVariant || 'ghost') as ButtonVariant,
             announcement:
               site.announcementEnabled && site.announcementText
                 ? {

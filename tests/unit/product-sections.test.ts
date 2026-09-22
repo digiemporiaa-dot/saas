@@ -270,9 +270,14 @@ describe('product design settings', () => {
   it('falls back to the defaults rather than throwing on a corrupt record', () => {
     expect(parseProductCard('not an object')).toEqual(DEFAULT_PRODUCT_SETTINGS.card);
     expect(parseProductImage(null)).toEqual(DEFAULT_PRODUCT_SETTINGS.image);
+    // A phone reads the page in the order it was written, with the price box
+    // at the end rather than in front of what the product is.
     expect(parseProductLayout({ sidebarWidth: 42, mobileSidebar: 'sideways' })).toMatchObject({
-      mobileSidebar: 'above',
+      mobileSidebar: 'below',
     });
+    expect(parseProductLayout({}).mobileSidebar).toBe('below');
+    // …and a site that chose "above" keeps it.
+    expect(parseProductLayout({ mobileSidebar: 'above' }).mobileSidebar).toBe('above');
   });
 
   it('keeps a hex colour and drops anything that is not one', () => {

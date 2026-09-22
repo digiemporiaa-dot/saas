@@ -70,12 +70,18 @@ export async function SiteFooter({
   })).filter((s): s is { label: string; Icon: IconComponent; href: string } => Boolean(s.href));
 
   return (
-    <footer className="border-t border-hairline bg-[rgb(var(--brand-secondary))] text-white/70">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6">
+    <footer className="site-footer site-footer-body border-t border-hairline">
+      <div
+        className="mx-auto px-4 sm:px-6"
+        style={{
+          maxWidth: 'var(--footer-width, 80rem)',
+          paddingBlock: 'var(--footer-padding-y, 3.5rem)',
+        }}
+      >
         {newsletter ? (
           <div className="mb-12 grid gap-6 rounded-2xl bg-white/5 p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-center">
             <div>
-              <h2 className="font-heading text-lg font-bold text-white">{newsletter.name}</h2>
+              <h2 className="site-footer-heading font-heading text-lg font-bold">{newsletter.name}</h2>
               {newsletter.description ? (
                 <p className="mt-2 text-sm leading-relaxed">{newsletter.description}</p>
               ) : null}
@@ -108,8 +114,13 @@ export async function SiteFooter({
           * the footer wider than the page.
           */}
         <div
-          className="grid gap-10 lg:[grid-template-columns:minmax(0,1.4fr)_repeat(var(--footer-cols),minmax(0,1fr))]"
-          style={{ '--footer-cols': columns.length || 1 } as React.CSSProperties}
+          className="grid lg:[grid-template-columns:minmax(0,1.4fr)_repeat(var(--footer-cols),minmax(0,1fr))]"
+          style={
+            {
+              '--footer-cols': columns.length || 1,
+              gap: 'var(--footer-column-gap, 2.5rem)',
+            } as React.CSSProperties
+          }
         >
           <div className="max-w-sm">
             <Link href={homeUrl} className="inline-flex items-center gap-2">
@@ -118,10 +129,13 @@ export async function SiteFooter({
                 <img
                   src={settings.logoDarkUrl ?? settings.logoUrl ?? undefined}
                   alt={settings.siteName}
-                  className="h-8 w-auto max-w-[10rem] object-contain"
+                  className="w-auto max-w-[10rem] object-contain"
+                  style={{ height: 'var(--footer-logo-height, 2rem)' }}
                 />
               ) : (
-                <span className="font-heading text-lg font-bold text-white">{settings.siteName}</span>
+                <span className="site-footer-heading font-heading text-lg font-bold">
+                  {settings.siteName}
+                </span>
               )}
             </Link>
             {local.footerDescription ? (
@@ -132,7 +146,7 @@ export async function SiteFooter({
               {local.salesEmail ? (
                 <li className="flex items-start gap-2.5">
                   <Mail className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <a href={`mailto:${local.salesEmail}`} className="hover:text-white">
+                  <a href={`mailto:${local.salesEmail}`} className="site-footer-link">
                     {local.salesEmail}
                   </a>
                 </li>
@@ -140,7 +154,7 @@ export async function SiteFooter({
               {local.salesPhone ? (
                 <li className="flex items-start gap-2.5">
                   <Phone className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                  <a href={`tel:${local.salesPhone.replace(/\s/g, '')}`} className="hover:text-white">
+                  <a href={`tel:${local.salesPhone.replace(/\s/g, '')}`} className="site-footer-link">
                     {local.salesPhone}
                   </a>
                 </li>
@@ -156,7 +170,7 @@ export async function SiteFooter({
 
           {columns.map((column) => (
             <nav key={column.id} aria-label={column.name}>
-              <h2 className="font-heading text-sm font-semibold text-white">{column.name}</h2>
+              <h2 className="site-footer-heading font-heading text-sm font-semibold">{column.name}</h2>
               <ul className="mt-4 space-y-2.5 text-sm">
                 {column.items.map((item) => (
                   <li key={item.id}>
@@ -164,7 +178,7 @@ export async function SiteFooter({
                       href={item.href}
                       target={item.openInNewTab ? '_blank' : undefined}
                       rel={item.openInNewTab ? 'noopener noreferrer' : undefined}
-                      className="transition-colors hover:text-white"
+                      className="site-footer-link transition-colors"
                     >
                       {item.label}
                     </Link>
@@ -175,7 +189,7 @@ export async function SiteFooter({
           ))}
         </div>
 
-        <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="site-footer-rule mt-12 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs">
             {local.copyrightText || `© ${new Date().getFullYear()} ${local.companyName}`}
           </p>
@@ -186,7 +200,7 @@ export async function SiteFooter({
                 <ul className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
                   {legal.map((item) => (
                     <li key={item.id}>
-                      <Link href={item.href} className="transition-colors hover:text-white">
+                      <Link href={item.href} className="site-footer-link transition-colors">
                         {item.label}
                       </Link>
                     </li>
@@ -204,7 +218,11 @@ export async function SiteFooter({
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={label}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20 hover:text-white"
+                      className="site-footer-link inline-flex items-center justify-center rounded-full bg-white/10 transition-colors hover:bg-white/20"
+                      style={{
+                        height: 'var(--footer-social-size, 2rem)',
+                        width: 'var(--footer-social-size, 2rem)',
+                      }}
                     >
                       <Icon className="h-4 w-4" aria-hidden="true" />
                     </a>

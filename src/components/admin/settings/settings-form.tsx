@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MediaUrlPicker } from './media-url-picker';
 import { ColorField } from './color-field';
 import { FontSelect, FontWeightSelect } from './font-select';
+import { IconSelect } from '@/components/cms/icon-select';
 import { Alert } from '@/components/ui/states';
 import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/icons';
@@ -28,6 +29,16 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+/** The button styles a header button may use. `danger` is deliberately absent. */
+const BUTTON_VARIANTS = [
+  { value: 'primary', label: 'Primary (filled)' },
+  { value: 'secondary', label: 'Secondary' },
+  { value: 'outline', label: 'Outline' },
+  { value: 'ghost', label: 'Ghost' },
+  { value: 'subtle', label: 'Subtle' },
+  { value: 'link', label: 'Link' },
+] as const;
 
 /**
  * Website settings.
@@ -760,6 +771,127 @@ export function WebsiteSettingsForm({
 
             {tab === 'header' ? (
               <>
+                <Alert tone="info">
+                  Every size and colour on this tab may be left blank, and blank means “leave it
+                  as it is”. Nothing here changes the header until you fill it in.
+                </Alert>
+
+                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">Bar</legend>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Height" htmlFor="headerHeight" hint="Default 4rem.">
+                      <Input
+                        id="headerHeight"
+                        value={str('headerHeight')}
+                        placeholder="4rem"
+                        onChange={(e) => set('headerHeight', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Height on phones" htmlFor="headerHeightMobile">
+                      <Input
+                        id="headerHeightMobile"
+                        value={str('headerHeightMobile')}
+                        placeholder="Same as above"
+                        onChange={(e) => set('headerHeightMobile', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Content width" htmlFor="headerWidth" hint="Default 80rem.">
+                      <Input
+                        id="headerWidth"
+                        value={str('headerWidth')}
+                        placeholder="80rem"
+                        onChange={(e) => set('headerWidth', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Shadow" htmlFor="headerShadow">
+                      <Select
+                        id="headerShadow"
+                        value={str('headerShadow') || 'none'}
+                        onChange={(e) => set('headerShadow', e.target.value)}
+                      >
+                        <option value="none">None</option>
+                        <option value="sm">Subtle</option>
+                        <option value="md">Medium</option>
+                        <option value="lg">Strong</option>
+                      </Select>
+                    </Field>
+                    <ColorField
+                      label="Background"
+                      name="headerBg"
+                      value={str('headerBg')}
+                      onChange={(v) => set('headerBg', v)}
+                    />
+                    <ColorField
+                      label="Text"
+                      name="headerText"
+                      value={str('headerText')}
+                      onChange={(v) => set('headerText', v)}
+                    />
+                    <ColorField
+                      label="Link on hover"
+                      name="headerLinkHover"
+                      value={str('headerLinkHover')}
+                      onChange={(v) => set('headerLinkHover', v)}
+                    />
+                    <ColorField
+                      label="Current page link"
+                      name="headerLinkActive"
+                      value={str('headerLinkActive')}
+                      onChange={(v) => set('headerLinkActive', v)}
+                    />
+                    <ColorField
+                      label="Bottom border"
+                      name="headerBorderColor"
+                      value={str('headerBorderColor')}
+                      onChange={(v) => set('headerBorderColor', v)}
+                    />
+                  </div>
+                  <Switch
+                    checked={str('headerBorder') !== 'false'}
+                    onChange={(next) => set('headerBorder', next)}
+                    label="Draw the line under the header"
+                  />
+                  <Switch
+                    checked={str('headerSticky') !== 'false'}
+                    onChange={(next) => set('headerSticky', next)}
+                    label="Keep the header on screen while scrolling"
+                  />
+                </fieldset>
+
+                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">Logo</legend>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Logo height" htmlFor="headerLogoHeight" hint="Default 2rem.">
+                      <Input
+                        id="headerLogoHeight"
+                        value={str('headerLogoHeight')}
+                        placeholder="2rem"
+                        onChange={(e) => set('headerLogoHeight', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Logo height on phones" htmlFor="headerLogoHeightMobile">
+                      <Input
+                        id="headerLogoHeightMobile"
+                        value={str('headerLogoHeightMobile')}
+                        placeholder="Same as above"
+                        onChange={(e) => set('headerLogoHeightMobile', e.target.value)}
+                      />
+                    </Field>
+                    <Field
+                      label="Maximum logo width"
+                      htmlFor="headerLogoMaxWidth"
+                      hint="Default 10rem."
+                    >
+                      <Input
+                        id="headerLogoMaxWidth"
+                        value={str('headerLogoMaxWidth')}
+                        placeholder="10rem"
+                        onChange={(e) => set('headerLogoMaxWidth', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
+
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
                   <legend className="px-1 text-sm font-medium text-content">Menu</legend>
                   <Field
@@ -777,6 +909,53 @@ export function WebsiteSettingsForm({
                       <option value="right">Right, beside the buttons</option>
                     </Select>
                   </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Space between items" htmlFor="headerMenuGap">
+                      <Input
+                        id="headerMenuGap"
+                        value={str('headerMenuGap')}
+                        placeholder="0.25rem"
+                        onChange={(e) => set('headerMenuGap', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Menu text size" htmlFor="headerMenuSize">
+                      <Input
+                        id="headerMenuSize"
+                        value={str('headerMenuSize')}
+                        placeholder="From Typography"
+                        onChange={(e) => set('headerMenuSize', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Menu text weight" htmlFor="headerMenuWeight">
+                      <Select
+                        id="headerMenuWeight"
+                        value={str('headerMenuWeight')}
+                        onChange={(e) => set('headerMenuWeight', e.target.value)}
+                      >
+                        <option value="">From Typography</option>
+                        {[300, 400, 500, 600, 700, 800].map((weight) => (
+                          <option key={weight} value={String(weight)}>
+                            {weight}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="Menu capitalisation" htmlFor="headerMenuTransform">
+                      <Select
+                        id="headerMenuTransform"
+                        value={str('headerMenuTransform') || 'none'}
+                        onChange={(e) => set('headerMenuTransform', e.target.value)}
+                      >
+                        <option value="none">As typed</option>
+                        <option value="uppercase">UPPERCASE</option>
+                        <option value="capitalize">Capitalise Each Word</option>
+                        <option value="lowercase">lowercase</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <p className="text-xs text-muted">
+                    A mega menu is switched on per menu item, in Navigation.
+                  </p>
                 </fieldset>
 
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
@@ -803,6 +982,20 @@ export function WebsiteSettingsForm({
                       onChange={(e) => set('announcementUrl', e.target.value)}
                     />
                   </Field>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ColorField
+                      label="Announcement background"
+                      name="announcementBgColor"
+                      value={str('announcementBgColor')}
+                      onChange={(v) => set('announcementBgColor', v)}
+                    />
+                    <ColorField
+                      label="Announcement text"
+                      name="announcementTextColor"
+                      value={str('announcementTextColor')}
+                      onChange={(v) => set('announcementTextColor', v)}
+                    />
+                  </div>
                 </fieldset>
 
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
@@ -838,6 +1031,72 @@ export function WebsiteSettingsForm({
                       />
                     </Field>
                   </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Primary button style" htmlFor="headerCtaVariant">
+                      <Select
+                        id="headerCtaVariant"
+                        value={str('headerCtaVariant') || 'primary'}
+                        onChange={(e) => set('headerCtaVariant', e.target.value)}
+                      >
+                        {BUTTON_VARIANTS.map((variant) => (
+                          <option key={variant.value} value={variant.value}>
+                            {variant.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="Primary button icon side" htmlFor="headerCtaIconSide">
+                      <Select
+                        id="headerCtaIconSide"
+                        value={str('headerCtaIconSide') || 'left'}
+                        onChange={(e) => set('headerCtaIconSide', e.target.value)}
+                      >
+                        <option value="left">Before the label</option>
+                        <option value="right">After the label</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <Field label="Primary button icon" htmlFor="headerCtaIcon">
+                    <IconSelect
+                      id="headerCtaIcon"
+                      value={str('headerCtaIcon')}
+                      onChange={(v) => set('headerCtaIcon', v)}
+                    />
+                  </Field>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field label="Secondary button style" htmlFor="headerSecondaryCtaVariant">
+                      <Select
+                        id="headerSecondaryCtaVariant"
+                        value={str('headerSecondaryCtaVariant') || 'ghost'}
+                        onChange={(e) => set('headerSecondaryCtaVariant', e.target.value)}
+                      >
+                        {BUTTON_VARIANTS.map((variant) => (
+                          <option key={variant.value} value={variant.value}>
+                            {variant.label}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="Secondary button icon side" htmlFor="headerSecondaryCtaIconSide">
+                      <Select
+                        id="headerSecondaryCtaIconSide"
+                        value={str('headerSecondaryCtaIconSide') || 'left'}
+                        onChange={(e) => set('headerSecondaryCtaIconSide', e.target.value)}
+                      >
+                        <option value="left">Before the label</option>
+                        <option value="right">After the label</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <Field label="Secondary button icon" htmlFor="headerSecondaryCtaIcon">
+                    <IconSelect
+                      id="headerSecondaryCtaIcon"
+                      value={str('headerSecondaryCtaIcon')}
+                      onChange={(v) => set('headerSecondaryCtaIcon', v)}
+                    />
+                  </Field>
                 </fieldset>
               </>
             ) : null}
@@ -902,6 +1161,91 @@ export function WebsiteSettingsForm({
                   Footer columns come from Navigation — every menu with a footer location becomes a
                   column.
                 </p>
+
+                <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+                  <legend className="px-1 text-sm font-medium text-content">Appearance</legend>
+                  <p className="text-xs text-muted">
+                    Leave anything blank to keep the footer exactly as it looks now.
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <ColorField
+                      label="Background"
+                      name="footerBg"
+                      value={str('footerBg')}
+                      onChange={(v) => set('footerBg', v)}
+                    />
+                    <ColorField
+                      label="Text"
+                      name="footerText"
+                      value={str('footerText')}
+                      onChange={(v) => set('footerText', v)}
+                    />
+                    <ColorField
+                      label="Headings"
+                      name="footerHeadingColor"
+                      value={str('footerHeadingColor')}
+                      onChange={(v) => set('footerHeadingColor', v)}
+                    />
+                    <ColorField
+                      label="Links"
+                      name="footerLinkColor"
+                      value={str('footerLinkColor')}
+                      onChange={(v) => set('footerLinkColor', v)}
+                    />
+                    <ColorField
+                      label="Links on hover"
+                      name="footerLinkHover"
+                      value={str('footerLinkHover')}
+                      onChange={(v) => set('footerLinkHover', v)}
+                    />
+                    <ColorField
+                      label="Divider line"
+                      name="footerBorderColor"
+                      value={str('footerBorderColor')}
+                      onChange={(v) => set('footerBorderColor', v)}
+                    />
+                    <Field label="Vertical padding" htmlFor="footerPaddingY" hint="Default 3.5rem.">
+                      <Input
+                        id="footerPaddingY"
+                        value={str('footerPaddingY')}
+                        placeholder="3.5rem"
+                        onChange={(e) => set('footerPaddingY', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Content width" htmlFor="footerWidth" hint="Default 80rem.">
+                      <Input
+                        id="footerWidth"
+                        value={str('footerWidth')}
+                        placeholder="80rem"
+                        onChange={(e) => set('footerWidth', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Space between columns" htmlFor="footerColumnGap">
+                      <Input
+                        id="footerColumnGap"
+                        value={str('footerColumnGap')}
+                        placeholder="2.5rem"
+                        onChange={(e) => set('footerColumnGap', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Logo height" htmlFor="footerLogoHeight" hint="Default 2rem.">
+                      <Input
+                        id="footerLogoHeight"
+                        value={str('footerLogoHeight')}
+                        placeholder="2rem"
+                        onChange={(e) => set('footerLogoHeight', e.target.value)}
+                      />
+                    </Field>
+                    <Field label="Social icon size" htmlFor="footerSocialSize" hint="Default 2rem.">
+                      <Input
+                        id="footerSocialSize"
+                        value={str('footerSocialSize')}
+                        placeholder="2rem"
+                        onChange={(e) => set('footerSocialSize', e.target.value)}
+                      />
+                    </Field>
+                  </div>
+                </fieldset>
               </>
             ) : null}
           </fieldset>
@@ -927,6 +1271,14 @@ export function WebsiteSettingsForm({
 }
 
 function tabForField(field: string): TabId {
+  /*
+   * The chrome prefixes are matched first, ahead of the typography and design
+   * rules below: `headerMenuWeight` and `footerColumnGap` belong to the header
+   * and the footer, not to the tabs whose looser patterns would also claim
+   * them, and a validation error has to open the tab its field is actually on.
+   */
+  if (field.startsWith('announcement') || field.startsWith('header')) return 'header';
+  if (field.startsWith('footer') || field.startsWith('copyright')) return 'footer';
   if (field.startsWith('color')) return 'theme';
   if (
     field.includes('Font') ||
@@ -947,7 +1299,5 @@ function tabForField(field: string): TabId {
   }
   if (field.startsWith('logo') || field.startsWith('favicon') || field.startsWith('ogImage'))
     return 'branding';
-  if (field.startsWith('announcement') || field.startsWith('header')) return 'header';
-  if (field.startsWith('footer') || field.startsWith('copyright')) return 'footer';
   return 'general';
 }

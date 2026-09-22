@@ -144,10 +144,15 @@ export const productLayoutSchema = z.object({
   sidebarSticky: bool(true),
   stickyOffset: length.default('96px'),
   /**
-   * Where the price box goes on a phone. "above" is the default because a
-   * visitor on a phone should see the price before scrolling the description.
+   * Where the price box goes on a phone.
+   *
+   * Below the content. Above it, the sidebar is the first thing on the page:
+   * a visitor arriving from a search result meets a price box before they have
+   * seen what the product is, and everything they came to read is a scroll
+   * away. Below, the page reads in the order it was written and the price box
+   * closes it.
    */
-  mobileSidebar: z.enum(MOBILE_SIDEBAR).catch('above').default('above'),
+  mobileSidebar: z.enum(MOBILE_SIDEBAR).catch('below').default('below'),
 
   // --- the rail at the bottom ---
   relatedEnabled: bool(true),

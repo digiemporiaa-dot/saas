@@ -57,8 +57,11 @@ export default async function NavigationAdmin() {
     blogPostId: row.blogPostId ?? '',
     blogCategoryId: row.blogCategoryId ?? '',
     description: row.description ?? '',
+    icon: row.icon ?? '',
     openInNewTab: row.openInNewTab,
     isHighlighted: row.isHighlighted,
+    megaMenu: row.megaMenu,
+    megaColumns: row.megaColumns,
     isVisible: row.isVisible,
     children: [],
   });
