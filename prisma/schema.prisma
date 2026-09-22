@@ -2180,18 +2180,6 @@ model WebsiteSettings {
   /// are the one part of the footer people are meant to read.
   footerContactColor String @default("")
 
-  /// What the footer shows. All on, which is the footer as it is.
-  footerShowLogo        Boolean @default(true)
-  footerShowSiteName    Boolean @default(true)
-  footerShowDescription Boolean @default(true)
-  footerShowEmail       Boolean @default(true)
-  footerShowPhone       Boolean @default(true)
-  footerShowAddress     Boolean @default(true)
-  footerShowSocials     Boolean @default(true)
-  footerShowLegal       Boolean @default(true)
-  footerShowCopyright   Boolean @default(true)
-  footerShowDivider     Boolean @default(true)
-
   // Layout — global defaults every section can override
   containerWidth       String @default("72rem")
   containerPadding     String @default("1.5rem")
