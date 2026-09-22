@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getPublicProduct, getProductSeo, findLiveProductCountries } from '@/lib/services/products';
 import { getMediaByIds } from '@/lib/services/media';
 import { redirectOrNotFound } from '@/lib/services/redirects';
+import { taxonomyHrefs } from '@/lib/services/taxonomy-pages';
 import { getWebsiteSettings } from '@/lib/services/settings';
 import { buildMetadata, absoluteCountryUrl } from '@/lib/seo/metadata';
 import { JsonLd } from '@/components/seo/json-ld';
@@ -66,10 +67,11 @@ export async function ProductSurface({
    */
   if (!product) return redirectOrNotFound(country, `products/${slug}`);
 
-  const [gallery, detail, sidebar] = await Promise.all([
+  const [gallery, detail, sidebar, taxonomy] = await Promise.all([
     getMediaByIds(product.galleryIds),
     getProductSections(product.id, 'DETAIL'),
     getProductSections(product.id, 'SIDEBAR'),
+    taxonomyHrefs(country, product),
   ]);
 
   // Preserve the order the admin arranged in the gallery picker.
@@ -88,6 +90,8 @@ export async function ProductSurface({
     gallery: galleryImages,
     settings,
     siteName: site.siteName,
+    categoryHref: taxonomy.categoryHref,
+    brandHref: taxonomy.brandHref,
   };
 
   const { layout } = settings;

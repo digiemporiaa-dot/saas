@@ -30,10 +30,30 @@ const heading = (fallback: string) => z.string().max(160).catch(fallback).defaul
 
 const productHeaderSchema = z.object({
   showBreadcrumb: bool(true),
+
+  /*
+   * Each crumb before the product is a label and a destination, both editable.
+   * A blank destination keeps the built-in one — the market's own home page
+   * and its pricing page — so a breadcrumb nobody has touched is unchanged,
+   * and a site whose catalogue lives somewhere else can point at it without a
+   * code change.
+   */
   homeLabel: z.string().max(60).catch('Home').default('Home'),
+  homeUrl: z.string().max(500).catch('').default(''),
+  showProductsCrumb: bool(true),
   productsLabel: z.string().max(60).catch('Products').default('Products'),
+  productsUrl: z.string().max(500).catch('').default(''),
+
   showCategory: bool(true),
   showBrand: bool(true),
+  /*
+   * The category and the brand as links to their own pages, which is what a
+   * visitor reading "Cloud storage · Dropbox" expects them to be. On by
+   * default; a category with no published page renders as plain text either
+   * way, so switching this on can never produce a link to a 404.
+   */
+  linkCategory: bool(true),
+  linkBrand: bool(true),
   showSku: bool(false),
   showShortDescription: bool(true),
   align: z.enum(['left', 'center']).catch('left').default('left'),
@@ -191,10 +211,59 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
         ],
       },
       { kind: 'boolean', name: 'showBreadcrumb', label: 'Show breadcrumb', width: 'half' },
-      { kind: 'text', name: 'homeLabel', label: 'Home label', width: 'half' },
-      { kind: 'text', name: 'productsLabel', label: 'Products label', width: 'half' },
+      {
+        kind: 'text',
+        name: 'homeLabel',
+        label: 'Home crumb label',
+        width: 'half',
+        showWhen: { field: 'showBreadcrumb', equals: [true] },
+      },
+      {
+        kind: 'url',
+        name: 'homeUrl',
+        label: 'Home crumb link',
+        width: 'half',
+        placeholder: 'This market’s home page',
+        showWhen: { field: 'showBreadcrumb', equals: [true] },
+      },
+      {
+        kind: 'boolean',
+        name: 'showProductsCrumb',
+        label: 'Show the middle crumb',
+        width: 'half',
+        showWhen: { field: 'showBreadcrumb', equals: [true] },
+      },
+      {
+        kind: 'text',
+        name: 'productsLabel',
+        label: 'Middle crumb label',
+        width: 'half',
+        showWhen: { field: 'showProductsCrumb', equals: [true] },
+      },
+      {
+        kind: 'url',
+        name: 'productsUrl',
+        label: 'Middle crumb link',
+        width: 'half',
+        placeholder: '/pricing',
+        showWhen: { field: 'showProductsCrumb', equals: [true] },
+      },
       { kind: 'boolean', name: 'showCategory', label: 'Show category', width: 'half' },
+      {
+        kind: 'boolean',
+        name: 'linkCategory',
+        label: 'Link the category to its page',
+        width: 'half',
+        showWhen: { field: 'showCategory', equals: [true] },
+      },
       { kind: 'boolean', name: 'showBrand', label: 'Show brand', width: 'half' },
+      {
+        kind: 'boolean',
+        name: 'linkBrand',
+        label: 'Link the brand to its page',
+        width: 'half',
+        showWhen: { field: 'showBrand', equals: [true] },
+      },
       { kind: 'boolean', name: 'showSku', label: 'Show SKU', width: 'half' },
       {
         kind: 'boolean',

@@ -79,6 +79,59 @@ describe('product surfaces', () => {
     }
   });
 
+  it('leaves the breadcrumb where it was until a destination is typed', () => {
+    const content = parseBlockContent('productHeader', {}) as Record<string, unknown>;
+
+    // Blank means the built-in destination — this market's home page and its
+    // pricing page — so a breadcrumb nobody has touched is unchanged.
+    expect(content.homeUrl).toBe('');
+    expect(content.productsUrl).toBe('');
+    expect(content.homeLabel).toBe('Home');
+    expect(content.productsLabel).toBe('Products');
+    expect(content.showProductsCrumb).toBe(true);
+  });
+
+  it('takes a destination for each crumb', () => {
+    const content = parseBlockContent('productHeader', {
+      homeUrl: '/start',
+      productsUrl: 'https://example.com/catalogue',
+      showProductsCrumb: false,
+    }) as Record<string, unknown>;
+
+    expect(content.homeUrl).toBe('/start');
+    expect(content.productsUrl).toBe('https://example.com/catalogue');
+    expect(content.showProductsCrumb).toBe(false);
+  });
+
+  it('links the category and the brand by default', () => {
+    const content = parseBlockContent('productHeader', {}) as Record<string, unknown>;
+    expect(content.linkCategory).toBe(true);
+    expect(content.linkBrand).toBe(true);
+    expect(
+      (parseBlockContent('productHeader', { linkBrand: false }) as Record<string, unknown>)
+        .linkBrand,
+    ).toBe(false);
+  });
+
+  it('hides each crumb control behind the toggle it depends on', () => {
+    const fields = PRODUCT_BLOCKS.productHeader.fields ?? [];
+    const named = (name: string) => fields.find((field) => field.name === name);
+
+    for (const name of ['homeLabel', 'homeUrl', 'showProductsCrumb']) {
+      expect(named(name)?.showWhen, name).toEqual({ field: 'showBreadcrumb', equals: [true] });
+    }
+    for (const name of ['productsLabel', 'productsUrl']) {
+      expect(named(name)?.showWhen, name).toEqual({ field: 'showProductsCrumb', equals: [true] });
+    }
+    expect(named('linkCategory')?.showWhen).toEqual({ field: 'showCategory', equals: [true] });
+    expect(named('linkBrand')?.showWhen).toEqual({ field: 'showBrand', equals: [true] });
+
+    // Typed into a URL box, not a free text one — so the editor offers the
+    // same picker every other link in the builder uses.
+    expect(named('homeUrl')?.kind).toBe('url');
+    expect(named('productsUrl')?.kind).toBe('url');
+  });
+
   it('keeps the price box exactly as it was until the form is switched on', () => {
     const parse = (raw: unknown) =>
       parseBlockContent('productPriceBox', raw) as Record<string, unknown>;

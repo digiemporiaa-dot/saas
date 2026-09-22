@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Check, ChevronRight, Sparkles } from 'lucide-react';
@@ -15,6 +16,7 @@ import { selectProducts } from '@/lib/services/products';
 import { getPublicForm } from '@/lib/services/forms';
 import { formatMoney } from '@/lib/utils/money';
 import { countryPath } from '@/lib/country/routing';
+import { safeUrl } from '@/lib/utils/sanitize';
 import { cn } from '@/lib/utils/cn';
 import { ProductCta } from '@/components/products/product-cta';
 import { ProductCard } from '@/components/products/product-card';
@@ -53,6 +55,21 @@ function mediaSizing(content: ProductMediaContent, ctx: BlockContext) {
   };
 }
 
+/**
+ * A category or brand name, as a link where its page exists.
+ *
+ * The same element either way, so the eyebrow's spacing and letterspacing do
+ * not shift depending on whether a page happens to have been generated.
+ */
+function TaxonomyName({ href, children }: { href: string | null; children: React.ReactNode }) {
+  if (!href) return <span>{children}</span>;
+  return (
+    <Link href={href} className="underline-offset-4 hover:underline">
+      {children}
+    </Link>
+  );
+}
+
 export function ProductHeaderBlock({
   content,
   ctx,
@@ -62,7 +79,21 @@ export function ProductHeaderBlock({
 }) {
   const productCtx = ctx.product;
   if (!productCtx) return null;
-  const { product, country } = productCtx;
+  const { product, country, categoryHref, brandHref } = productCtx;
+
+  /*
+   * A crumb's own destination where one is set, and the built-in one where it
+   * is not. `safeUrl` is what keeps a stored value from becoming a
+   * `javascript:` link; anything it refuses falls back to the default rather
+   * than rendering a crumb that does nothing.
+   */
+  const homeHref = safeUrl(content.homeUrl) ?? countryPath(country);
+  const productsHref = safeUrl(content.productsUrl) ?? countryPath(country, 'pricing');
+
+  // A link only where there is a published page to send anyone to; otherwise
+  // the name still shows, as plain text.
+  const categoryLink = content.linkCategory ? categoryHref : null;
+  const brandLink = content.linkBrand ? brandHref : null;
 
   const centred = content.align === 'center';
   const withImage = content.showImage && Boolean(product.imageUrl);
@@ -88,17 +119,21 @@ export function ProductHeaderBlock({
             )}
           >
             <li>
-              <Link href={countryPath(country)} className="hover:text-brand">
+              <Link href={homeHref} className="hover:text-brand">
                 {content.homeLabel || 'Home'}
               </Link>
             </li>
             <ChevronRight className="h-3 w-3" aria-hidden="true" />
-            <li>
-              <Link href={countryPath(country, 'pricing')} className="hover:text-brand">
-                {content.productsLabel || 'Products'}
-              </Link>
-            </li>
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
+            {content.showProductsCrumb ? (
+              <>
+                <li>
+                  <Link href={productsHref} className="hover:text-brand">
+                    {content.productsLabel || 'Products'}
+                  </Link>
+                </li>
+                <ChevronRight className="h-3 w-3" aria-hidden="true" />
+              </>
+            ) : null}
             <li aria-current="page" className="font-medium text-content">
               {product.name}
             </li>
@@ -149,7 +184,7 @@ export function ProductHeaderBlock({
               )}
             >
               {content.showCategory && product.categoryName ? (
-                <span>{product.categoryName}</span>
+                <TaxonomyName href={categoryLink}>{product.categoryName}</TaxonomyName>
               ) : null}
               {content.showCategory &&
               product.categoryName &&
@@ -159,7 +194,9 @@ export function ProductHeaderBlock({
                   ·
                 </span>
               ) : null}
-              {content.showBrand && product.brandName ? <span>{product.brandName}</span> : null}
+              {content.showBrand && product.brandName ? (
+                <TaxonomyName href={brandLink}>{product.brandName}</TaxonomyName>
+              ) : null}
             </p>
           ) : null}
 

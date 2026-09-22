@@ -1,5 +1,8 @@
 import 'server-only';
 import { prisma } from '@/lib/db/prisma';
+import { countryPath } from '@/lib/country/routing';
+import { publishedPageWhere } from './pages';
+import type { CountryContext } from '@/lib/country/types';
 import { blockDefaults } from '@/lib/cms/blocks';
 import {
   taxonomyPageSections,
@@ -97,4 +100,38 @@ export async function taxonomyPageMap(
   });
 
   return new Map(pages.map((page) => [page.slug, page.id]));
+}
+
+/**
+ * Where a product's category and brand actually link to, in this market.
+ *
+ * Only a page that is published here produces a link. A category whose page
+ * was never generated, or was unpublished or deleted, renders as plain text
+ * rather than as a link to a 404 — the name is still worth showing, the dead
+ * link is not.
+ */
+export async function taxonomyHrefs(
+  country: Pick<CountryContext, 'id' | 'slug'>,
+  taxonomy: { categorySlug?: string | null; brandSlug?: string | null },
+): Promise<{ categoryHref: string | null; brandHref: string | null }> {
+  const wanted = new Map<string, 'category' | 'brand'>();
+  if (taxonomy.categorySlug) {
+    wanted.set(taxonomyPageSlug('category', taxonomy.categorySlug), 'category');
+  }
+  if (taxonomy.brandSlug) {
+    wanted.set(taxonomyPageSlug('brand', taxonomy.brandSlug), 'brand');
+  }
+  if (wanted.size === 0) return { categoryHref: null, brandHref: null };
+
+  const live = await prisma.page.findMany({
+    where: { ...publishedPageWhere(), countryId: country.id, slug: { in: [...wanted.keys()] } },
+    select: { slug: true },
+  });
+
+  const href = (kind: 'category' | 'brand') => {
+    const match = live.find((page) => wanted.get(page.slug) === kind);
+    return match ? countryPath(country, match.slug) : null;
+  };
+
+  return { categoryHref: href('category'), brandHref: href('brand') };
 }

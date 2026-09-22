@@ -20,4 +20,11 @@ export type ProductRenderContext = {
   settings: ResolvedProductSettings;
   /** Used by the price box's small print. */
   siteName: string;
+  /**
+   * Where the product's category and brand link to in this market, or null
+   * where there is no published page to send anyone to. Resolved once by the
+   * route so no block has to ask.
+   */
+  categoryHref: string | null;
+  brandHref: string | null;
 };

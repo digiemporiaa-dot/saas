@@ -32,6 +32,15 @@ product added to the category tomorrow is on the page tomorrow — nothing to
 regenerate, nothing to keep in sync. Only products published in that market are
 listed.
 
+## Products link to it
+
+A product page's header shows its category and brand — "Cloud storage ·
+Dropbox" — and each is a link to the page above, in the market being viewed.
+The link appears only where that page is **published in this market**: a
+category whose page was never generated, or was unpublished or deleted, renders
+as plain text rather than as a link to a 404. Both links can be switched off in
+the Product header section.
+
 ## It is an ordinary page
 
 From the moment it exists it behaves like any other page: it is in the pages
