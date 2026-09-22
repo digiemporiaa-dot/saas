@@ -62,6 +62,23 @@ describe('product surfaces', () => {
     }
   });
 
+  it('lets the product name be any heading level, and refuses anything else', () => {
+    const parse = (raw: unknown) =>
+      parseBlockContent('productHeader', raw) as Record<string, unknown>;
+
+    // The page is about the product, so H1 until someone says otherwise.
+    expect(parse({}).titleTag).toBe('h1');
+    expect(parse({}).titleSize).toBe('');
+
+    for (const tag of ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']) {
+      expect(parse({ titleTag: tag }).titleTag, tag).toBe(tag);
+    }
+    // Nothing else reaches the renderer, which interpolates the value as a tag.
+    for (const attack of ['script', 'H2', '', 'div onclick=x', null, 7]) {
+      expect(parse({ titleTag: attack }).titleTag, String(attack)).toBe('h1');
+    }
+  });
+
   it('parses each product block to usable defaults', () => {
     for (const type of Object.keys(PRODUCT_BLOCKS)) {
       const content = parseBlockContent(type, {}) as Record<string, unknown>;

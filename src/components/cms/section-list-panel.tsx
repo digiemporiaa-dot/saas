@@ -192,8 +192,15 @@ function SortableRow({
 
   const definition = getBlock(section.blockType);
   const label = section.name || definition?.label || section.blockType;
-  // A one-per-surface block is part of the layout's anatomy: it can be
-  // reordered, hidden and styled, but not copied or thrown away.
+  /*
+   * A one-per-surface block cannot be copied — one product has one title and
+   * one price box, and a second of either is not a layout.
+   *
+   * It can be deleted, though. Removing it is no more destructive than the
+   * Hide beside it, which already takes it off the website, and "Add section"
+   * offers it again the moment it is gone — so a layout is never stuck
+   * carrying a part it does not want.
+   */
   const fixed = Boolean(definition?.singleton);
 
   return (
@@ -278,12 +285,10 @@ function SortableRow({
               <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
               Move down
             </RowMenuItem>
-            {fixed ? null : (
-              <RowMenuItem tone="danger" onClick={onDelete}>
-                <Trash className="h-3.5 w-3.5" aria-hidden="true" />
-                Delete
-              </RowMenuItem>
-            )}
+            <RowMenuItem tone="danger" onClick={onDelete}>
+              <Trash className="h-3.5 w-3.5" aria-hidden="true" />
+              Delete
+            </RowMenuItem>
           </RowMenu>
         ) : null}
       </div>

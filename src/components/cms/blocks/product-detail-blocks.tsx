@@ -68,6 +68,12 @@ export function ProductHeaderBlock({
   // centre the text against.
   const centredText = centred && !withImage;
   const width = content.imageWidth || '250px';
+  /*
+   * The element the product name is, chosen per section. Rendered through a
+   * variable rather than a switch: the tag is one of six literals the schema
+   * already pinned down, so there is nothing here for a stored value to widen.
+   */
+  const Title = content.titleTag;
 
   return (
     <header className={cn(centredText && 'text-center')}>
@@ -155,17 +161,23 @@ export function ProductHeaderBlock({
             </p>
           ) : null}
 
-          <h1
-            className="product-title mt-3 font-heading text-3xl tracking-tight text-content sm:text-4xl lg:text-5xl"
+          <Title
+            className={cn(
+              'product-title mt-3 font-heading tracking-tight text-content',
+              // The built-in scale, which this section's own size replaces.
+              !content.titleSize && 'text-3xl sm:text-4xl lg:text-5xl',
+            )}
             style={{
-              fontSize: 'var(--product-title-size)',
+              // The section's size wins; otherwise the design screen's, and
+              // then the class above.
+              fontSize: content.titleSize || 'var(--product-title-size)',
               fontWeight: 'var(--product-title-weight)' as unknown as number,
               lineHeight: 'var(--product-title-lh)',
               letterSpacing: 'var(--product-title-ls)',
             }}
           >
             {product.name}
-          </h1>
+          </Title>
 
           {content.showShortDescription && product.shortDescription ? (
             <p className="mt-4 text-lg leading-relaxed text-muted">{product.shortDescription}</p>

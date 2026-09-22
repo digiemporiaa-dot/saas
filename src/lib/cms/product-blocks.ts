@@ -39,6 +39,18 @@ const productHeaderSchema = z.object({
   align: z.enum(['left', 'center']).catch('left').default('left'),
 
   /**
+   * Which heading element the product name is.
+   *
+   * `h1` by default, because on a product page the product is what the page is
+   * about. It is a choice rather than a fixture because a page that opens with
+   * a hero above this one already has its `h1`, and two of them is worse than
+   * picking the right level here.
+   */
+  titleTag: z.enum(['h1', 'h2', 'h3', 'h4', 'h5', 'h6']).catch('h1').default('h1'),
+  /** Blank keeps the built-in responsive size, which grows with the screen. */
+  titleSize: z.string().max(16).catch('').default(''),
+
+  /**
    * The product's image, beside the name rather than under it.
    *
    * On by default: the opening pair — the product's mark on one side, its
@@ -175,6 +187,29 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
         name: 'showShortDescription',
         label: 'Show short description',
         width: 'half',
+      },
+      {
+        kind: 'select',
+        name: 'titleTag',
+        label: 'Product name heading level',
+        width: 'half',
+        options: [
+          { label: 'H1 — the page is about this product', value: 'h1' },
+          { label: 'H2', value: 'h2' },
+          { label: 'H3', value: 'h3' },
+          { label: 'H4', value: 'h4' },
+          { label: 'H5', value: 'h5' },
+          { label: 'H6', value: 'h6' },
+        ],
+        help: 'Only one H1 per page. Drop this to H2 when a section above it already has one.',
+      },
+      {
+        kind: 'text',
+        name: 'titleSize',
+        label: 'Product name size',
+        width: 'half',
+        placeholder: 'e.g. 32px or 2rem',
+        help: 'Blank keeps the built-in size, which grows with the screen.',
       },
       {
         kind: 'boolean',
