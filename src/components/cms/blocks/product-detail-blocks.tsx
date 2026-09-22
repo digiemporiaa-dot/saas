@@ -21,7 +21,7 @@ import { cn } from '@/lib/utils/cn';
 import { ProductCta } from '@/components/products/product-cta';
 import { ProductCard } from '@/components/products/product-card';
 import { PublicFormRenderer } from '@/components/forms/public-form';
-import { RichText, SectionHeading, type BlockContext } from './shared';
+import { RichText, SectionHeading, columnVars, type BlockContext } from './shared';
 
 /**
  * The blocks a product page is built from.
@@ -272,10 +272,18 @@ export function ProductMediaBlock({
 
       {showGallery ? (
         <ul
-          className={cn('mt-6 grid gap-3', showMain ? '' : 'mt-0')}
+          className={cn('cms-grid mt-6', showMain ? '' : 'mt-0')}
           style={{
-            gridTemplateColumns: `repeat(${sizing.columns}, minmax(0, 1fr))`,
-            gap: 'var(--product-gallery-gap)',
+            /*
+             * Thumbnails, so they keep more than one per row on a phone unless
+             * the design panel says otherwise — a gallery of full-width
+             * thumbnails is just the main image again.
+             */
+            ...columnVars(ctx.design, sizing.columns, {
+              tablet: Math.min(sizing.columns, 3),
+              mobile: Math.min(sizing.columns, 2),
+            }),
+            gap: 'var(--product-gallery-gap, 0.75rem)',
           }}
         >
           {images.map((image) => (
@@ -342,23 +350,20 @@ export function ProductFeaturesBlock({
   const benefits = content.showBenefits ? cap(product.benefits) : [];
   if (features.length === 0 && benefits.length === 0) return null;
 
-  const gridColumns = {
-    gridTemplateColumns: `repeat(${content.columns}, minmax(0, 1fr))`,
-  } satisfies React.CSSProperties;
+  const columns = columnVars(ctx.design, content.columns);
+  const featuresHeadingId = `product-features-${ctx.sectionId}`;
+  const benefitsHeadingId = `product-benefits-${ctx.sectionId}`;
 
   return (
     <div className="space-y-12">
       {features.length > 0 ? (
-        <section aria-labelledby="product-features-heading">
+        <section aria-labelledby={featuresHeadingId}>
           {content.featuresHeading ? (
-            <h2
-              id="product-features-heading"
-              className="font-heading text-xl font-bold text-content"
-            >
+            <h2 id={featuresHeadingId} className="font-heading text-xl font-bold text-content">
               {content.featuresHeading}
             </h2>
           ) : null}
-          <ul className="mt-5 grid gap-3 sm:[grid-template-columns:var(--cols)]" style={{ ['--cols' as string]: gridColumns.gridTemplateColumns }}>
+          <ul className="cms-grid mt-5 gap-3" style={columns}>
             {features.map((feature, index) => (
               <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
                 {content.showIcons ? (
@@ -372,16 +377,13 @@ export function ProductFeaturesBlock({
       ) : null}
 
       {benefits.length > 0 ? (
-        <section aria-labelledby="product-benefits-heading">
+        <section aria-labelledby={benefitsHeadingId}>
           {content.benefitsHeading ? (
-            <h2
-              id="product-benefits-heading"
-              className="font-heading text-xl font-bold text-content"
-            >
+            <h2 id={benefitsHeadingId} className="font-heading text-xl font-bold text-content">
               {content.benefitsHeading}
             </h2>
           ) : null}
-          <ul className="mt-5 grid gap-3 sm:[grid-template-columns:var(--cols)]" style={{ ['--cols' as string]: gridColumns.gridTemplateColumns }}>
+          <ul className="cms-grid mt-5 gap-3" style={columns}>
             {benefits.map((benefit, index) => (
               <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
                 {content.showIcons ? (
@@ -499,17 +501,16 @@ export async function ProductRelatedBlock({
 
   if (related.length === 0) return null;
 
+  const headingId = `product-related-${ctx.sectionId}`;
+
   return (
-    <section aria-labelledby="product-related-heading">
+    <section aria-labelledby={headingId}>
       {content.heading ? (
-        <h2 id="product-related-heading" className="font-heading text-2xl font-bold text-content">
+        <h2 id={headingId} className="font-heading text-2xl font-bold text-content">
           {content.heading}
         </h2>
       ) : null}
-      <div
-        className="mt-8 grid gap-6"
-        style={{ gridTemplateColumns: `repeat(${content.columns}, minmax(0, 1fr))` }}
-      >
+      <div className="cms-grid mt-8 gap-6" style={columnVars(ctx.design, content.columns)}>
         {related.map((item) => (
           <ProductCard
             key={item.id}

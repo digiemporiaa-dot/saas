@@ -56,9 +56,19 @@ describe('product surfaces', () => {
     expect(blockAllowedOnSurface('nonsense', 'productDetail')).toBe(false);
   });
 
-  it('makes every product block a singleton — one title, one price box', () => {
-    for (const [type, block] of Object.entries(PRODUCT_BLOCKS)) {
-      expect(block.singleton, `${type} should be a singleton`).toBe(true);
+  it('keeps the anatomy blocks singletons, and lets the listing ones repeat', () => {
+    // One title, one gallery, one body, one spec table, one price box.
+    const once = ['productHeader', 'productMedia', 'productDescription', 'productSpecs', 'productPriceBox'];
+    // These pick what they list, so a second one is a different section.
+    const repeatable = ['productRelated', 'productFeatures'];
+
+    expect(new Set([...once, ...repeatable])).toEqual(new Set(Object.keys(PRODUCT_BLOCKS)));
+
+    for (const type of once) {
+      expect(PRODUCT_BLOCKS[type].singleton, `${type} should be a singleton`).toBe(true);
+    }
+    for (const type of repeatable) {
+      expect(PRODUCT_BLOCKS[type].singleton, `${type} should be repeatable`).toBeFalsy();
     }
   });
 

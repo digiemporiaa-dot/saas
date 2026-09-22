@@ -177,4 +177,22 @@ describe('responsive columns', () => {
     const design = parseSectionDesign({ desktop: { columns: 2 } });
     expect(resolveColumns(design, 4)).toEqual({ desktop: 2, tablet: 2, mobile: 1 });
   });
+
+  it('lets a block move where "Automatic" lands, for a grid that is not cards', () => {
+    // A thumbnail grid keeps more than one per row on a phone.
+    expect(resolveColumns(DEFAULT_SECTION_DESIGN, 4, { tablet: 3, mobile: 2 })).toEqual({
+      desktop: 4,
+      tablet: 3,
+      mobile: 2,
+    });
+  });
+
+  it('still lets the design panel win over the block’s fallback', () => {
+    const design = parseSectionDesign({ mobile: { columns: 1 } });
+    expect(resolveColumns(design, 4, { tablet: 3, mobile: 2 })).toEqual({
+      desktop: 4,
+      tablet: 3,
+      mobile: 1,
+    });
+  });
 });

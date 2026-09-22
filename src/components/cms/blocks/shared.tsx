@@ -20,6 +20,14 @@ import type { CountryContext } from '@/lib/country/types';
  */
 export type BlockContext = {
   /**
+   * The row this block is being rendered from.
+   *
+   * Blocks that mint a DOM id — a heading a `aria-labelledby` points at —
+   * build it from this rather than from a constant, so two copies of the same
+   * block on one page do not share one id.
+   */
+  sectionId: string;
+  /**
    * The market this section is being rendered for.
    *
    * Blocks read it instead of building market-aware URLs themselves: the
@@ -54,8 +62,12 @@ export type BlockContext = {
 };
 
 /** CSS variables for a responsive card grid, design panel taking precedence. */
-export function columnVars(design: SectionDesign, blockColumns: number): Record<string, string> {
-  return gridStyle(resolveColumns(design, blockColumns));
+export function columnVars(
+  design: SectionDesign,
+  blockColumns: number,
+  fallback?: { tablet?: number; mobile?: number },
+): Record<string, string> {
+  return gridStyle(resolveColumns(design, blockColumns, fallback));
 }
 
 export function SectionHeading({

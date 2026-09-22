@@ -616,12 +616,21 @@ export type ResolvedColumns = { desktop: number; tablet: number; mobile: number 
  *
  * The design panel wins when it has a value; otherwise the block's own setting
  * is used, and tablet/mobile inherit downwards (desktop -> tablet -> mobile).
+ *
+ * `fallback` moves where a block lands when nobody has chosen for it. Cards
+ * narrow to two and then one, which is the default; a thumbnail grid says so,
+ * because one thumbnail per row is not a gallery. The design panel still wins
+ * over it — this decides only what "Automatic" means for that block.
  */
-export function resolveColumns(design: SectionDesign, blockColumns: number): ResolvedColumns {
+export function resolveColumns(
+  design: SectionDesign,
+  blockColumns: number,
+  fallback?: { tablet?: number; mobile?: number },
+): ResolvedColumns {
   const clamp = (value: number) => Math.min(Math.max(Math.round(value) || 1, 1), 6);
   const desktop = clamp(design.desktop.columns ?? blockColumns);
-  const tablet = clamp(design.tablet.columns ?? Math.min(desktop, 2));
-  const mobile = clamp(design.mobile.columns ?? Math.min(tablet, 1));
+  const tablet = clamp(design.tablet.columns ?? fallback?.tablet ?? Math.min(desktop, 2));
+  const mobile = clamp(design.mobile.columns ?? fallback?.mobile ?? Math.min(tablet, 1));
   return { desktop, tablet, mobile };
 }
 

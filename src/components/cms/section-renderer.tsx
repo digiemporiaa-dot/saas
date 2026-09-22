@@ -380,6 +380,7 @@ export async function SectionRenderer({
 
   const styles = buildSectionStyles(design, section.id, backgroundMedia?.url ?? null);
   const ctx: BlockContext = {
+    sectionId: section.id,
     country,
     inverted: styles.inverted,
     isFirst,

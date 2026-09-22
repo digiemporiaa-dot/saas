@@ -12,9 +12,16 @@ import type { BlockDefinition } from './block-types';
  * design panel, drag-and-drop outline and renderer dispatch instead of growing
  * a third builder beside them.
  *
- * Every one of these is a `singleton`: a product has one title and one price,
- * so they can be reordered, hidden and styled but never stacked twice. Anything
- * an administrator *does* want twice — a CTA, a FAQ, a testimonial rail — is an
+ * Most are a `singleton`: a product has one title, one gallery, one body and
+ * one price, so those can be reordered, hidden and styled but never stacked
+ * twice — two <h1>s for one product is not a layout anybody asked for.
+ *
+ * The exceptions are the two whose fields change *what is listed*, not just
+ * how the same thing looks: "Other plans" picks its own source, so a page can
+ * carry one rail of the same category and another of the featured plans, and
+ * "Features & benefits" can be split into a features section and a benefits
+ * section with their own headings and column counts. Anything else an
+ * administrator wants twice — a CTA, a FAQ, a testimonial rail — is an
  * ordinary page block, and the product surfaces offer all of those too.
  *
  * Nothing here hardcodes content. Each block reads the product being rendered;
@@ -447,7 +454,6 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
     group: 'Products',
     icon: 'check',
     surfaces: ['productDetail'],
-    singleton: true,
     schema: productFeaturesSchema,
     fields: [
       { kind: 'boolean', name: 'showFeatures', label: 'Show features', width: 'half' },
@@ -502,7 +508,6 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
     group: 'Products',
     icon: 'package',
     surfaces: ['productDetail'],
-    singleton: true,
     schema: productRelatedSchema,
     fields: [
       { kind: 'text', name: 'heading', label: 'Heading' },
