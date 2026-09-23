@@ -12,7 +12,7 @@ import {
 } from '@/lib/cms/footer';
 import { SettingsSection, SettingsDivider } from '@/components/admin/settings-section';
 import { ColorInput, UnitInput } from '@/components/cms/design-controls';
-import { MediaPicker } from '@/components/admin/media-picker';
+import { MediaOrIcon } from '@/components/cms/media-or-icon';
 import { Card, CardBody } from '@/components/ui/card';
 import { Field, Input, Select, Switch, Textarea } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
@@ -144,10 +144,12 @@ export function FooterForm({
                 />
               </Field>
             </div>
-            <MediaPicker
+            <MediaOrIcon
               label="Footer logo"
-              value={content.brand.logoId || null}
-              onChange={(id) => setBrand('logoId', id ?? '')}
+              mediaId={content.brand.logoId || null}
+              icon={content.brand.logoIcon}
+              onChangeMedia={(id) => setBrand('logoId', id ?? '')}
+              onChangeIcon={(name) => setBrand('logoIcon', name)}
             />
             <Field label="Line under it" htmlFor="footer-description">
               <Textarea

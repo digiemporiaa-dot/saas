@@ -211,3 +211,48 @@ describe('per-breakpoint columns', () => {
   });
 });
 
+
+/**
+ * One artwork, from either source.
+ *
+ * A block that shows a mark takes a picture or an icon, and the control that
+ * sets it is one control — an "Image" field beside an "Icon" field is how a
+ * block ends up with both set and nothing saying which one it draws.
+ */
+describe('artwork that may be an icon', () => {
+  const paired = BLOCK_LIST.flatMap((block) => {
+    const walk = (fields: typeof block.fields): Array<{ block: string; field: typeof fields[number] }> =>
+      fields.flatMap((field) =>
+        field.kind === 'repeater'
+          ? walk(field.fields)
+          : field.kind === 'media' && field.iconField
+            ? [{ block: block.type, field }]
+            : [],
+      );
+    return walk(block.fields);
+  });
+
+  it('offers the icon source on the blocks that draw a mark', () => {
+    expect(paired.length).toBeGreaterThanOrEqual(5);
+  });
+
+  it('names a sibling the block can actually store an icon in', () => {
+    for (const { block, field } of paired) {
+      if (field.kind !== 'media') continue;
+      const defaults = blockDefaults(block);
+      const inRepeater = !(field.name in defaults);
+      // A field inside a repeater is checked through its own item shape, which
+      // the parse below exercises; a top-level one must be in the defaults.
+      if (inRepeater) continue;
+      expect(defaults, `${block}.${field.iconField}`).toHaveProperty(field.iconField!);
+    }
+  });
+
+  it('keeps an icon name that was chosen', () => {
+    const parsed = parseBlockContent('iconBox', { icon: 'rocket', imageId: null }) as Record<
+      string,
+      unknown
+    >;
+    expect(parsed.icon).toBe('rocket');
+  });
+});

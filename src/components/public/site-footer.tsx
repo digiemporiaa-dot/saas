@@ -8,6 +8,7 @@ import { footerVars, renderCopyright, type FooterContent } from '@/lib/cms/foote
 import { countryHref, countryPath } from '@/lib/country/routing';
 import { safeUrl } from '@/lib/utils/sanitize';
 import { cn } from '@/lib/utils/cn';
+import { resolveCmsIcon } from '@/components/ui/icons';
 import {
   LinkedInLineIcon,
   XLineIcon,
@@ -56,7 +57,13 @@ export async function SiteFooter({
   if (!content.enabled) return null;
 
   const logo = content.brand.logoId ? await getMedia(content.brand.logoId) : null;
-  const logoUrl = logo?.url ?? settings.logoDarkUrl ?? settings.logoUrl ?? null;
+  /*
+   * An icon stands in for a picture, so a footer can carry a mark without one
+   * being uploaded. It wins over the site logo the way a chosen picture does —
+   * it is the thing somebody chose — but a chosen picture still wins over it.
+   */
+  const BrandIcon = content.brand.logoId ? null : resolveCmsIcon(content.brand.logoIcon);
+  const logoUrl = logo?.url ?? (BrandIcon ? null : (settings.logoDarkUrl ?? settings.logoUrl));
 
   const columns = content.columns.filter(
     (column) => column.heading || column.links.some((link) => link.label),
@@ -94,8 +101,10 @@ export async function SiteFooter({
 
   const withName =
     content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'name';
-  const withLogo =
-    Boolean(logoUrl) && (content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'logo');
+  const showsMark =
+    content.brand.logoMode === 'logoAndName' || content.brand.logoMode === 'logo';
+  const withLogo = Boolean(logoUrl) && showsMark;
+  const withIcon = Boolean(BrandIcon) && showsMark;
 
   return (
     <footer
@@ -111,6 +120,16 @@ export async function SiteFooter({
                 className="inline-flex items-center gap-3"
                 aria-label={settings.siteName}
               >
+                {withIcon && BrandIcon ? (
+                  <BrandIcon
+                    className="shrink-0 text-[color:var(--footer-heading,rgb(var(--brand-primary)))]"
+                    style={{
+                      height: 'var(--footer-logo-height, 2.5rem)',
+                      width: 'var(--footer-logo-height, 2.5rem)',
+                    }}
+                    aria-hidden="true"
+                  />
+                ) : null}
                 {withLogo ? (
                   /*
                    * Beside the name the logo is a mark, so it is capped much

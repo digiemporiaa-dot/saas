@@ -318,6 +318,8 @@ const logoWallSchema = z.object({
       z.object({
         label: z.string().max(80).default(''),
         imageId: z.string().nullable().default(null),
+        /** An icon instead of a picture, for a mark this app already ships. */
+        icon: z.string().max(40).catch('').default(''),
         url: z.string().max(500).default(''),
       }),
     )
@@ -752,7 +754,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
             width: 'half',
             help: 'Lucide icon name, e.g. shield, zap, users',
           },
-          { kind: 'media', name: 'imageId', label: 'Image (overrides icon)', width: 'half' },
+          { kind: 'media', name: 'imageId', label: 'Artwork', iconField: 'icon' },
         ],
       },
     ],
@@ -1225,7 +1227,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         fields: [
           { kind: 'text', name: 'label', label: 'Name', width: 'half' },
           { kind: 'url', name: 'url', label: 'Link', width: 'half' },
-          { kind: 'media', name: 'imageId', label: 'Logo image' },
+          { kind: 'media', name: 'imageId', label: 'Logo image', iconField: 'icon' },
         ],
       },
     ],
@@ -1408,8 +1410,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         itemLabel: 'Card',
         titleField: 'heading',
         fields: [
-          { kind: 'icon', name: 'icon', label: 'Icon', width: 'half' },
-          { kind: 'media', name: 'imageId', label: 'Or upload an icon', width: 'half' },
+          { kind: 'media', name: 'imageId', label: 'Artwork', iconField: 'icon' },
           { kind: 'text', name: 'heading', label: 'Heading' },
           { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
           ...linkFields('cta', 'Button'),
@@ -1479,8 +1480,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'shield',
     schema: iconBoxSchema,
     fields: [
-      { kind: 'icon', name: 'icon', label: 'Icon', width: 'half' },
-      { kind: 'media', name: 'imageId', label: 'Or upload an icon', width: 'half' },
+      { kind: 'media', name: 'imageId', label: 'Artwork', iconField: 'icon' },
       { kind: 'length', name: 'iconSize', label: 'Icon size', width: 'half', placeholder: '32px' },
       {
         kind: 'select',

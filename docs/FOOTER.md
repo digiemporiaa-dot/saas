@@ -13,7 +13,7 @@ usual result was changing the one that did nothing.
 
 | Section | What it holds |
 | --- | --- |
-| **Brand** | Logo, name, the line under them and the social icons. Logo and name, either alone, or neither. A blank name uses the site name; a blank logo uses the one from Branding. |
+| **Brand** | Logo, name, the line under them and the social icons. The logo is a picture from the media library **or** an icon from the set this app ships — one control, two sources. Logo and name, either alone, or neither. A blank name uses the site name; a blank logo uses the one from Branding. |
 | **Link columns** | Up to four, each a heading and its links. `/pricing` is resolved inside the market being browsed; a full URL is left alone. |
 | **Contact column** | A heading and the phone, email and address, each switchable. Leave one blank and it uses the market's own value. |
 | **Bottom bar** | The line under the rule. `{year}` becomes this year and `{site}` the site name. |

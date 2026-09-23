@@ -58,7 +58,23 @@ type FieldVariant =
       placeholder?: string;
       width?: FieldWidth;
     }
-  | { kind: 'media'; name: string; label: string; help?: string; width?: FieldWidth }
+  | {
+      kind: 'media';
+      name: string;
+      label: string;
+      help?: string;
+      width?: FieldWidth;
+      /**
+       * The sibling field holding an icon name, where this artwork may be one.
+       *
+       * Naming it turns the control into a single picker with two sources: the
+       * media library, or the icon set this app ships. Choosing either clears
+       * the other, because a block draws one mark and not two — which is the
+       * bug the old arrangement had, where an "Image" field and an "Icon"
+       * field sat side by side and nothing said which one won.
+       */
+      iconField?: string;
+    }
   | { kind: 'form'; name: string; label: string; help?: string; width?: FieldWidth }
   | { kind: 'products'; name: string; label: string; help?: string; width?: FieldWidth }
   | { kind: 'productCategory'; name: string; label: string; help?: string; width?: FieldWidth }

@@ -62,6 +62,8 @@ const brandSchema = z.object({
   logoMode: z.enum(LOGO_MODES).catch('logoAndName').default('logoAndName'),
   /** Blank uses the site logo from Branding. */
   logoId: text(40),
+  /** An icon in place of a picture, for a mark this app already ships. */
+  logoIcon: text(40),
   /** Blank uses the site name. */
   title: text(80),
   description: text(400),

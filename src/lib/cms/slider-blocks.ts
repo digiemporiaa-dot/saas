@@ -50,6 +50,8 @@ const logoSliderSchema = z.object({
     .array(
       z.object({
         imageId: mediaId,
+        /** An icon instead of a picture, for a mark this app already ships. */
+        icon: z.string().max(40).catch('').default(''),
         alt: z.string().max(200).default(''),
         title: z.string().max(120).default(''),
         url: link,
@@ -246,7 +248,7 @@ export const SLIDER_BLOCKS: Record<string, BlockDefinition> = {
         titleField: 'title',
         max: 60,
         fields: [
-          { kind: 'media', name: 'imageId', label: 'Logo', width: 'half' },
+          { kind: 'media', name: 'imageId', label: 'Logo', iconField: 'icon' },
           { kind: 'text', name: 'alt', label: 'Alt text', width: 'half' },
           { kind: 'text', name: 'title', label: 'Name', width: 'half' },
           { kind: 'url', name: 'url', label: 'Link', width: 'half' },
@@ -506,10 +508,9 @@ export const SLIDER_BLOCKS: Record<string, BlockDefinition> = {
         titleField: 'heading',
         max: 60,
         fields: [
-          { kind: 'text', name: 'heading', label: 'Heading', width: 'half' },
-          { kind: 'icon', name: 'icon', label: 'Icon', width: 'half' },
+          { kind: 'text', name: 'heading', label: 'Heading' },
           { kind: 'textarea', name: 'text', label: 'Text', rows: 2 },
-          { kind: 'media', name: 'imageId', label: 'Image', width: 'half' },
+          { kind: 'media', name: 'imageId', label: 'Artwork', iconField: 'icon' },
           { kind: 'url', name: 'url', label: 'Link', width: 'half' },
           { kind: 'text', name: 'ctaLabel', label: 'Link label', width: 'half' },
           newTab,

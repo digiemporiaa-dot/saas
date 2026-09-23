@@ -11,6 +11,7 @@ import { RichTextEditor } from './rich-text-editor';
 import { ProductMultiSelect } from './product-select';
 import { FormSelect } from './form-select';
 import { IconSelect } from './icon-select';
+import { MediaOrIcon } from './media-or-icon';
 import { CategorySelect, BrandSelect } from './taxonomy-select';
 import {
   BlogCategorySelect,
@@ -61,6 +62,8 @@ export function FieldList({
               field={field}
               value={readFieldPath(values, field.name)}
               onChange={(value) => onChange(field.name, value)}
+              siblings={values}
+              onChangeSibling={onChange}
               id={`${idPrefix}-${field.name}`}
             />
           </div>
@@ -73,11 +76,21 @@ function FieldControl({
   field,
   value,
   onChange,
+  siblings,
+  onChangeSibling,
   id,
 }: {
   field: FieldDescriptor;
   value: unknown;
   onChange: (value: unknown) => void;
+  /**
+   * The other values in this group, and a way to set one.
+   *
+   * Only the artwork control needs them: it writes a media id or an icon name
+   * depending on which source was picked, and those are two fields.
+   */
+  siblings?: FieldValues;
+  onChangeSibling?: (name: string, value: unknown) => void;
   id: string;
 }) {
   switch (field.kind) {
@@ -177,7 +190,24 @@ function FieldControl({
         </Field>
       );
 
-    case 'media':
+    case 'media': {
+      const iconField = field.iconField;
+      if (iconField && onChangeSibling) {
+        const icon = readFieldPath(siblings ?? {}, iconField);
+        return (
+          <Field label={field.label} hint={field.help}>
+            <MediaOrIcon
+              id={id}
+              label={field.label}
+              mediaId={typeof value === 'string' ? value : null}
+              icon={typeof icon === 'string' ? icon : ''}
+              onChangeMedia={onChange}
+              onChangeIcon={(next) => onChangeSibling(iconField, next)}
+            />
+          </Field>
+        );
+      }
+
       return (
         <Field label={field.label} hint={field.help}>
           <MediaPicker
@@ -187,6 +217,7 @@ function FieldControl({
           />
         </Field>
       );
+    }
 
     case 'form':
       return (

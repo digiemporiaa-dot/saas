@@ -262,6 +262,7 @@ export async function LogoWallBlock({ content, ctx }: { content: LogoWallContent
         {logos.map((logo, index) => {
           const image = logo.imageId ? media.get(logo.imageId) : null;
           const href = safeUrl(logo.url);
+          const LogoIcon = logo.imageId ? null : resolveCmsIcon(logo.icon);
           const inner = image ? (
             <Image
               src={image.url}
@@ -269,6 +270,11 @@ export async function LogoWallBlock({ content, ctx }: { content: LogoWallContent
               width={image.width ?? 140}
               height={image.height ?? 40}
               className={cn('h-8 w-auto object-contain', !inverted && 'opacity-60 grayscale')}
+            />
+          ) : LogoIcon ? (
+            <LogoIcon
+              className={cn('h-8 w-8', inverted ? 'text-white/70' : 'text-muted/70')}
+              aria-hidden="true"
             />
           ) : (
             <span

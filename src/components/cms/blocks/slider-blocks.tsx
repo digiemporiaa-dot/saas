@@ -1,5 +1,6 @@
 import NextImage from 'next/image';
 import { Star } from 'lucide-react';
+import { resolveCmsIcon } from '@/components/ui/icons';
 import { getMediaByIds, type ResolvedMedia } from '@/lib/services/media';
 import { readSliderSettings } from '@/lib/cms/slider';
 import type {
@@ -117,6 +118,7 @@ export async function LogoSliderBlock({
       <SliderCore settings={settings} label={content.heading || 'Logos'}>
         {items.map((item, index) => {
           const image = item.imageId ? media.get(item.imageId) : undefined;
+          const ItemIcon = item.imageId ? null : resolveCmsIcon(item.icon);
           const href = safeUrl(item.url);
           const body = (
             <span
@@ -137,6 +139,15 @@ export async function LogoSliderBlock({
                     content.logoFit === 'cover' ? 'object-cover' : 'object-contain',
                     content.grayscale && 'grayscale transition-[filter] hover:grayscale-0',
                   )}
+                />
+              ) : ItemIcon ? (
+                <ItemIcon
+                  className={cn(
+                    'max-h-full w-auto',
+                    content.grayscale && 'opacity-70 transition-opacity hover:opacity-100',
+                  )}
+                  style={{ height: `${content.logoHeight}px`, width: `${content.logoHeight}px` }}
+                  aria-hidden="true"
                 />
               ) : (
                 <span className="text-sm font-medium opacity-70">{item.title}</span>
@@ -498,6 +509,7 @@ export async function TextBoxSliderBlock({
       <SliderCore settings={settings} label={content.heading || 'Cards'}>
         {items.map((item, index) => {
           const image = item.imageId ? media.get(item.imageId) : undefined;
+          const ItemIcon = item.imageId ? null : resolveCmsIcon(item.icon);
           const href = safeUrl(item.url);
           return (
             <article
@@ -517,6 +529,10 @@ export async function TextBoxSliderBlock({
                 >
                   <SlideImage media={image} alt={item.heading} ratio="16 / 9" fit="cover" />
                 </div>
+              ) : ItemIcon ? (
+                /* The icon this card was given. It had a field for one all
+                   along; nothing drew it. */
+                <ItemIcon className="mb-3 h-8 w-8 text-brand" aria-hidden="true" />
               ) : null}
               {item.heading ? (
                 <h3 className="font-heading text-base font-semibold">{item.heading}</h3>
