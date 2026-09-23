@@ -52,7 +52,7 @@ export function FaqBlock({ content, ctx }: { content: FaqContent; ctx: BlockCont
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="cms-measure mx-auto max-w-3xl">
       <SectionHeading
         heading={content.heading}
         description={content.description}

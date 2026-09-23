@@ -81,7 +81,25 @@ export type BlockDefinition = {
    */
   deprecated?: boolean;
   supersededBy?: string;
+  /**
+   * Design-panel controls this block honours beyond the ones every section
+   * does.
+   *
+   * Spacing, width, height, visibility, alignment, colours and type sizes reach
+   * every section through the section and its container. These do not: grid
+   * columns and gaps are read by `.cms-grid`, image sizes by `.cms-media`, and
+   * only some blocks render either. The panel shows a control only to a block
+   * that declares it here — offering one to a block that never reads it is how
+   * the panel ended up mostly dead controls.
+   *
+   * Checked against the renderers by `design-controls.test.ts`, in both
+   * directions: a block cannot claim a control it ignores, nor render a grid
+   * without offering the controls for it.
+   */
+  design?: ReadonlyArray<BlockDesignCapability>;
 };
+
+export type BlockDesignCapability = 'grid' | 'image';
 
 /** Label + link pair, used by nearly every block that offers a button. */
 export const linkFields = (prefix: string, label: string): FieldDescriptor[] => [

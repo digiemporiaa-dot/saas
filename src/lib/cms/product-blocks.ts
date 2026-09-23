@@ -363,6 +363,7 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
 
   productMedia: {
     type: 'productMedia',
+    design: ['grid'],
     label: 'Product images',
     description: 'The main image and the gallery beneath it.',
     group: 'Products',
@@ -455,6 +456,7 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
 
   productFeatures: {
     type: 'productFeatures',
+    design: ['grid'],
     label: 'Features & benefits',
     description: "Everything the product includes, and why teams choose it.",
     group: 'Products',
@@ -510,6 +512,7 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
 
   productRelated: {
     type: 'productRelated',
+    design: ['grid'],
     label: 'Other plans',
     description: 'A rail of related products, as cards.',
     group: 'Products',

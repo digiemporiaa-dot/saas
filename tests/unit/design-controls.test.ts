@@ -1,0 +1,180 @@
+import { describe, it, expect } from 'vitest';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { BLOCKS } from '@/lib/cms/blocks';
+import { buildSectionStyles, parseSectionDesign } from '@/lib/cms/design';
+
+/**
+ * Every control on the design panel moves something.
+ *
+ * The panel writes a setting, the section turns it into CSS, and an element on
+ * the page has to read that CSS. Most of the panel's controls used to stop at
+ * the second step: the value saved, the variable was written, and nothing on
+ * the page read it — because the heading beside it carried a Tailwind size of
+ * its own, or the text kept its own measure, or the block had no grid for the
+ * grid controls to act on. Nothing failed, so nothing said so. This does.
+ */
+
+const renderer = readFileSync('src/components/cms/section-renderer.tsx', 'utf8');
+const BLOCK_DIR = 'src/components/cms/blocks';
+const blockFiles = readdirSync(BLOCK_DIR)
+  .filter((file) => file.endsWith('.tsx'))
+  .map((file) => readFileSync(join(BLOCK_DIR, file), 'utf8'));
+
+/** A function's own source, found by name and cut at its matching brace. */
+function functionSource(source: string, name: string): string | null {
+  const start = source.search(new RegExp(`function ${name}\\b`));
+  if (start < 0) return null;
+
+  // Past the parameter list — which has braces of its own in a destructure.
+  let i = source.indexOf('(', start);
+  for (let depth = 0; i < source.length; i += 1) {
+    if (source[i] === '(') depth += 1;
+    else if (source[i] === ')' && --depth === 0) break;
+  }
+  const open = source.indexOf('{', source.indexOf(')', i));
+  let depth = 0;
+  for (let j = open; j < source.length; j += 1) {
+    if (source[j] === '{') depth += 1;
+    else if (source[j] === '}' && --depth === 0) return source.slice(start, j + 1);
+  }
+  return null;
+}
+
+/** What a block's renderer draws: its own body, and the helpers beside it that it uses. */
+function rendered(component: string): string {
+  for (const file of blockFiles) {
+    const own = functionSource(file, component);
+    if (!own) continue;
+    const helpers = [...own.matchAll(/<([A-Z][A-Za-z]+)/g)]
+      .map((match) => match[1]!)
+      .filter((tag) => tag !== component)
+      .map((tag) => functionSource(file, tag) ?? '');
+    return [own, ...helpers].join('\n');
+  }
+  return '';
+}
+
+const TYPES = [...renderer.matchAll(/case '([A-Za-z]+)':\s*return <([A-Za-z]+)/g)].map(
+  (match) => ({ type: match[1]!, component: match[2]! }),
+);
+
+describe('the controls a block is offered', () => {
+  it('finds the renderer for every block it checks', () => {
+    expect(TYPES.length).toBeGreaterThan(40);
+    for (const { type, component } of TYPES) {
+      expect(rendered(component), `${type} → ${component}`).not.toBe('');
+    }
+  });
+
+  /*
+   * Both directions. A block that claims the grid controls without a grid
+   * offers controls that do nothing; a block that renders a grid without
+   * claiming them hides controls that would have worked.
+   */
+  it('offers grid columns and gaps exactly where there is a grid', () => {
+    for (const { type, component } of TYPES) {
+      const usesGrid = /cms-grid|columnVars|blockColumnVars/.test(rendered(component));
+      const offers = (BLOCKS[type]?.design ?? []).includes('grid');
+      expect(offers, `${type}: renders a grid ${usesGrid}, offers grid controls ${offers}`).toBe(
+        usesGrid,
+      );
+    }
+  });
+
+  it('offers image sizes exactly where the image reads them', () => {
+    for (const { type, component } of TYPES) {
+      const usesMedia = /<CmsImage\b/.test(rendered(component));
+      const offers = (BLOCKS[type]?.design ?? []).includes('image');
+      expect(offers, `${type}: sized image ${usesMedia}, offers image sizes ${offers}`).toBe(
+        usesMedia,
+      );
+    }
+  });
+
+  it('does not let a claim hide from the check above', () => {
+    const checked = new Set(TYPES.map(({ type }) => type));
+    for (const [type, block] of Object.entries(BLOCKS)) {
+      if ((block.design ?? []).length === 0) continue;
+      expect(checked.has(type), `${type} declares controls but is not checked`).toBe(true);
+    }
+  });
+
+  it('offers nothing that nothing reads', () => {
+    const panel = readFileSync('src/components/cms/design-panel.tsx', 'utf8');
+    // `.cms-stack` is on no block; `--sec-secondary` was read by no rule.
+    expect(panel).not.toContain("'Content gap'");
+    expect(panel).not.toContain('Secondary colour');
+  });
+});
+
+describe('the settings that used to lose to a utility class', () => {
+  const styles = (raw: unknown) => buildSectionStyles(parseSectionDesign(raw), 'abc');
+
+  it('writes no CSS at all for a section left at its defaults', () => {
+    expect(styles({}).css).toBe('');
+  });
+
+  /*
+   * `.sec-abc :is(h1,h2,h3)` is a class and an element: it outranks the single
+   * class of `text-3xl` or `lg:text-5xl` wherever either sits in the sheet.
+   * The variable it replaced was read at a class's specificity and lost.
+   */
+  it('sizes headings with a rule that outranks a heading’s own size', () => {
+    const { css, style } = styles({ desktop: { headingSize: '40px' } });
+    expect(css).toContain('.sec-abc :is(h1,h2,h3){font-size:40px}');
+    expect(style['--sec-heading-size']).toBeUndefined();
+  });
+
+  it('sizes body text the same way', () => {
+    expect(styles({ desktop: { bodySize: '18px' } }).css).toContain(
+      '.sec-abc :is(p,li){font-size:18px}',
+    );
+  });
+
+  it('aligns text even where a block centred it itself', () => {
+    expect(styles({ desktop: { align: 'left' } }).css).toContain('{text-align:left}');
+  });
+
+  it('lets a chosen content width release the text’s own measure', () => {
+    // The container widened already; the hero's words stayed in a max-w-3xl
+    // column inside it, so "full width" changed nothing a visitor could see.
+    expect(styles({ desktop: { contentWidth: '100%' } }).css).toContain(
+      '.sec-abc .cms-measure{max-width:none}',
+    );
+  });
+
+  it('lets a narrower screen override the desktop value, not the other way round', () => {
+    const { css } = styles({
+      desktop: { headingSize: '48px' },
+      mobile: { headingSize: '28px' },
+    });
+    const desktop = css.indexOf('font-size:48px');
+    const mobile = css.indexOf('font-size:28px');
+    expect(desktop).toBeGreaterThanOrEqual(0);
+    expect(mobile).toBeGreaterThan(desktop);
+    expect(css.slice(0, mobile)).toContain('@media (max-width:767px)');
+  });
+
+  it('cannot be made to write a rule of its own', () => {
+    // Every value is validated before it gets here; a length that is not one
+    // is dropped rather than interpolated.
+    expect(styles({ desktop: { headingSize: '1px}body{display:none' } }).css).toBe('');
+  });
+});
+
+describe('the columns a section lives in', () => {
+  it('gives every section a container for the panel to act on', () => {
+    // A product page and an article render their sections without the page
+    // container, and so had no element for content width, side padding, body
+    // size or alignment to reach.
+    expect(renderer).toContain("'cms-container cms-container--fill'");
+    const css = readFileSync('src/app/globals.css', 'utf8');
+    expect(css).toMatch(/\.cms-container\.cms-container--fill\s*\{[^}]*max-width:\s*var\(--sec-max-w,\s*none\)/);
+  });
+
+  it('marks the text measures a chosen width releases', () => {
+    const marked = blockFiles.filter((file) => file.includes('cms-measure')).length;
+    expect(marked).toBeGreaterThanOrEqual(5);
+  });
+});

@@ -464,7 +464,6 @@ function breakpointVars(bp: BreakpointDesign, includeDisplay: boolean): VarMap {
   if (bp.contentWidth) vars['--sec-max-w'] = bp.contentWidth;
   if (bp.minHeight) vars['--sec-min-h'] = bp.minHeight;
   if (bp.align !== 'inherit') vars['--sec-align'] = bp.align;
-  if (bp.headingSize) vars['--sec-heading-size'] = bp.headingSize;
   if (bp.bodySize) vars['--sec-body-size'] = bp.bodySize;
   if (bp.rowGap) vars['--sec-row-gap'] = bp.rowGap;
   if (bp.columnGap) vars['--sec-col-gap'] = bp.columnGap;
@@ -475,6 +474,35 @@ function breakpointVars(bp: BreakpointDesign, includeDisplay: boolean): VarMap {
   if (includeDisplay) vars['--sec-display'] = bp.hidden ? 'none' : 'block';
   else if (bp.hidden) vars['--sec-display'] = 'none';
   return vars;
+}
+
+/**
+ * The settings a variable cannot carry, as rules scoped to one section.
+ *
+ * Heading size, body size and text alignment used to be variables read by a
+ * rule in the stylesheet — and every heading a block renders carries a
+ * Tailwind size class of its own, which sits later in the stylesheet at the
+ * same specificity and so won every time. The control saved, the variable was
+ * written, and nothing on the page moved. Scoped to the section's own class,
+ * `.sec-x :is(h1, h2, h3)` outranks a single utility class wherever it sits.
+ *
+ * Content width is here for the same reason from the other side: the section's
+ * container did widen, but the text inside kept its own `max-w-*` measure, so a
+ * section set to full width still set its words in a narrow column. When a
+ * width is chosen for a screen size, those measures give way to it.
+ *
+ * Every value is a validated length or an enum by the time it gets here, so
+ * nothing a person typed can close the rule and start another.
+ */
+function breakpointRules(bp: BreakpointDesign, scope: string): string {
+  const rules: string[] = [];
+  if (bp.headingSize) rules.push(`${scope} :is(h1,h2,h3){font-size:${bp.headingSize}}`);
+  if (bp.bodySize) rules.push(`${scope} :is(p,li){font-size:${bp.bodySize}}`);
+  if (bp.align !== 'inherit') {
+    rules.push(`${scope} :is(h1,h2,h3,h4,h5,h6,p,li,blockquote){text-align:${bp.align}}`);
+  }
+  if (bp.contentWidth) rules.push(`${scope} .cms-measure{max-width:none}`);
+  return rules.join('');
 }
 
 function widthVar(design: SectionDesign): string | null {
@@ -569,7 +597,6 @@ export function buildSectionStyles(
   if (text) style['--sec-text'] = text;
   if (heading) style['--sec-heading-color'] = heading;
   style['--sec-primary'] = design.colors.primary || 'rgb(var(--brand-primary))';
-  style['--sec-secondary'] = design.colors.secondary || 'rgb(var(--brand-secondary))';
   style['--sec-button'] =
     design.colors.button || design.colors.primary || 'rgb(var(--brand-primary))';
   style['--sec-button-text'] = design.colors.buttonText || '#FFFFFF';
@@ -581,13 +608,19 @@ export function buildSectionStyles(
       ? hexToRgba(design.background.overlayColor, design.background.overlayOpacity)
       : null;
 
-  const blocks: string[] = [];
+  const scope = `.${className}`;
+  // Desktop first and unconditioned, so the narrower breakpoints below — later
+  // in the same sheet, at the same specificity — override it where they apply.
+  const blocks: string[] = [breakpointRules(design.desktop, scope)];
   for (const bp of ['tablet', 'mobile'] as const) {
     const vars = breakpointVars(design[bp], false);
     const entries = Object.entries(vars);
-    if (entries.length === 0) continue;
     const decls = entries.map(([key, value]) => `${key}:${value}`).join(';');
-    blocks.push(`@media (max-width:${BREAKPOINT_MAX_WIDTH[bp]}px){.${className}{${decls}}}`);
+    const rules = breakpointRules(design[bp], scope);
+    if (!decls && !rules) continue;
+    blocks.push(
+      `@media (max-width:${BREAKPOINT_MAX_WIDTH[bp]}px){${decls ? `${scope}{${decls}}` : ''}${rules}}`,
+    );
   }
 
   return {

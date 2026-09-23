@@ -277,7 +277,7 @@ export async function ImageBoxBlock({ content, ctx }: { content: ImageBoxContent
           />
         ) : null}
         <div className="absolute inset-0 -z-10 bg-black/50" aria-hidden="true" />
-        <div className="mx-auto max-w-2xl text-center text-white">{copy}</div>
+        <div className="cms-measure mx-auto max-w-2xl text-center text-white">{copy}</div>
       </div>
     );
   }
@@ -297,7 +297,7 @@ export async function ImageBoxBlock({ content, ctx }: { content: ImageBoxContent
 
   if (content.layout === 'imageTop') {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="cms-measure mx-auto max-w-3xl">
         <div className="mb-8">{picture}</div>
         {copy}
       </div>
@@ -320,7 +320,7 @@ export async function IconBoxBlock({ content, ctx }: { content: IconBoxContent; 
   return (
     <MaybeLink
       url={content.linkUrl}
-      className={cn('group block', centred && 'mx-auto max-w-2xl text-center')}
+      className={cn('group block', centred && 'cms-measure mx-auto max-w-2xl text-center')}
     >
       {image || Icon ? (
         <IconBadge
@@ -469,7 +469,7 @@ export function ListSectionBlock({ content, ctx }: { content: ListSectionContent
 export function HeadingTextBlock({ content, ctx }: { content: HeadingTextContent; ctx: BlockContext }) {
   const centred = content.align === 'center';
   return (
-    <div className={cn(centred ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl')}>
+    <div className={cn('cms-measure', centred ? 'mx-auto max-w-3xl text-center' : 'max-w-3xl')}>
       <SectionHeading
         as={ctx.isFirst ? 'h1' : 'h2'}
         eyebrow={content.eyebrow}
@@ -477,7 +477,7 @@ export function HeadingTextBlock({ content, ctx }: { content: HeadingTextContent
         description={content.subheading}
         align={centred ? 'center' : 'left'}
         inverted={ctx.inverted}
-        className={centred ? undefined : 'max-w-3xl'}
+        className={centred ? undefined : 'cms-measure max-w-3xl'}
       />
       <RichText html={content.content} className={cn('mt-6', ctx.inverted && 'text-white/80')} />
       {content.ctaLabel ? (
@@ -563,7 +563,7 @@ export async function TextListImageBlock({
 
   if (stacked) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <div className="cms-measure mx-auto max-w-3xl">
         {content.imagePlacement === 'top' ? <div className="mb-10">{picture}</div> : null}
         {copy}
         {content.imagePlacement === 'bottom' ? <div className="mt-10">{picture}</div> : null}

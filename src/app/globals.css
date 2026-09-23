@@ -382,9 +382,6 @@
     color: var(--sec-heading-color, inherit);
   }
 
-  .cms-section :where(h1, h2, h3) {
-    font-size: var(--sec-heading-size, inherit);
-  }
 
   .cms-container {
     width: 100%;
@@ -397,6 +394,20 @@
 
   @media (min-width: 640px) {
     .cms-container { padding-inline: var(--sec-px, var(--layout-gutter)); }
+  }
+
+  /*
+    The container for a section that lives in someone else's column — a product
+    page, an article. It already has a width and a gutter from that column, so
+    by default this adds neither; but it is still the element that reads the
+    design panel's content width, side padding, body size and alignment. Without
+    it those four controls had nothing to act on there, and did nothing.
+
+    Two classes, so it outranks the breakpoint rule above wherever it sits.
+  */
+  .cms-container.cms-container--fill {
+    max-width: var(--sec-max-w, none);
+    padding-inline: var(--sec-px, 0);
   }
 
   /* Background image / gradient layer, painted behind the content. */
@@ -921,6 +932,7 @@
   /* A slot wrapper that honours the design panel without painting a band. */
   .cms-slot {
     display: var(--sec-display, block);
+    max-width: var(--sec-max-w, none);
     margin: var(--sec-mt, 0) var(--sec-mr, 0) var(--sec-mb, var(--blog-widget-gap, 1.5rem))
             var(--sec-ml, 0);
     padding: var(--sec-pt, 0) var(--sec-pr, 0) var(--sec-pb, 0) var(--sec-pl, 0);

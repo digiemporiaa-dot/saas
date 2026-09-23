@@ -607,6 +607,7 @@ const MARKER_OPTIONS = [
 const PAGE_BLOCKS: Record<string, BlockDefinition> = {
   hero: {
     type: 'hero',
+    design: ['image'],
     label: 'Hero',
     description: 'Large headline, supporting copy and up to two calls to action.',
     group: 'Content',
@@ -717,6 +718,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   featureGrid: {
     type: 'featureGrid',
+    design: ['grid'],
     label: 'Feature grid',
     description: 'A grid of benefits or features with optional icons.',
     group: 'Content',
@@ -789,6 +791,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   productCards: {
     type: 'productCards',
+    design: ['grid'],
     label: 'Product cards',
     description: 'Product plans displayed as pricing cards.',
     group: 'Products',
@@ -919,6 +922,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   testimonials: {
     type: 'testimonials',
+    design: ['grid'],
     label: 'Testimonials',
     description: 'Customer quotes with name, role and company.',
     group: 'Social proof',
@@ -1235,6 +1239,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   stats: {
     type: 'stats',
+    design: ['grid'],
     label: 'Statistics (classic)',
     description: 'A row of headline numbers. Superseded by the richer Statistics section.',
     group: 'Social proof',
@@ -1262,6 +1267,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   steps: {
     type: 'steps',
+    design: ['grid'],
     label: 'Steps / process',
     description: 'A numbered sequence describing how something works.',
     group: 'Content',
@@ -1286,6 +1292,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   imageCards: {
     type: 'imageCards',
+    design: ['grid', 'image'],
     label: 'Image cards',
     description: 'A responsive grid of picture cards with a heading, copy and a link.',
     group: 'Cards & media',
@@ -1357,6 +1364,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   iconCards: {
     type: 'iconCards',
+    design: ['grid'],
     label: 'Icon cards',
     description: 'A grid of icon-led cards. Use an icon from the library or upload your own.',
     group: 'Cards & media',
@@ -1422,6 +1430,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   imageBox: {
     type: 'imageBox',
+    design: ['image'],
     label: 'Image box',
     description: 'One image paired with a heading, copy and a button.',
     group: 'Cards & media',
@@ -1505,6 +1514,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   listSection: {
     type: 'listSection',
+    design: ['grid'],
     label: 'List',
     description: 'A heading with an unlimited, reorderable list of points.',
     group: 'Content',
@@ -1565,6 +1575,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   textListImage: {
     type: 'textListImage',
+    design: ['image'],
     label: 'Text + list + image',
     description: 'Copy and a bullet list beside an image, with two calls to action.',
     group: 'Content',
@@ -1626,6 +1637,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   statistics: {
     type: 'statistics',
+    design: ['grid'],
     label: 'Statistics',
     description: 'Headline numbers such as “500+ Customers” or “99.9% Support SLA”.',
     group: 'Social proof',
@@ -1677,6 +1689,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   productGrid: {
     type: 'productGrid',
+    design: ['grid'],
     label: 'Product grid',
     description: 'Drop products onto any page — all, featured, hand-picked, by category or brand.',
     group: 'Products',

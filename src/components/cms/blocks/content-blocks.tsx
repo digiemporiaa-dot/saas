@@ -25,7 +25,7 @@ export function RichTextBlock({ content, ctx }: { content: RichTextContent; ctx:
   return (
     <div
       className={cn(
-        content.width === 'narrow' ? 'mx-auto max-w-3xl' : '',
+        content.width === 'narrow' ? 'cms-measure mx-auto max-w-3xl' : '',
         content.align === 'center' && 'text-center',
       )}
     >

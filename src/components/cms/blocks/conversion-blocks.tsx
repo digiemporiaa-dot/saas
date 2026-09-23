@@ -245,7 +245,7 @@ export async function FormBlock({
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="cms-measure mx-auto max-w-2xl">
       <SectionHeading
         heading={content.heading}
         description={content.description}

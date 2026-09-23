@@ -107,7 +107,7 @@ export function SectionHeading({
   return (
     <div
       className={cn(
-        'max-w-2xl',
+        'cms-measure max-w-2xl',
         align === 'center' && 'mx-auto text-center',
         align === 'right' && 'ml-auto text-right',
         className,

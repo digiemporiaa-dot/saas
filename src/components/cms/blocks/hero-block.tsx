@@ -35,7 +35,7 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
   const centred = isBackdrop || (content.alignment === 'center' && !showImage && !showForm);
 
   const copy = (
-    <div className={cn(centred && 'mx-auto max-w-3xl text-center')}>
+    <div className={cn(centred && 'cms-measure mx-auto max-w-3xl text-center')}>
       <SectionHeading
         as={ctx.isFirst ? 'h1' : 'h2'}
         eyebrow={content.eyebrow}
@@ -43,7 +43,7 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
         description={content.description}
         align={centred ? 'center' : 'left'}
         inverted={inverted}
-        className={centred ? undefined : 'max-w-xl'}
+        className={centred ? undefined : 'cms-measure max-w-xl'}
       />
 
       {bullets.length > 0 ? (

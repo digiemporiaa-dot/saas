@@ -397,13 +397,15 @@ export async function SectionRenderer({
           <div className="cms-section-overlay" aria-hidden="true" style={{ backgroundColor: styles.overlay }} />
         ) : null}
 
-        {container ? (
-          <div className="cms-container">
-            <BlockBody section={section} ctx={ctx} />
-          </div>
-        ) : (
+        {/*
+          * Always a container, so the design panel's content width, side
+          * padding, body size and alignment have an element to act on. In a
+          * column that already sets its own width and gutter — a product page,
+          * an article — it adds neither unless the section asks for one.
+          */}
+        <div className={container ? 'cms-container' : 'cms-container cms-container--fill'}>
           <BlockBody section={section} ctx={ctx} />
-        )}
+        </div>
       </section>
     </>
   );

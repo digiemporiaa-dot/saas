@@ -570,6 +570,7 @@ function SectionEditor({
             value={settings}
             idPrefix={`s-${section.id}`}
             takenAnchors={takenAnchors}
+            supports={getBlock(section.blockType)?.design ?? []}
             onChange={(next: SectionDesign) => {
               setSettings(next as unknown as FieldValues);
               setDirty(true);

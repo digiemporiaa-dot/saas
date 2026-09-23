@@ -15,6 +15,7 @@ import {
   type BreakpointDesign,
   type BoxValue,
 } from '@/lib/cms/design';
+import type { BlockDesignCapability } from '@/lib/cms/block-types';
 import { Field, Input, Select, Switch, Label } from '@/components/ui/field';
 import { MediaPicker } from '@/components/admin/media-picker';
 import { UnitInput, BoxInput, ColorInput, DesignGroup } from './design-controls';
@@ -64,13 +65,24 @@ export function DesignPanel({
   view = 'all',
   /** Anchor IDs used by the page's other sections, for duplicate detection. */
   takenAnchors = [],
+  supports,
 }: {
   value: unknown;
   onChange: (next: SectionDesign) => void;
   idPrefix: string;
   view?: DesignPanelView;
   takenAnchors?: string[];
+  /**
+   * The optional controls this block honours — see `BlockDefinition.design`.
+   *
+   * Left out, every control shows, which is only right for a caller that has
+   * no block to ask. The section editors pass it, so a hero is not offered
+   * grid columns it has no grid to apply to.
+   */
+  supports?: ReadonlyArray<BlockDesignCapability>;
 }) {
+  const offersGrid = !supports || supports.includes('grid');
+  const offersImage = !supports || supports.includes('image');
   // Always work against a fully-parsed design so a legacy or partial settings
   // object still renders every control with sensible values.
   const design = React.useMemo(() => parseSectionDesign(value), [value]);
@@ -221,6 +233,7 @@ export function DesignPanel({
 
           <DesignGroup title="Layout & alignment" description="Columns, alignment and gaps">
             <div className="grid gap-4 sm:grid-cols-2">
+              {offersGrid ? (
               <Field
                 label="Grid columns"
                 htmlFor={`${idPrefix}-${breakpoint}-columns`}
@@ -243,6 +256,7 @@ export function DesignPanel({
                   ))}
                 </Select>
               </Field>
+              ) : null}
 
               <Field label="Text alignment" htmlFor={`${idPrefix}-${breakpoint}-align`}>
                 <Select
@@ -262,12 +276,18 @@ export function DesignPanel({
               </Field>
             </div>
 
+            {/*
+              * Gaps are read by `.cms-grid`, so only a grid block offers them.
+              * "Content gap" is not offered at all: the class that reads it is
+              * on no block, and a control that cannot move anything is worse
+              * than no control.
+              */}
+            {offersGrid ? (
             <div className="grid gap-3 sm:grid-cols-2">
               {(
                 [
                   ['rowGap', 'Row gap'],
                   ['columnGap', 'Column gap'],
-                  ['contentGap', 'Content gap'],
                   ['cardGap', 'Card gap'],
                 ] as const
               ).map(([key, label]) => (
@@ -283,6 +303,7 @@ export function DesignPanel({
                 </div>
               ))}
             </div>
+            ) : null}
           </DesignGroup>
 
           <DesignGroup title="Typography & images" description="Sizes for this screen size">
@@ -291,8 +312,12 @@ export function DesignPanel({
                 [
                   ['headingSize', 'Heading size'],
                   ['bodySize', 'Body text size'],
-                  ['imageWidth', 'Image width'],
-                  ['imageHeight', 'Image height'],
+                  ...(offersImage
+                    ? ([
+                        ['imageWidth', 'Image width'],
+                        ['imageHeight', 'Image height'],
+                      ] as const)
+                    : []),
                 ] as const
               ).map(([key, label]) => (
                 <div key={key} className="space-y-1.5">
@@ -556,12 +581,6 @@ export function DesignPanel({
                 id={`${idPrefix}-cPrimary`}
                 value={design.colors.primary}
                 onChange={(primary) => patch({ colors: { ...design.colors, primary } })}
-              />
-              <ColorInput
-                label="Secondary colour"
-                id={`${idPrefix}-cSecondary`}
-                value={design.colors.secondary}
-                onChange={(secondary) => patch({ colors: { ...design.colors, secondary } })}
               />
               <ColorInput
                 label="Heading colour"

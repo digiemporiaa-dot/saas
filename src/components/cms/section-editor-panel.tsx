@@ -240,6 +240,7 @@ export function SectionEditorPanel({
               view="design"
               idPrefix={`d-${section.id}`}
               takenAnchors={takenAnchors}
+              supports={definition?.design ?? []}
               onChange={(next: SectionDesign) =>
                 edit('settings:design', { ...draft, settings: next as unknown as FieldValues })
               }
@@ -252,6 +253,7 @@ export function SectionEditorPanel({
               view="responsive"
               idPrefix={`r-${section.id}`}
               takenAnchors={takenAnchors}
+              supports={definition?.design ?? []}
               onChange={(next: SectionDesign) =>
                 edit('settings:responsive', { ...draft, settings: next as unknown as FieldValues })
               }
@@ -277,6 +279,7 @@ export function SectionEditorPanel({
               view="advanced"
               idPrefix={`a-${section.id}`}
               takenAnchors={takenAnchors}
+              supports={definition?.design ?? []}
               onChange={(next: SectionDesign) =>
                 edit('settings:advanced', { ...draft, settings: next as unknown as FieldValues })
               }
