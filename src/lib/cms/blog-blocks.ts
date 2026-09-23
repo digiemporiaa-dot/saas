@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { normaliseColor } from './color';
 import { panelDesignSchema } from './design';
+import { formStyleField, formStyleGroups } from './form-style';
 import {
   linkFields,
   responsiveColumnsSchema,
@@ -318,6 +319,8 @@ const blogNewsletterSchema = z.object({
   imageId: z.string().max(40).nullable().catch(null).default(null),
   panel: panelDesignSchema.default(panelDesignSchema.parse({})),
   footnote: z.string().max(240).catch('').default(''),
+  /** The form's look in this section only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 const dividerSchema = z.object({
@@ -582,6 +585,8 @@ const widgetFormSchema = z.object({
   ctaLocation: z.string().max(120).catch('').default(''),
   /** Uses the post's own sidebar form when it has one. */
   preferPostForm: z.coerce.boolean().catch(true).default(true),
+  /** The form's look in this widget only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 const widgetCtaSchema = z.object({
@@ -1008,7 +1013,13 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
           { label: 'Centred', value: 'centered' },
         ],
       },
-      { kind: 'form', name: 'formSlug', label: 'Form', width: 'half' },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form',
+        width: 'half',
+        help: 'Its heading, colours and button are on the Form tab.',
+      },
       {
         kind: 'text',
         name: 'ctaLocation',
@@ -1026,6 +1037,7 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'footnote', label: 'Small print under the form' },
       ...widgetPanelFields.filter((field) => field.name.startsWith('panel.')),
     ],
+    formFields: formStyleGroups(),
   },
 
   divider: {
@@ -1412,7 +1424,13 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
     schema: widgetFormSchema,
     fields: [
       ...widgetBaseFields,
-      { kind: 'form', name: 'formSlug', label: 'Form', width: 'half' },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form',
+        width: 'half',
+        help: 'Its heading, colours and button are on the Form tab.',
+      },
       {
         kind: 'boolean',
         name: 'preferPostForm',
@@ -1428,6 +1446,8 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
       },
       ...widgetPanelFields,
     ],
+    // The widget is already the form's card, styled by its own panel fields.
+    formFields: formStyleGroups({ card: false }),
   },
 
   widgetNewsletter: {
@@ -1440,10 +1460,17 @@ export const BLOG_BLOCKS: Record<string, BlockDefinition> = {
     schema: widgetFormSchema,
     fields: [
       ...widgetBaseFields,
-      { kind: 'form', name: 'formSlug', label: 'Form', width: 'half' },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form',
+        width: 'half',
+        help: 'Its heading, colours and button are on the Form tab.',
+      },
       { kind: 'text', name: 'ctaLocation', label: 'Tracking label', width: 'half' },
       ...widgetPanelFields,
     ],
+    formFields: formStyleGroups({ card: false }),
   },
 
   widgetCta: {

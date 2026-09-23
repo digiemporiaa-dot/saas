@@ -47,6 +47,7 @@ function same(a: Draft, b: Draft): boolean {
  *
  * Content comes from the block's own field descriptors through the shared field
  * renderer; Design, Responsive and Advanced come from the shared design panel.
+ * A block that embeds a form also gets a Form tab, from its `formFields`.
  * Nothing block-specific lives here, which is what keeps a new block free.
  */
 export function SectionEditorPanel({
@@ -181,6 +182,7 @@ export function SectionEditorPanel({
   }
 
   const dirty = state === 'dirty' || state === 'error';
+  const formGroups = definition.formFields ?? [];
 
   const changed = !same(draft, saved);
 
@@ -209,6 +211,8 @@ export function SectionEditorPanel({
       <AdminTabs
         tabs={[
           { id: 'content', label: 'Content' },
+          // Only a block that embeds a form has one to style.
+          ...(formGroups.length > 0 ? [{ id: 'form', label: 'Form' }] : []),
           { id: 'design', label: 'Design' },
           { id: 'responsive', label: 'Responsive' },
           { id: 'advanced', label: 'Advanced' },
@@ -233,6 +237,35 @@ export function SectionEditorPanel({
               }
             />
           </TabPanel>
+
+          {formGroups.length > 0 ? (
+            <TabPanel id="form" active={tab} className="space-y-4">
+              <p className="text-xs text-muted">
+                Restyles the form in this section only. Anything left blank keeps the form’s own
+                design from Forms, and other pages using the same form are not affected.
+              </p>
+              {formGroups.map((group) => (
+                <fieldset
+                  key={group.title}
+                  className="space-y-3 rounded-lg border border-hairline p-3"
+                >
+                  <legend className="px-1 text-sm font-medium text-content">{group.title}</legend>
+                  {group.help ? <p className="text-xs text-muted">{group.help}</p> : null}
+                  <FieldList
+                    fields={group.fields}
+                    values={content}
+                    idPrefix={`f-${section.id}`}
+                    onChange={(field, value) =>
+                      edit(`form:${field}`, {
+                        ...draft,
+                        content: writeFieldPath(content, field, value) as FieldValues,
+                      })
+                    }
+                  />
+                </fieldset>
+              ))}
+            </TabPanel>
+          ) : null}
 
           <TabPanel id="design" active={tab}>
             <DesignPanel

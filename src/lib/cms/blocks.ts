@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { panelDesignSchema } from '@/lib/cms/design';
+import { formStyleField, formStyleGroups } from './form-style';
 import type { FieldDescriptor } from './fields';
 import {
   BLOCK_GROUPS,
@@ -93,6 +94,8 @@ const heroSchema = z.object({
   formSlug: z.string().max(120).default(''),
   formHeading: z.string().max(160).default(''),
   formDescription: z.string().max(400).default(''),
+  /** The form's look in this hero only — the Form tab. */
+  formStyle: formStyleField,
   /**
    * Internal CTA attribution. Names *where on the site* this form sits, so a
    * lead can be traced to the placement that converted it — separately from
@@ -272,6 +275,8 @@ const ctaSchema = z.object({
    * label they already report under.
    */
   ctaLocation: z.string().max(120).default(''),
+  /** The form's look in this section only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 // --- leadMagnet ------------------------------------------------------------
@@ -290,6 +295,8 @@ const leadMagnetSchema = z.object({
    * label they already report under.
    */
   ctaLocation: z.string().max(120).default(''),
+  /** The form's look in this section only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 // --- formBlock -------------------------------------------------------------
@@ -308,6 +315,8 @@ const formBlockSchema = z.object({
    * label they already report under.
    */
   ctaLocation: z.string().max(120).default(''),
+  /** The form's look in this section only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 // --- logoWall --------------------------------------------------------------
@@ -663,7 +672,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         name: 'formSlug',
         label: 'Form',
         width: 'half',
-        help: 'Shown by the “Content + form” layouts. Choose any active form.',
+        help: 'Shown by the “Content + form” layouts. Its heading, colours and button are on the Form tab.',
       },
       {
         kind: 'text',
@@ -672,14 +681,8 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         width: 'half',
         help: 'Optional. Names this placement on leads it captures, e.g. homepage_hero. Separate from UTM campaign tracking.',
       },
-      { kind: 'text', name: 'formHeading', label: 'Form heading', width: 'half' },
-      {
-        kind: 'textarea',
-        name: 'formDescription',
-        label: 'Form description',
-        rows: 2,
-      },
     ],
+    formFields: formStyleGroups({ heading: 'formHeading', description: 'formDescription' }),
   },
 
   richText: {
@@ -998,7 +1001,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         name: 'formSlug',
         label: 'Inline form',
         width: 'half',
-        help: 'Used by the split layout',
+        help: 'Used by the split layout. Style it on the Form tab.',
       },
       {
         kind: 'text',
@@ -1139,6 +1142,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'color', name: 'panel.headingColor', label: 'Heading colour', width: 'half' },
       { kind: 'color', name: 'panel.textColor', label: 'Description colour', width: 'half' },
     ],
+    formFields: formStyleGroups(),
   },
 
   leadMagnet: {
@@ -1159,7 +1163,13 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
       { kind: 'text', name: 'heading', label: 'Heading override' },
       { kind: 'textarea', name: 'description', label: 'Description override', rows: 2 },
       { kind: 'media', name: 'imageId', label: 'Image override', width: 'half' },
-      { kind: 'form', name: 'formSlug', label: 'Form override', width: 'half' },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form override',
+        width: 'half',
+        help: 'Its heading, colours and button are on the Form tab.',
+      },
       {
         kind: 'text',
         name: 'ctaLocation',
@@ -1167,8 +1177,9 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         width: 'half',
         help: 'Optional. Names this placement on leads it captures, e.g. homepage_hero. Separate from UTM campaign tracking.',
       },
-      { kind: 'text', name: 'ctaLabel', label: 'Button label', width: 'half' },
     ],
+    // The lead magnet's own button label is the Form tab's button text.
+    formFields: formStyleGroups({ buttonLabel: 'ctaLabel' }),
   },
 
   formBlock: {
@@ -1182,7 +1193,13 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     fields: [
       { kind: 'text', name: 'heading', label: 'Heading' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
-      { kind: 'form', name: 'formSlug', label: 'Form', width: 'half' },
+      {
+        kind: 'form',
+        name: 'formSlug',
+        label: 'Form',
+        width: 'half',
+        help: 'Its heading, colours and button are on the Form tab.',
+      },
       {
         kind: 'text',
         name: 'ctaLocation',
@@ -1210,6 +1227,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
         fields: [{ kind: 'text', name: 'value', label: 'Text' }],
       },
     ],
+    formFields: formStyleGroups(),
   },
 
   logoWall: {

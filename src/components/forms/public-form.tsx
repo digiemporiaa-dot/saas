@@ -59,6 +59,7 @@ export function PublicFormRenderer({
   ctaLocation,
   className,
   compact,
+  instanceKey,
   context,
 }: {
   form: PublicForm;
@@ -69,6 +70,15 @@ export function PublicFormRenderer({
   className?: string;
   /** Narrow container: collapse to one column unless the design says otherwise. */
   compact?: boolean;
+  /**
+   * Which placement this is, when the page has more than one.
+   *
+   * A section that restyles its form hands its own id here, so the scoped
+   * rules (hover, breakpoints) and the element ids belong to this copy of the
+   * form alone — the same form elsewhere on the page keeps its own look and
+   * its labels keep pointing at their own inputs.
+   */
+  instanceKey?: string;
   /**
    * Display values for system fields — the product being enquired about, say.
    * Shown so the visitor can see what they are asking about; the value the
@@ -93,9 +103,10 @@ export function PublicFormRenderer({
   const captchaId = React.useId();
 
   const design = form.design;
+  const placementKey = instanceKey ? `${form.slug}-${instanceKey}` : form.slug;
   const styles = React.useMemo<FormStyles>(
-    () => buildFormStyles(design, form.slug),
-    [design, form.slug],
+    () => buildFormStyles(design, placementKey),
+    [design, placementKey],
   );
 
   /**
@@ -328,7 +339,7 @@ export function PublicFormRenderer({
               <FormFieldRow
                 key={field.id}
                 field={field}
-                formSlug={form.slug}
+                idBase={placementKey}
                 styles={styles}
                 errors={fieldErrors[field.name]}
                 showRequiredMark={design.label.showRequiredMark}
@@ -387,9 +398,9 @@ export function PublicFormRenderer({
 
         {/* Honeypot — hidden from users and screen readers, filled by bots. */}
         <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
-          <label htmlFor={`hp-${form.slug}`}>Leave this field empty</label>
+          <label htmlFor={`hp-${placementKey}`}>Leave this field empty</label>
           <input
-            id={`hp-${form.slug}`}
+            id={`hp-${placementKey}`}
             type="text"
             name="website"
             tabIndex={-1}
@@ -402,7 +413,7 @@ export function PublicFormRenderer({
           checked={consentAccepted}
           onChange={setConsentAccepted}
           errors={fieldErrors}
-          idPrefix={form.slug}
+          idPrefix={placementKey}
         />
 
         {/* The legacy free-text line, for forms written before the notice. */}
@@ -457,7 +468,7 @@ export function PublicFormRenderer({
  */
 function FormFieldRow({
   field,
-  formSlug,
+  idBase,
   styles,
   errors,
   showRequiredMark,
@@ -465,7 +476,8 @@ function FormFieldRow({
   onChange,
 }: {
   field: PublicFormField;
-  formSlug: string;
+  /** The form's slug, plus the placement where there is one. */
+  idBase: string;
   styles: FormStyles;
   errors: string[] | undefined;
   showRequiredMark: boolean;
@@ -473,7 +485,7 @@ function FormFieldRow({
   contextValue?: string;
   onChange: (value: string) => void;
 }) {
-  const fieldId = `f-${formSlug}-${field.name}`;
+  const fieldId = `f-${idBase}-${field.name}`;
   const invalid = Boolean(errors?.length);
 
   const describedBy = [

@@ -3,10 +3,10 @@ import { prisma } from '@/lib/db/prisma';
 import type { CtaContent, FormBlockContent, LeadMagnetContent } from '@/lib/cms/blocks';
 import { getPublicForm, getDefaultForm } from '@/lib/services/forms';
 import { getMedia } from '@/lib/services/media';
-import { PublicFormRenderer } from '@/components/forms/public-form';
 import { cn } from '@/lib/utils/cn';
 import { Check } from 'lucide-react';
 import { SectionHeading, CtaLink, type BlockContext } from './shared';
+import { FormPanel } from './form-panel';
 import { buildPanelStyles } from '@/lib/cms/design';
 
 export async function CtaBlock({ content, ctx }: { content: CtaContent; ctx: BlockContext }) {
@@ -88,13 +88,16 @@ export async function CtaBlock({ content, ctx }: { content: CtaContent; ctx: Blo
             </div>
           ) : null}
         </div>
-        <div className="rounded-2xl border border-hairline bg-surface p-6 shadow-lg sm:p-8">
-          <PublicFormRenderer
-            form={form}
-            ctaLocation={content.ctaLocation || 'cta-block'}
-            compact
-          />
-        </div>
+        <FormPanel
+          form={form}
+          style={content.formStyle}
+          instanceKey={ctx.sectionId}
+          card="rounded-2xl border border-hairline bg-surface p-6 shadow-lg sm:p-8"
+          heading={content.formStyle.heading}
+          description={content.formStyle.description}
+          ctaLocation={content.ctaLocation || 'cta-block'}
+          compact
+        />
       </div>
     );
   }
@@ -193,9 +196,15 @@ export async function FormBlock({
   }
 
   const formPanel = (
-    <div className="rounded-2xl border border-hairline bg-surface p-6 shadow-sm sm:p-8">
-      <PublicFormRenderer form={form} ctaLocation={content.ctaLocation || 'form-block'} />
-    </div>
+    <FormPanel
+      form={form}
+      style={content.formStyle}
+      instanceKey={ctx.sectionId}
+      card="rounded-2xl border border-hairline bg-surface p-6 shadow-sm sm:p-8"
+      heading={content.formStyle.heading}
+      description={content.formStyle.description}
+      ctaLocation={content.ctaLocation || 'form-block'}
+    />
   );
 
   if (content.layout === 'split') {
@@ -322,11 +331,17 @@ export async function LeadMagnetBlock({
 
       <div>
         {form ? (
-          <PublicFormRenderer
+          <FormPanel
             form={{
               ...form,
+              // The Form tab's button text is this block's own `ctaLabel`.
               submitLabel: content.ctaLabel || magnet?.ctaLabel || form.submitLabel,
             }}
+            style={content.formStyle}
+            instanceKey={ctx.sectionId}
+            heading={content.formStyle.heading}
+            description={content.formStyle.description}
+            inverted={inverted}
             leadMagnetId={magnet?.id ?? null}
             compact
             ctaLocation={content.ctaLocation || 'lead-magnet'}

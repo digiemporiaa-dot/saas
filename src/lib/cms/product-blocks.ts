@@ -4,6 +4,7 @@ import {
   responsiveColumnFields,
   type BlockDefinition,
 } from './block-types';
+import { formStyleField, formStyleGroups } from './form-style';
 
 /**
  * Product blocks.
@@ -196,6 +197,8 @@ const productPriceBoxSchema = z.object({
   formSlug: z.string().max(120).catch('').default(''),
   formHeading: heading(''),
   formPosition: z.enum(['below', 'above']).catch('below').default('below'),
+  /** The form's look in this box only — the Form tab. */
+  formStyle: formStyleField,
 });
 
 // ---------------------------------------------------------------------------
@@ -595,17 +598,11 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
         label: 'Form',
         width: 'half',
         showWhen: { field: 'showForm', equals: [true] },
-        help: "Leave empty to use the product's own enquiry form.",
-      },
-      {
-        kind: 'text',
-        name: 'formHeading',
-        label: 'Form heading',
-        width: 'half',
-        showWhen: { field: 'showForm', equals: [true] },
-        placeholder: 'Optional',
+        help: "Leave empty to use the product's own enquiry form. Its heading, colours and button are on the Form tab.",
       },
     ],
+    // The price box is already the form's card.
+    formFields: formStyleGroups({ heading: 'formHeading', card: false }),
   },
 };
 

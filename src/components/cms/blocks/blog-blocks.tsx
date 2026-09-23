@@ -43,7 +43,6 @@ import {
 } from '@/lib/services/blog';
 import { getMedia } from '@/lib/services/media';
 import { getPublicForm, getDefaultForm } from '@/lib/services/forms';
-import { PublicFormRenderer } from '@/components/forms/public-form';
 import { PostCard } from '@/components/blog/post-card';
 import { CategoryChips } from '@/components/blog/category-chips';
 import { BlogSearch } from '@/components/blog/blog-search';
@@ -55,6 +54,7 @@ import { EmptyState } from '@/components/ui/states';
 import { formatDate, initials } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
 import { SectionHeading, CtaLink, type BlockContext } from './shared';
+import { FormPanel } from './form-panel';
 
 /**
  * Blog block renderers.
@@ -763,8 +763,13 @@ export async function BlogNewsletterBlock({
   const copy = <Heading content={content} ctx={ctx} />;
   const formPanel = (
     <div className="min-w-0">
-      <PublicFormRenderer
+      <FormPanel
         form={form}
+        style={content.formStyle}
+        instanceKey={ctx.sectionId}
+        heading={content.formStyle.heading}
+        description={content.formStyle.description}
+        inverted={ctx.inverted}
         ctaLocation={content.ctaLocation || 'blog_newsletter'}
         compact={content.layout === 'inline'}
       />

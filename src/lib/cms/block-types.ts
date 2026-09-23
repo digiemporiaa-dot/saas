@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { FieldDescriptor } from './fields';
+import type { FormFieldGroup } from './form-style';
 
 /**
  * Block registry types, kept separate from the registry itself.
@@ -97,6 +98,13 @@ export type BlockDefinition = {
    * without offering the controls for it.
    */
   design?: ReadonlyArray<BlockDesignCapability>;
+  /**
+   * The Form tab, for a block that embeds a form: the controls that restyle
+   * that form for this one placement, stored under `content.formStyle` (see
+   * `form-style.ts`). A block declares it only when its renderer draws the
+   * form through `FormPanel` — checked by `form-style.test.ts`.
+   */
+  formFields?: ReadonlyArray<FormFieldGroup>;
 };
 
 export type BlockDesignCapability = 'grid' | 'image';
