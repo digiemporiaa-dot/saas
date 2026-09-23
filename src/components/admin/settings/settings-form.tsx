@@ -8,6 +8,7 @@ import { Field, Input, Textarea, Select, Switch } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { MediaUrlPicker } from './media-url-picker';
 import { ColorField } from './color-field';
+import { ButtonShapePicker } from './button-shape-picker';
 import { FontSelect, FontWeightSelect } from './font-select';
 import { IconSelect } from '@/components/cms/icon-select';
 import { Alert } from '@/components/ui/states';
@@ -420,7 +421,7 @@ export function WebsiteSettingsForm({
                         background: primaryLook.bg,
                         color: primaryLook.text,
                         borderColor: primaryLook.border,
-                        borderRadius: str('buttonRadius') || '0.5rem',
+                        borderRadius: str('buttonPrimaryRadius') || str('buttonRadius') || '0.5rem',
                         padding: `${str('buttonPaddingY') || '0.625rem'} ${str('buttonPaddingX') || '1.25rem'}`,
                       }}
                     >
@@ -743,18 +744,18 @@ export function WebsiteSettingsForm({
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
                   <legend className="px-1 text-sm font-medium text-content">Buttons</legend>
                   <p className="text-xs text-muted">
-                    Shape and size shared by every button on the website. Font, weight and size
-                    are on the Typography tab.
+                    Shape and size shared by every button on the website. The primary and
+                    secondary buttons below can each take a shape of their own. Font, weight and
+                    size are on the Typography tab.
                   </p>
+                  <ButtonShapePicker
+                    id="buttonRadius"
+                    label="Button shape"
+                    value={str('buttonRadius')}
+                    error={errors.buttonRadius}
+                    onChange={(v) => set('buttonRadius', v)}
+                  />
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Button radius" htmlFor="buttonRadius" error={errors.buttonRadius}>
-                      <Input
-                        id="buttonRadius"
-                        value={str('buttonRadius')}
-                        placeholder="0.5rem"
-                        onChange={(e) => set('buttonRadius', e.target.value)}
-                      />
-                    </Field>
                     <Field label="Text transform" htmlFor="buttonTextTransform">
                       <Select
                         id="buttonTextTransform"
@@ -1262,9 +1263,10 @@ function ButtonRoleFieldset({
 }) {
   const str = (key: string) => String(values[key] ?? '');
   const styleKey = `${role.prefix}Style`;
+  const radiusKey = `${role.prefix}Radius`;
   const look = previewLook(values as Partial<ButtonSettings>, role.id);
   const shape: React.CSSProperties = {
-    borderRadius: str('buttonRadius') || '0.5rem',
+    borderRadius: str(radiusKey) || str('buttonRadius') || '0.5rem',
     padding: `${str('buttonPaddingY') || '0.625rem'} ${str('buttonPaddingX') || '1.25rem'}`,
     borderStyle: 'solid',
     borderWidth: str('buttonBorderWidth') || '1px',
@@ -1285,6 +1287,14 @@ function ButtonRoleFieldset({
           <option value="soft">Soft tint</option>
         </Select>
       </Field>
+      <ButtonShapePicker
+        id={radiusKey}
+        label="Shape"
+        value={str(radiusKey)}
+        error={errors[radiusKey]}
+        inheritLabel="Same as all buttons"
+        onChange={(v) => onChange(radiusKey, v)}
+      />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {BUTTON_COLOURS.map((colour) => {
           const key = `${role.prefix}${colour.suffix}`;

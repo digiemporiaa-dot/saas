@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
-import { buttonLook, buttonStylesheet, previewLook } from '@/lib/cms/buttons';
+import {
+  BUTTON_SHAPES,
+  buttonLook,
+  buttonShapeOf,
+  buttonStylesheet,
+  previewLook,
+} from '@/lib/cms/buttons';
 
 /**
  * The primary and secondary buttons in Website design.
@@ -79,9 +85,9 @@ describe('button roles', () => {
     expect(sheet).toContain('.btn-role-primary.border{border-width:2px;}');
     expect(sheet).toContain('.btn-role-secondary.border{border-width:2px;}');
     // With a border colour of its own, the whole role takes the width.
-    expect(buttonStylesheet({ buttonBorderWidth: '2px', buttonPrimaryBorder: '#000000' })).toContain(
-      '.btn-role-primary{border-color:#000000;border-style:solid;border-width:2px;}',
-    );
+    expect(
+      buttonStylesheet({ buttonBorderWidth: '2px', buttonPrimaryBorder: '#000000' }),
+    ).toContain('.btn-role-primary{border-color:#000000;border-style:solid;border-width:2px;}');
   });
 
   it('ignores values that are not colours', () => {
@@ -91,6 +97,40 @@ describe('button roles', () => {
   it('previews the real default look when nothing is set', () => {
     expect(previewLook({ colorPrimary: '#0061FF' }, 'primary').bg).toBe('#0061FF');
     expect(previewLook({ colorPrimary: '#0061FF' }, 'secondary').border).toBe('#0061FF');
+  });
+});
+
+describe('button shapes', () => {
+  it('offers square, slightly rounded, rounded and pill as radii', () => {
+    expect(BUTTON_SHAPES.map((shape) => shape.radius)).toEqual([
+      '0px',
+      '0.25rem',
+      '0.5rem',
+      '999px',
+    ]);
+  });
+
+  it('recognises a stored radius as its preset, and anything else as custom', () => {
+    expect(buttonShapeOf('999px')?.id).toBe('pill');
+    expect(buttonShapeOf(' 0px ')?.id).toBe('square');
+    // The shared default is the "Rounded" preset, so a fresh site shows it picked.
+    expect(buttonShapeOf('0.5rem')?.id).toBe('rounded');
+    expect(buttonShapeOf('0.75rem')).toBeNull();
+    expect(buttonShapeOf('')).toBeNull();
+  });
+
+  it('gives each button its own shape only when one was chosen', () => {
+    expect(buttonStylesheet({ buttonPrimaryRadius: '', buttonSecondaryRadius: '' })).toBe('');
+    expect(buttonStylesheet({ buttonPrimaryRadius: '999px' })).toBe(
+      ':root .btn-tokens.btn-role-primary{border-radius:999px;}',
+    );
+    expect(buttonStylesheet({ buttonSecondaryRadius: '0px' })).toBe(
+      ':root .btn-tokens.btn-role-secondary{border-radius:0px;}',
+    );
+  });
+
+  it('ignores a shape that is not a length', () => {
+    expect(buttonStylesheet({ buttonPrimaryRadius: '50%;color:red' })).toBe('');
   });
 });
 
@@ -149,19 +189,36 @@ describe('the admin screen', () => {
     expect(form).toContain("'buttonBorderWidth'");
   });
 
+  it('picks shapes by sight: shared, and per button with "same as all"', () => {
+    expect(form).toMatch(/<ButtonShapePicker\s+id="buttonRadius"/);
+    expect(form).toContain('const radiusKey = `${role.prefix}Radius`;');
+    expect(form).toMatch(
+      /<ButtonShapePicker\s+id=\{radiusKey\}[^>]*inheritLabel="Same as all buttons"/,
+    );
+    // The previews draw the shape the site will use.
+    expect(form).toContain("str(radiusKey) || str('buttonRadius')");
+  });
+
   it('saves every field, blank or not', () => {
     // The action is a 'use server' module, so its schema is read as source.
     const action = readFileSync('src/lib/actions/settings.ts', 'utf8');
     for (const field of [
       ...COLOUR_FIELDS,
       'buttonBorderWidth',
+      'buttonPrimaryRadius',
+      'buttonSecondaryRadius',
       'buttonPrimaryStyle',
       'buttonSecondaryStyle',
     ]) {
       expect(action, field).toMatch(new RegExp(`\\n  ${field}: `));
     }
     const schema = readFileSync('prisma/schema.prisma', 'utf8');
-    for (const field of [...COLOUR_FIELDS, 'buttonBorderWidth']) {
+    for (const field of [
+      ...COLOUR_FIELDS,
+      'buttonBorderWidth',
+      'buttonPrimaryRadius',
+      'buttonSecondaryRadius',
+    ]) {
       expect(schema, field).toMatch(new RegExp(`\\b${field}\\s+String @default\\(""\\)`));
     }
   });

@@ -184,6 +184,8 @@ const websiteSettingsSchema = z.object({
   buttonSecondaryStyle: z.enum(['solid', 'outline', 'soft']).catch('outline').default('outline'),
   buttonTextTransform: z.enum(['none', 'uppercase', 'capitalize']).catch('none').default('none'),
   buttonBorderWidth: optionalLength,
+  buttonPrimaryRadius: optionalLength,
+  buttonSecondaryRadius: optionalLength,
   buttonPrimaryBg: optionalColor,
   buttonPrimaryText: optionalColor,
   buttonPrimaryBorder: optionalColor,

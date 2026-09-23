@@ -7,8 +7,8 @@
  * the Website design settings for each role into the rules that paint it.
  *
  * Same rule as the header's design values: **only what somebody set is
- * emitted.** A style left at its default and colours left blank produce no
- * CSS at all, so every button keeps exactly the look it had before.
+ * emitted.** A style left at its default and colours and shape left blank
+ * produce no CSS at all, so every button keeps exactly the look it had before.
  */
 
 import { cssColor, cssLength } from './chrome';
@@ -24,6 +24,24 @@ export const DEFAULT_BUTTON_STYLE: Record<ButtonRole, ButtonStyle> = {
   secondary: 'outline',
 };
 
+/**
+ * The corner shapes offered as one click each. They are only radii — what is
+ * stored is the length, so a value typed as "Custom" and a preset are the
+ * same kind of thing and every existing radius keeps working.
+ */
+export const BUTTON_SHAPES = [
+  { id: 'square', label: 'Square', radius: '0px' },
+  { id: 'slight', label: 'Slightly rounded', radius: '0.25rem' },
+  { id: 'rounded', label: 'Rounded', radius: '0.5rem' },
+  { id: 'pill', label: 'Pill', radius: '999px' },
+] as const;
+
+/** The preset a stored radius is, if it is one. */
+export function buttonShapeOf(radius: string | null | undefined) {
+  const value = (radius ?? '').trim().toLowerCase();
+  return BUTTON_SHAPES.find((shape) => shape.radius === value) ?? null;
+}
+
 /** The class `buttonClasses` puts on a button of each role. */
 export const BUTTON_ROLE_CLASS: Record<ButtonRole, string> = {
   primary: 'btn-role-primary',
@@ -34,6 +52,8 @@ export type ButtonSettings = {
   colorPrimary: string;
   colorSecondary: string;
   buttonBorderWidth: string;
+  buttonPrimaryRadius: string;
+  buttonSecondaryRadius: string;
   buttonPrimaryStyle: string;
   buttonPrimaryBg: string;
   buttonPrimaryText: string;
@@ -182,6 +202,10 @@ export function buttonStylesheet(settings: Partial<ButtonSettings>): string {
   for (const role of ['primary', 'secondary'] as const) {
     const look = buttonLook(settings, role);
     const selector = `:root .btn-tokens.${BUTTON_ROLE_CLASS[role]}`;
+    // Blank follows the shared Button radius (`--btn-radius`).
+    const radius = cssLength(
+      role === 'primary' ? settings.buttonPrimaryRadius : settings.buttonSecondaryRadius,
+    );
     // Only a filled primary button takes a section's button colour; an outline
     // or tint would turn into a solid block of it.
     const inSection =
@@ -204,6 +228,7 @@ export function buttonStylesheet(settings: Partial<ButtonSettings>): string {
       ['border-color', look.border],
       ['border-style', look.border ? 'solid' : undefined],
       ['border-width', look.border ? (width ?? '1px') : undefined],
+      ['border-radius', radius ?? undefined],
     ]);
     const hover = declarations([
       ['background-color', hoverBg],

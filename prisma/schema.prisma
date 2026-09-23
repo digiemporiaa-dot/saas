@@ -2159,6 +2159,9 @@ model WebsiteSettings {
   /// Primary and secondary button colours. Blank means "keep the look the
   /// style above gives it" — only what somebody set is emitted as CSS.
   buttonBorderWidth          String @default("")
+  /// A corner radius for one button only. Blank follows buttonRadius.
+  buttonPrimaryRadius        String @default("")
+  buttonSecondaryRadius      String @default("")
   buttonPrimaryBg            String @default("")
   buttonPrimaryText          String @default("")
   buttonPrimaryBorder        String @default("")
