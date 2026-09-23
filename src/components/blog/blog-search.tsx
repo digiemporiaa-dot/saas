@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Input } from '@/components/ui/field';
+import { buttonClasses } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/icons';
 import { cn } from '@/lib/utils/cn';
 
@@ -108,9 +109,10 @@ export function BlogSearch({
       {showButton ? (
         <button
           type="submit"
-          className={cn(
-            'btn-tokens inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-white transition-colors hover:bg-brand/90',
-            compact ? 'h-9' : 'h-10',
+          className={buttonClasses(
+            'primary',
+            compact ? 'sm' : 'md',
+            cn('btn-tokens shrink-0', compact && '!min-h-9'),
           )}
         >
           {pending ? <Spinner className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}

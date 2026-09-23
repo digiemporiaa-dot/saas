@@ -473,6 +473,38 @@
     text-transform: var(--btn-transform);
   }
 
+  /*
+   * The same tokens on a `buttonClasses` button, which also carries its size
+   * utilities (rounded-lg, px-4, text-sm, h-10…). Those are one class and sit
+   * later in the sheet, so they would win over `.btn-tokens` alone and the
+   * radius, padding, size and weight settings would never show. Two classes
+   * outrank them. The size keeps its proportion — a large button is still
+   * larger — and its old height becomes a minimum, so a site that never
+   * touched padding keeps its buttons' height while more padding grows them.
+   */
+  .btn-tokens:is(.btn-sm, .btn-md, .btn-lg) {
+    height: auto;
+    min-height: 2.5rem;
+    border-radius: var(--btn-radius);
+    padding-inline: var(--btn-padding-x);
+    padding-block: var(--btn-padding-y);
+    font-size: var(--font-button-size);
+    font-weight: var(--font-button-weight);
+    line-height: 1.25;
+  }
+  .btn-tokens.btn-lg {
+    min-height: 3rem;
+    padding-inline: calc(var(--btn-padding-x) * 1.2);
+    padding-block: calc(var(--btn-padding-y) * 1.2);
+    font-size: calc(var(--font-button-size) * 8 / 7);
+  }
+  .btn-tokens.btn-sm {
+    min-height: 2rem;
+    padding-inline: calc(var(--btn-padding-x) * 0.6);
+    padding-block: calc(var(--btn-padding-y) * 0.6);
+    font-size: calc(var(--font-button-size) * 13 / 14);
+  }
+
   .nav-tokens {
     font-family: var(--font-nav);
     font-weight: var(--font-nav-weight);

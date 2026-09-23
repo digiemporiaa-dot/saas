@@ -7,6 +7,7 @@ import { Button, buttonClasses, type ButtonVariant } from '@/components/ui/butto
 import { Dialog } from '@/components/ui/dialog';
 import { PublicFormLoader } from '@/components/forms/form-loader';
 import { safeUrl } from '@/lib/utils/sanitize';
+import { cn } from '@/lib/utils/cn';
 import { trackConversion } from '@/lib/analytics/attribution';
 
 /**
@@ -32,6 +33,8 @@ export function ProductCta({
   ctaLocation?: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  // The public site's buttons follow Website design → Buttons.
+  const classes = cn('btn-tokens', className);
   const ctaLabel = label || product.ctaLabel || 'Get Started';
   const href = safeUrl(product.ctaUrl);
 
@@ -39,7 +42,7 @@ export function ProductCta({
     return (
       <Link
         href={href}
-        className={buttonClasses(variant, size, className)}
+        className={buttonClasses(variant, size, classes)}
         onClick={() => trackConversion('select_item', { item_name: product.name, cta: ctaLabel })}
       >
         {ctaLabel}
@@ -50,7 +53,7 @@ export function ProductCta({
   if (!product.ctaFormSlug) {
     // No form and no URL configured — send the visitor to the product page.
     return (
-      <Link href={product.href} className={buttonClasses(variant, size, className)}>
+      <Link href={product.href} className={buttonClasses(variant, size, classes)}>
         {ctaLabel}
       </Link>
     );
@@ -61,7 +64,7 @@ export function ProductCta({
       <Button
         variant={variant}
         size={size}
-        className={className}
+        className={classes}
         onClick={() => {
           trackConversion('select_item', { item_name: product.name, cta: ctaLabel });
           setOpen(true);

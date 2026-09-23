@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/toast';
 import { Spinner } from '@/components/ui/icons';
 import { SUPPORTED_CURRENCIES } from '@/lib/utils/money';
 import { cn } from '@/lib/utils/cn';
+import { previewLook, type ButtonSettings } from '@/lib/cms/buttons';
 
 export type WebsiteSettingsValues = Record<string, string | boolean>;
 
@@ -31,6 +32,37 @@ type TabId = (typeof TABS)[number]['id'];
 
 
 /** The button styles a header button may use. `danger` is deliberately absent. */
+/**
+ * The two buttons Website design styles. Which public buttons are which is
+ * decided in `buttonClasses`: filled main calls to action are primary, outline
+ * and second calls to action are secondary.
+ */
+const BUTTON_ROLES = [
+  {
+    id: 'primary',
+    prefix: 'buttonPrimary',
+    title: 'Primary button',
+    description:
+      'The main call to action — the filled button in heroes, cards, product pages and the header.',
+  },
+  {
+    id: 'secondary',
+    prefix: 'buttonSecondary',
+    title: 'Secondary button',
+    description:
+      'The button beside it — the outline “Learn more” style in heroes, cards and banners.',
+  },
+] as const;
+
+const BUTTON_COLOURS = [
+  { suffix: 'Bg', label: 'Background' },
+  { suffix: 'Text', label: 'Text' },
+  { suffix: 'Border', label: 'Border' },
+  { suffix: 'HoverBg', label: 'Background on hover' },
+  { suffix: 'HoverText', label: 'Text on hover' },
+  { suffix: 'HoverBorder', label: 'Border on hover' },
+] as const;
+
 const BUTTON_VARIANTS = [
   { value: 'primary', label: 'Primary (filled)' },
   { value: 'secondary', label: 'Secondary' },
@@ -72,6 +104,7 @@ export function WebsiteSettingsForm({
   const [tab, setTab] = React.useState<TabId>(visibleTabs[0]?.id ?? 'general');
 
   const str = (key: string) => String(values[key] ?? '');
+  const primaryLook = previewLook(values as Partial<ButtonSettings>, 'primary');
   const bool = (key: string) => Boolean(values[key]);
   const set = (key: string, value: string | boolean) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -382,9 +415,11 @@ export function WebsiteSettingsForm({
                       Supporting copy uses the muted colour.
                     </p>
                     <span
-                      className="mt-3 inline-flex text-xs font-medium text-white"
+                      className="mt-3 inline-flex border text-xs font-medium"
                       style={{
-                        background: str('colorPrimary'),
+                        background: primaryLook.bg,
+                        color: primaryLook.text,
+                        borderColor: primaryLook.border,
                         borderRadius: str('buttonRadius') || '0.5rem',
                         padding: `${str('buttonPaddingY') || '0.625rem'} ${str('buttonPaddingX') || '1.25rem'}`,
                       }}
@@ -707,29 +742,11 @@ export function WebsiteSettingsForm({
 
                 <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
                   <legend className="px-1 text-sm font-medium text-content">Buttons</legend>
+                  <p className="text-xs text-muted">
+                    Shape and size shared by every button on the website. Font, weight and size
+                    are on the Typography tab.
+                  </p>
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <Field label="Primary button style" htmlFor="buttonPrimaryStyle">
-                      <Select
-                        id="buttonPrimaryStyle"
-                        value={str('buttonPrimaryStyle')}
-                        onChange={(e) => set('buttonPrimaryStyle', e.target.value)}
-                      >
-                        <option value="solid">Solid</option>
-                        <option value="outline">Outline</option>
-                        <option value="soft">Soft tint</option>
-                      </Select>
-                    </Field>
-                    <Field label="Secondary button style" htmlFor="buttonSecondaryStyle">
-                      <Select
-                        id="buttonSecondaryStyle"
-                        value={str('buttonSecondaryStyle')}
-                        onChange={(e) => set('buttonSecondaryStyle', e.target.value)}
-                      >
-                        <option value="solid">Solid</option>
-                        <option value="outline">Outline</option>
-                        <option value="soft">Soft tint</option>
-                      </Select>
-                    </Field>
                     <Field label="Button radius" htmlFor="buttonRadius" error={errors.buttonRadius}>
                       <Input
                         id="buttonRadius"
@@ -773,8 +790,31 @@ export function WebsiteSettingsForm({
                         onChange={(e) => set('buttonPaddingY', e.target.value)}
                       />
                     </Field>
+                    <Field
+                      label="Border width"
+                      htmlFor="buttonBorderWidth"
+                      error={errors.buttonBorderWidth}
+                      hint="Blank keeps 1px wherever a button has a border."
+                    >
+                      <Input
+                        id="buttonBorderWidth"
+                        value={str('buttonBorderWidth')}
+                        placeholder="1px"
+                        onChange={(e) => set('buttonBorderWidth', e.target.value)}
+                      />
+                    </Field>
                   </div>
                 </fieldset>
+
+                {BUTTON_ROLES.map((role) => (
+                  <ButtonRoleFieldset
+                    key={role.id}
+                    role={role}
+                    values={values}
+                    errors={errors}
+                    onChange={set}
+                  />
+                ))}
               </>
             ) : null}
 
@@ -1200,6 +1240,89 @@ export function WebsiteSettingsForm({
       </Card>
       </form>
     </div>
+  );
+}
+
+/**
+ * One button's style, colours and a live preview of it.
+ *
+ * Every colour may stay blank: blank takes the colour the chosen style gives
+ * it from the Theme palette, so a style alone is a complete design.
+ */
+function ButtonRoleFieldset({
+  role,
+  values,
+  errors,
+  onChange,
+}: {
+  role: (typeof BUTTON_ROLES)[number];
+  values: WebsiteSettingsValues;
+  errors: Record<string, string[]>;
+  onChange: (key: string, value: string) => void;
+}) {
+  const str = (key: string) => String(values[key] ?? '');
+  const styleKey = `${role.prefix}Style`;
+  const look = previewLook(values as Partial<ButtonSettings>, role.id);
+  const shape: React.CSSProperties = {
+    borderRadius: str('buttonRadius') || '0.5rem',
+    padding: `${str('buttonPaddingY') || '0.625rem'} ${str('buttonPaddingX') || '1.25rem'}`,
+    borderStyle: 'solid',
+    borderWidth: str('buttonBorderWidth') || '1px',
+    textTransform: (str('buttonTextTransform') || 'none') as React.CSSProperties['textTransform'],
+    fontWeight: Number(str('buttonWeight')) || 600,
+  };
+
+  return (
+    <fieldset className="space-y-4 rounded-lg border border-hairline p-4">
+      <legend className="px-1 text-sm font-medium text-content">{role.title}</legend>
+      <p className="text-xs text-muted">
+        {role.description} Leave a colour blank to take it from the style and your Theme colours.
+      </p>
+      <Field label="Style" htmlFor={styleKey}>
+        <Select id={styleKey} value={str(styleKey)} onChange={(e) => onChange(styleKey, e.target.value)}>
+          <option value="solid">Solid (filled)</option>
+          <option value="outline">Outline</option>
+          <option value="soft">Soft tint</option>
+        </Select>
+      </Field>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {BUTTON_COLOURS.map((colour) => {
+          const key = `${role.prefix}${colour.suffix}`;
+          return (
+            <ColorField
+              key={key}
+              label={colour.label}
+              name={key}
+              value={str(key)}
+              error={errors[key]}
+              onChange={(v) => onChange(key, v)}
+            />
+          );
+        })}
+      </div>
+      <div
+        className="flex flex-wrap items-center gap-3 rounded-lg border border-hairline p-4"
+        style={{ background: str('colorBackground') || undefined }}
+      >
+        <span
+          className="inline-flex text-sm"
+          style={{ ...shape, background: look.bg, color: look.text, borderColor: look.border }}
+        >
+          {role.title}
+        </span>
+        <span
+          className="inline-flex text-sm"
+          style={{
+            ...shape,
+            background: look.hoverBg,
+            color: look.hoverText,
+            borderColor: look.hoverBorder,
+          }}
+        >
+          On hover
+        </span>
+      </div>
+    </fieldset>
   );
 }
 

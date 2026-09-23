@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
+import { BUTTON_ROLE_CLASS } from '@/lib/cms/buttons';
 
 export type ButtonVariant =
   | 'primary'
@@ -23,6 +24,17 @@ const VARIANTS: Record<ButtonVariant, string> = {
   link: 'text-brand underline underline-offset-4 hover:no-underline p-0 h-auto',
 };
 
+/**
+ * Which of the two buttons in Website design → Buttons a variant is. Outline
+ * is the secondary button because that is what every second call to action on
+ * the public site is drawn with. Ghost, subtle, danger and link are neither.
+ */
+const ROLES: Partial<Record<ButtonVariant, string>> = {
+  primary: BUTTON_ROLE_CLASS.primary,
+  secondary: BUTTON_ROLE_CLASS.secondary,
+  outline: BUTTON_ROLE_CLASS.secondary,
+};
+
 const SIZES: Record<ButtonSize, string> = {
   sm: 'h-8 px-3 text-[0.8125rem] gap-1.5',
   md: 'h-10 px-4 text-sm gap-2',
@@ -40,6 +52,10 @@ export function buttonClasses(
     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
     VARIANTS[variant],
     variant !== 'link' && SIZES[size],
+    // Markers only: they do nothing until `btn-tokens` joins them, which only
+    // the public site's buttons carry — see `.btn-tokens` in globals.css.
+    ROLES[variant],
+    variant !== 'link' && `btn-${size}`,
     className,
   );
 }

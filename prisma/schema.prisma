@@ -2156,6 +2156,21 @@ model WebsiteSettings {
   buttonPrimaryStyle   String @default("solid")
   buttonSecondaryStyle String @default("outline")
   buttonTextTransform  String @default("none")
+  /// Primary and secondary button colours. Blank means "keep the look the
+  /// style above gives it" — only what somebody set is emitted as CSS.
+  buttonBorderWidth          String @default("")
+  buttonPrimaryBg            String @default("")
+  buttonPrimaryText          String @default("")
+  buttonPrimaryBorder        String @default("")
+  buttonPrimaryHoverBg       String @default("")
+  buttonPrimaryHoverText     String @default("")
+  buttonPrimaryHoverBorder   String @default("")
+  buttonSecondaryBg          String @default("")
+  buttonSecondaryText        String @default("")
+  buttonSecondaryBorder      String @default("")
+  buttonSecondaryHoverBg     String @default("")
+  buttonSecondaryHoverText   String @default("")
+  buttonSecondaryHoverBorder String @default("")
 
   // Misc
   defaultCurrency String  @default("INR")
