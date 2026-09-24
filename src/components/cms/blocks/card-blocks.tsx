@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils/cn';
 import {
   SectionHeading,
   CtaLink,
+  mainCtaVariant,
   RichText,
   CmsImage,
   IconBadge,
@@ -254,7 +255,8 @@ export async function ImageBoxBlock({ content, ctx }: { content: ImageBoxContent
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
-            variant={ctx.inverted || content.layout === 'backgroundImage' ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx, ctx.inverted || content.layout === 'backgroundImage')}
             size="md"
           />
         </div>
@@ -358,7 +360,8 @@ export async function IconBoxBlock({ content, ctx }: { content: IconBoxContent; 
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
-            variant={ctx.inverted ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx)}
             size="md"
           />
         </div>
@@ -485,7 +488,8 @@ export function HeadingTextBlock({ content, ctx }: { content: HeadingTextContent
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
-            variant={ctx.inverted ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx)}
             size="md"
           />
         </div>
@@ -535,7 +539,8 @@ export async function TextListImageBlock({
           <CtaLink
             label={content.primaryCtaLabel}
             url={content.primaryCtaUrl}
-            variant={ctx.inverted ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx)}
             size="md"
           />
           <CtaLink

@@ -187,13 +187,14 @@ function declarations(entries: Array<[string, string | undefined]>): string {
  *
  * The selectors are deliberately three classes deep: they have to beat the
  * utility colours `buttonClasses` puts on every button (one class, two on
- * hover) and a section's own button rule (two), whatever order the sheets
+ * hover) and a section's default button rules (two), whatever order the sheets
  * load in. Only buttons marked `btn-tokens` — the public site's — are touched;
  * the admin's buttons are not the website's.
  *
- * The primary button still defers to a section that chose its own button
- * colour, through `--sec-button` / `--sec-button-text`, so a section's Design
- * panel keeps working on top of the global look.
+ * A section that chose its own Button colour on its Design tab still wins:
+ * its rules in globals.css sit five classes deep and apply only where that
+ * colour was chosen. Nothing here reads the section's variables — a section
+ * that chose nothing is exactly where this design should show.
  */
 export function buttonStylesheet(settings: Partial<ButtonSettings>): string {
   const width = cssLength(settings.buttonBorderWidth);
@@ -206,34 +207,23 @@ export function buttonStylesheet(settings: Partial<ButtonSettings>): string {
     const radius = cssLength(
       role === 'primary' ? settings.buttonPrimaryRadius : settings.buttonSecondaryRadius,
     );
-    // Only a filled primary button takes a section's button colour; an outline
-    // or tint would turn into a solid block of it.
-    const inSection =
-      role === 'primary' && parseStyle(settings.buttonPrimaryStyle, role) === 'solid';
-    const sectionBg = look.bg && inSection ? `var(--sec-button, ${look.bg})` : look.bg;
-    // A hover nobody typed follows the section's colour too, rather than
-    // flashing back to the global one.
-    const hoverBg =
-      inSection && sectionBg && !field(settings, role, 'HoverBg')
-        ? darker(sectionBg)
-        : look.hoverBg;
-    const hoverText =
-      inSection && look.hoverText && !field(settings, role, 'HoverText')
-        ? `var(--sec-button-text, ${look.hoverText})`
-        : look.hoverText;
 
     const base = declarations([
-      ['background-color', sectionBg],
-      ['color', look.text && (inSection ? `var(--sec-button-text, ${look.text})` : look.text)],
-      ['border-color', look.border],
+      ['background-color', look.bg],
+      ['color', look.text],
+      // With no border colour of its own, a button drawn with a border (an
+      // outline-variant main button on a dark band) edges in its fill rather
+      // than the brand colour. The colour alone draws nothing on a button
+      // that has no border, so the filled ones keep their size.
+      ['border-color', look.border ?? look.bg],
       ['border-style', look.border ? 'solid' : undefined],
       ['border-width', look.border ? (width ?? '1px') : undefined],
       ['border-radius', radius ?? undefined],
     ]);
     const hover = declarations([
-      ['background-color', hoverBg],
-      ['color', hoverText],
-      ['border-color', look.hoverBorder],
+      ['background-color', look.hoverBg],
+      ['color', look.hoverText],
+      ['border-color', look.hoverBorder ?? look.hoverBg],
     ]);
 
     if (base) rules.push(`${selector}{${base}}`);

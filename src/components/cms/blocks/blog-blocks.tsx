@@ -53,7 +53,7 @@ import { Pagination } from '@/components/blog/pagination';
 import { EmptyState } from '@/components/ui/states';
 import { formatDate, initials } from '@/lib/utils/format';
 import { cn } from '@/lib/utils/cn';
-import { SectionHeading, CtaLink, type BlockContext } from './shared';
+import { SectionHeading, CtaLink, mainCtaVariant, type BlockContext } from './shared';
 import { FormPanel } from './form-panel';
 
 /**
@@ -165,7 +165,8 @@ export async function BlogHeroBlock({ content, ctx }: { content: BlogHeroContent
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
-            variant={ctx.inverted ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx)}
           />
           <CtaLink
             label={content.secondaryCtaLabel}

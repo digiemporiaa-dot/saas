@@ -441,7 +441,18 @@
 
   .cms-stack > * + * { margin-top: var(--sec-content-gap, 1rem); }
 
-  /* Section colour overrides reach buttons and links without !important. */
+  /*
+   * A section's buttons, in three layers, each outranking the one before:
+   *
+   * 1. These two rules: the default look, in the brand colour.
+   * 2. The global Primary / Secondary button design from Website design,
+   *    emitted by `buttonStylesheet` three classes deep.
+   * 3. The section's own Button colour and Button text colour, from its
+   *    Design tab — the rules below, five classes deep. They apply only to a
+   *    section carrying `cms-section--button(-text)`, which it does only when
+   *    a colour was chosen there, so a section that chose nothing leaves the
+   *    global design alone.
+   */
   .cms-section .cms-btn-primary {
     background-color: var(--sec-button, rgb(var(--brand-primary)));
     color: var(--sec-button-text, #fff);
@@ -451,6 +462,32 @@
     border-color: var(--sec-button, rgb(var(--brand-primary)));
     color: var(--sec-button, rgb(var(--brand-primary)));
     background-color: transparent;
+  }
+  /* The quiet second button on a dark band takes the band's text colour;
+     its utility colour is the page's dark text, which vanished on it. */
+  .cms-section .cms-btn-ghost {
+    color: inherit;
+  }
+  :root .cms-section.cms-section--button .btn-tokens.cms-btn-primary {
+    background-color: var(--sec-button);
+    border-color: var(--sec-button);
+  }
+  :root .cms-section.cms-section--button .btn-tokens.cms-btn-primary:hover {
+    background-color: color-mix(in srgb, var(--sec-button) 88%, #000);
+    border-color: color-mix(in srgb, var(--sec-button) 88%, #000);
+  }
+  :root .cms-section.cms-section--button-text .btn-tokens.cms-btn-primary,
+  :root .cms-section.cms-section--button-text .btn-tokens.cms-btn-primary:hover {
+    color: var(--sec-button-text);
+  }
+  :root .cms-section.cms-section--button .btn-tokens.cms-btn-outline {
+    background-color: transparent;
+    border-color: var(--sec-button);
+    color: var(--sec-button);
+  }
+  :root .cms-section.cms-section--button .btn-tokens.cms-btn-outline:hover {
+    background-color: color-mix(in srgb, var(--sec-button) 12%, transparent);
+    color: var(--sec-button);
   }
   .cms-section .cms-accent { color: var(--sec-primary, rgb(var(--brand-primary))); }
   .cms-section .prose-cms a { color: var(--sec-link, rgb(var(--brand-primary))); }

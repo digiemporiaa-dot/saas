@@ -14,6 +14,7 @@ import { safeUrl } from '@/lib/utils/sanitize';
 import {
   SectionHeading,
   CtaLink,
+  mainCtaVariant,
   RichText,
   type BlockContext,
   columnVars,
@@ -68,7 +69,8 @@ export async function ImageContentBlock({
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
-            variant={inverted ? 'outline' : 'primary'}
+            role="primary"
+            variant={mainCtaVariant(ctx)}
             size="md"
           />
         </div>

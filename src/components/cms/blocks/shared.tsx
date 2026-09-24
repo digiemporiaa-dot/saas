@@ -4,6 +4,7 @@ import NextImage from 'next/image';
 import { cn } from '@/lib/utils/cn';
 import { safeUrl, sanitizeHtml } from '@/lib/utils/sanitize';
 import { buttonClasses, type ButtonVariant } from '@/components/ui/button';
+import type { ButtonRole } from '@/lib/cms/buttons';
 import type { ResolvedMedia } from '@/lib/services/media';
 import type { SectionDesign } from '@/lib/cms/design';
 import { resolveColumns, gridStyle } from '@/lib/cms/design';
@@ -151,6 +152,22 @@ export function SectionHeading({
 }
 
 /**
+ * The variant of a block's main call to action.
+ *
+ * On a dark surface the main button is drawn as an outline, because a button
+ * filled with the brand colour disappears on a band of the brand colour. A
+ * section that chose its own Button colour on its Design tab has said what its
+ * buttons are filled with, so there the main button stays filled — in that
+ * colour, with that text colour — whatever the surface behind it.
+ *
+ * `dark` is the surface the button sits on, when that is not simply the
+ * section's: a hero with a backdrop image, or the CTA's brand panel.
+ */
+export function mainCtaVariant(ctx: BlockContext, dark: boolean = ctx.inverted): 'primary' | 'outline' {
+  return dark && !ctx.design.colors.button ? 'outline' : 'primary';
+}
+
+/**
  * Renders a CTA only when both a label and a safe URL are present.
  *
  * Primary and outline buttons pick up the section's own button colour through
@@ -160,12 +177,15 @@ export function CtaLink({
   label,
   url,
   variant = 'primary',
+  role,
   size = 'lg',
   className,
 }: {
   label?: string | null;
   url?: string | null;
   variant?: ButtonVariant;
+  /** The Website design button this slot is, whatever it is drawn as. */
+  role?: ButtonRole;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }) {
@@ -178,11 +198,12 @@ export function CtaLink({
     'btn-tokens',
     variant === 'primary' && 'cms-btn-primary',
     variant === 'outline' && 'cms-btn-outline',
+    variant === 'ghost' && 'cms-btn-ghost',
   );
   return (
     <Link
       href={href}
-      className={buttonClasses(variant, size, cn(tone, className))}
+      className={buttonClasses(variant, size, cn(tone, className), role)}
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
       {label}

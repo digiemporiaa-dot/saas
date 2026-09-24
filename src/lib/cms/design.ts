@@ -544,6 +544,13 @@ export type SectionStyles = {
   } | null;
   overlay: string | null;
   inverted: boolean;
+  /**
+   * Classes saying which button colours this section chose for itself:
+   * `cms-section--button` and `cms-section--button-text`, or "" for neither.
+   * The rules that let a section's colours outrank the global button design
+   * hang off these, so a section that chose nothing leaves that design alone.
+   */
+  modifiers: string;
 };
 
 /**
@@ -597,9 +604,22 @@ export function buildSectionStyles(
   if (text) style['--sec-text'] = text;
   if (heading) style['--sec-heading-color'] = heading;
   style['--sec-primary'] = design.colors.primary || 'rgb(var(--brand-primary))';
-  style['--sec-button'] =
-    design.colors.button || design.colors.primary || 'rgb(var(--brand-primary))';
-  style['--sec-button-text'] = design.colors.buttonText || '#FFFFFF';
+  /*
+   * The button colours are set only where the section chose them. They used to
+   * be set on every section, falling back to the brand colour, which meant a
+   * section always "had" a button colour: the global button design from
+   * Website design could never reach a button inside one, and a colour chosen
+   * here could not be told apart from the default.
+   */
+  const button = design.colors.button || design.colors.primary;
+  if (button) style['--sec-button'] = button;
+  if (design.colors.buttonText) style['--sec-button-text'] = design.colors.buttonText;
+  const modifiers = [
+    button ? 'cms-section--button' : '',
+    design.colors.buttonText ? 'cms-section--button-text' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   style['--sec-link'] = design.colors.link || design.colors.primary || 'rgb(var(--brand-primary))';
 
   const layerImage = backgroundLayer(design, backgroundImageUrl);
@@ -638,6 +658,7 @@ export function buildSectionStyles(
       : null,
     overlay,
     inverted,
+    modifiers,
   };
 }
 

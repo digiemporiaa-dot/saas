@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { buildSectionStyles, parseSectionDesign } from '@/lib/cms/design';
 import { describe, it, expect } from 'vitest';
 import {
   BUTTON_SHAPES,
@@ -44,7 +46,9 @@ describe('button roles', () => {
 
   it('puts hover colours only in the hover rule', () => {
     const sheet = buttonStylesheet({ buttonSecondaryHoverBg: '#ABCDEF' });
-    expect(sheet).toBe(':root .btn-tokens.btn-role-secondary:hover{background-color:#ABCDEF;}');
+    expect(sheet).toBe(
+      ':root .btn-tokens.btn-role-secondary:hover{background-color:#ABCDEF;border-color:#ABCDEF;}',
+    );
   });
 
   it('turns a non-default style into a full look from the theme', () => {
@@ -71,13 +75,17 @@ describe('button roles', () => {
     expect(look.hoverBg).toBe('color-mix(in srgb, #00AA00 88%, #000)');
   });
 
-  it("keeps a section's own button colour ahead of the global primary", () => {
+  it('paints plain values, so it reaches buttons inside sections too', () => {
     const sheet = buttonStylesheet({
       buttonPrimaryBg: '#00AA00',
       buttonPrimaryText: '#000000',
     });
-    expect(sheet).toContain('var(--sec-button, #00AA00)');
-    expect(sheet).toContain('var(--sec-button-text, #000000)');
+    // Every section used to carry --sec-button, so chaining through it meant
+    // the global colour never showed inside one.
+    expect(sheet).not.toContain('--sec-button');
+    expect(sheet).toContain(
+      ':root .btn-tokens.btn-role-primary{background-color:#00AA00;color:#000000;border-color:#00AA00;}',
+    );
   });
 
   it('applies the border width to both roles', () => {
@@ -146,7 +154,7 @@ describe('which buttons carry which role', () => {
     for (const variant of ['ghost', 'subtle', 'danger', 'link']) {
       expect(roles).not.toContain(`${variant}:`);
     }
-    expect(button).toContain('ROLES[variant],');
+    expect(button).toContain('role ? BUTTON_ROLE_CLASS[role] : ROLES[variant],');
   });
 
   it('marks the size so the global padding and radius can outrank the size utilities', () => {
@@ -220,6 +228,72 @@ describe('the admin screen', () => {
       'buttonSecondaryRadius',
     ]) {
       expect(schema, field).toMatch(new RegExp(`\\b${field}\\s+String @default\\(""\\)`));
+    }
+  });
+});
+
+describe("a section's own button colours", () => {
+  const css = readFileSync('src/app/globals.css', 'utf8');
+  const ruleFor = (selector: string) => {
+    const at = css.indexOf(`${selector} {`);
+    return at < 0 ? '' : css.slice(at, css.indexOf('}', at));
+  };
+
+  it('are set only where the section chose them', () => {
+    const plain = buildSectionStyles(parseSectionDesign({}), 'abc');
+    expect(plain.style['--sec-button']).toBeUndefined();
+    expect(plain.style['--sec-button-text']).toBeUndefined();
+    expect(plain.modifiers).toBe('');
+
+    const chosen = buildSectionStyles(
+      parseSectionDesign({ colors: { button: '#FFFFFF', buttonText: '#000000' } }),
+      'abc',
+    );
+    expect(chosen.style['--sec-button']).toBe('#FFFFFF');
+    expect(chosen.style['--sec-button-text']).toBe('#000000');
+    expect(chosen.modifiers).toBe('cms-section--button cms-section--button-text');
+  });
+
+  it('reach the section element', () => {
+    const renderer = readFileSync('src/components/cms/section-renderer.tsx', 'utf8');
+    expect(renderer).toContain('styles.modifiers');
+  });
+
+  it('outrank the global button design, and only where chosen', () => {
+    // Five classes deep against the global rules' three (four on hover).
+    const fill = ruleFor(':root .cms-section.cms-section--button .btn-tokens.cms-btn-primary');
+    expect(fill).toContain('background-color: var(--sec-button)');
+    const text = ruleFor(
+      ':root .cms-section.cms-section--button-text .btn-tokens.cms-btn-primary,\n  :root .cms-section.cms-section--button-text .btn-tokens.cms-btn-primary:hover',
+    );
+    expect(text).toContain('color: var(--sec-button-text)');
+    expect(ruleFor(':root .cms-section.cms-section--button .btn-tokens.cms-btn-primary:hover')).toContain(
+      'color-mix(in srgb, var(--sec-button) 88%, #000)',
+    );
+    expect(ruleFor(':root .cms-section.cms-section--button .btn-tokens.cms-btn-outline')).toContain(
+      'border-color: var(--sec-button)',
+    );
+  });
+
+  it('give every block\'s main button the primary role, however it is drawn', () => {
+    const shared = readFileSync('src/components/cms/blocks/shared.tsx', 'utf8');
+    expect(shared).toContain('buttonClasses(variant, size, cn(tone, className), role)');
+    for (const file of readdirSync('src/components/cms/blocks')) {
+      const source = readFileSync(join('src/components/cms/blocks', file), 'utf8');
+      const mains = source.split(/variant=\{(?:mainCtaVariant\(|variantFor\.primary\})/).length - 1;
+      const roles = (source.match(/role="primary"\s*\n\s*variant=\{(?:mainCtaVariant\(|variantFor\.primary\})/g) ?? [])
+        .length;
+      expect(roles, file).toBe(mains);
+    }
+  });
+
+  it('keep the main button filled on a dark section that chose a button colour', () => {
+    const shared = readFileSync('src/components/cms/blocks/shared.tsx', 'utf8');
+    expect(shared).toContain("return dark && !ctx.design.colors.button ? 'outline' : 'primary';");
+    // No block decides it for itself any more.
+    for (const file of readdirSync('src/components/cms/blocks')) {
+      const source = readFileSync(join('src/components/cms/blocks', file), 'utf8');
+      expect(source, file).not.toMatch(/inverted[^?\n]*\? 'outline' : 'primary'/);
     }
   });
 });

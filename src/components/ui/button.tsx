@@ -1,7 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils/cn';
-import { BUTTON_ROLE_CLASS } from '@/lib/cms/buttons';
+import { BUTTON_ROLE_CLASS, type ButtonRole } from '@/lib/cms/buttons';
 
 export type ButtonVariant =
   | 'primary'
@@ -45,6 +45,12 @@ export function buttonClasses(
   variant: ButtonVariant = 'primary',
   size: ButtonSize = 'md',
   className?: string,
+  /**
+   * Which Website design button this is, where the slot decides rather than
+   * the look: a hero's main button is the primary button even on a dark band
+   * that draws it as an outline. Left out, the variant's own role applies.
+   */
+  role?: ButtonRole,
 ): string {
   return cn(
     'inline-flex items-center justify-center whitespace-nowrap rounded-lg font-medium transition-colors',
@@ -54,7 +60,7 @@ export function buttonClasses(
     variant !== 'link' && SIZES[size],
     // Markers only: they do nothing until `btn-tokens` joins them, which only
     // the public site's buttons carry — see `.btn-tokens` in globals.css.
-    ROLES[variant],
+    role ? BUTTON_ROLE_CLASS[role] : ROLES[variant],
     variant !== 'link' && `btn-${size}`,
     className,
   );
