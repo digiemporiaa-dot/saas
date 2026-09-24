@@ -616,7 +616,7 @@ const MARKER_OPTIONS = [
 const PAGE_BLOCKS: Record<string, BlockDefinition> = {
   hero: {
     type: 'hero',
-    design: ['image'],
+    design: ['image', 'buttons'],
     label: 'Hero',
     description: 'Large headline, supporting copy and up to two calls to action.',
     group: 'Content',
@@ -773,6 +773,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'image',
     surfaces: ['page', 'blogListing', 'blogArticle'],
     schema: imageContentSchema,
+    design: ['buttons'],
     fields: [
       { kind: 'text', name: 'eyebrow', label: 'Eyebrow', width: 'half' },
       {
@@ -864,6 +865,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     group: 'Products',
     icon: 'table',
     schema: productTableSchema,
+    design: ['buttons'],
     fields: [
       { kind: 'text', name: 'heading', label: 'Heading' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
@@ -962,6 +964,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'megaphone',
     surfaces: ['page', 'blogListing', 'blogArticle'],
     schema: ctaSchema,
+    design: ['buttons'],
     fields: [
       {
         kind: 'text',
@@ -1153,6 +1156,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'gift',
     surfaces: ['page', 'blogListing', 'blogArticle'],
     schema: leadMagnetSchema,
+    design: ['buttons'],
     fields: [
       {
         kind: 'text',
@@ -1190,6 +1194,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'clipboard-list',
     surfaces: ['page', 'blogListing', 'blogArticle'],
     schema: formBlockSchema,
+    design: ['buttons'],
     fields: [
       { kind: 'text', name: 'heading', label: 'Heading' },
       { kind: 'textarea', name: 'description', label: 'Description', rows: 2 },
@@ -1310,7 +1315,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   imageCards: {
     type: 'imageCards',
-    design: ['grid', 'image'],
+    design: ['grid', 'image', 'buttons'],
     label: 'Image cards',
     description: 'A responsive grid of picture cards with a heading, copy and a link.',
     group: 'Cards & media',
@@ -1382,7 +1387,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   iconCards: {
     type: 'iconCards',
-    design: ['grid'],
+    design: ['grid', 'buttons'],
     label: 'Icon cards',
     description: 'A grid of icon-led cards. Use an icon from the library or upload your own.',
     group: 'Cards & media',
@@ -1448,7 +1453,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   imageBox: {
     type: 'imageBox',
-    design: ['image'],
+    design: ['image', 'buttons'],
     label: 'Image box',
     description: 'One image paired with a heading, copy and a button.',
     group: 'Cards & media',
@@ -1506,6 +1511,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     group: 'Cards & media',
     icon: 'shield',
     schema: iconBoxSchema,
+    design: ['buttons'],
     fields: [
       { kind: 'media', name: 'imageId', label: 'Artwork', iconField: 'icon' },
       { kind: 'length', name: 'iconSize', label: 'Icon size', width: 'half', placeholder: '32px' },
@@ -1581,6 +1587,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
     icon: 'text',
     surfaces: ['page', 'blogListing', 'blogArticle'],
     schema: headingTextSchema,
+    design: ['buttons'],
     fields: [
       { kind: 'text', name: 'eyebrow', label: 'Eyebrow', width: 'half' },
       { kind: 'select', name: 'align', label: 'Alignment', width: 'half', options: ALIGN_OPTIONS },
@@ -1593,7 +1600,7 @@ const PAGE_BLOCKS: Record<string, BlockDefinition> = {
 
   textListImage: {
     type: 'textListImage',
-    design: ['image'],
+    design: ['image', 'buttons'],
     label: 'Text + list + image',
     description: 'Copy and a bullet list beside an image, with two calls to action.',
     group: 'Content',

@@ -38,7 +38,7 @@ export async function CtaBlock({ content, ctx }: { content: CtaContent; ctx: Blo
     secondary: 'outline' | 'ghost';
   }) =>
     hasButtons ? (
-      <div className={cn('flex flex-wrap gap-3', justifyClass)}>
+      <div className={cn('cms-actions flex flex-wrap gap-3', justifyClass)}>
         {showPrimary ? (
           <CtaLink
             label={content.primaryCtaLabel}
@@ -70,7 +70,7 @@ export async function CtaBlock({ content, ctx }: { content: CtaContent; ctx: Blo
           />
           {hasButtons ? (
             <div className="mt-7">
-              <div className="flex flex-wrap gap-3">
+              <div className="cms-actions flex flex-wrap gap-3">
                 {showPrimary ? (
                   <CtaLink
                     label={content.primaryCtaLabel}

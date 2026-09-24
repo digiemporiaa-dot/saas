@@ -92,6 +92,16 @@ describe('the controls a block is offered', () => {
     }
   });
 
+  it('offers the button position exactly where there are buttons to place', () => {
+    for (const { type, component } of TYPES) {
+      const hasButtons = /cms-actions|<FormPanel\b/.test(rendered(component));
+      const offers = (BLOCKS[type]?.design ?? []).includes('buttons');
+      expect(offers, `${type}: button rows ${hasButtons}, offers button position ${offers}`).toBe(
+        hasButtons,
+      );
+    }
+  });
+
   it('does not let a claim hide from the check above', () => {
     const checked = new Set(TYPES.map(({ type }) => type));
     for (const [type, block] of Object.entries(BLOCKS)) {
@@ -176,5 +186,66 @@ describe('the columns a section lives in', () => {
   it('marks the text measures a chosen width releases', () => {
     const marked = blockFiles.filter((file) => file.includes('cms-measure')).length;
     expect(marked).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe('the button position', () => {
+  const styles = (raw: unknown) => buildSectionStyles(parseSectionDesign(raw), 'abc');
+
+  it('writes nothing until somebody chooses one', () => {
+    expect(styles({}).css).toBe('');
+  });
+
+  it('stretches the buttons, and a form that follows the section', () => {
+    const css = styles({ desktop: { buttonPosition: 'full' } }).css;
+    expect(css).toContain('.sec-abc .cms-actions>.btn-tokens{width:100%}');
+    expect(css).toContain('.sec-abc .cms-form-follow .fd-submit{width:100%}');
+  });
+
+  it('justifies the row and undoes a larger screen’s stretch', () => {
+    const css = styles({
+      desktop: { buttonPosition: 'full' },
+      mobile: { buttonPosition: 'center' },
+    }).css;
+    const mobile = css.slice(css.indexOf('@media (max-width:767px)'));
+    expect(mobile).toContain(
+      '.sec-abc .cms-actions,.sec-abc .cms-form-follow .fd-actions{justify-content:center}',
+    );
+    expect(mobile).toContain('.sec-abc .cms-actions>.btn-tokens{width:auto}');
+    // The form goes back to its own width, not to a guess.
+    expect(mobile).toContain('.sec-abc .cms-form-follow .fd-submit{width:var(--fd-btn-w,auto)}');
+  });
+
+  it('is offered on the Responsive tab, beside text alignment', () => {
+    const panel = readFileSync('src/components/cms/design-panel.tsx', 'utf8');
+    expect(panel).toContain("const offersButtons = !supports || supports.includes('buttons');");
+    expect(panel).toContain('label="Button position"');
+    expect(panel).toContain("if (bp.buttonPosition !== 'inherit') count += 1;");
+  });
+
+  it('moves a form’s button unless the form’s own tab placed it', () => {
+    const formPanel = readFileSync('src/components/cms/blocks/form-panel.tsx', 'utf8');
+    expect(formPanel).toContain("style.buttonAlign === 'inherit' && 'cms-form-follow'");
+  });
+
+  it('finds every call-to-action button in a row it can act on', () => {
+    const dir = 'src/components/cms/blocks';
+    for (const file of readdirSync(dir)) {
+      if (file === 'shared.tsx') continue;
+      const source = readFileSync(join(dir, file), 'utf8');
+      // Every CtaLink and ProductCta sits directly inside a .cms-actions row —
+      // except the product grid's list rows, whose button shares its line with
+      // the details link and is placed by that row's own layout.
+      const lines = source.split('\n');
+      lines.forEach((line, index) => {
+        if (!/<(CtaLink|ProductCta)\b/.test(line)) return;
+        if (lines.slice(index, index + 8).join('\n').includes('ctaLocation="product-grid"')) return;
+        // The nearest element opened above it is its row.
+        let open = index - 1;
+        while (open >= 0 && !/<(div|td)\b/.test(lines[open]!)) open -= 1;
+        const row = lines.slice(Math.max(open, 0), index).join('\n');
+        expect(row, `${file}:${index + 1}`).toContain('cms-actions');
+      });
+    }
   });
 });

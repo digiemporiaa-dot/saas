@@ -113,7 +113,7 @@ export async function ImageCardsBlock({
                       </p>
                     ) : null}
                     {item.ctaLabel && !item.linkUrl ? (
-                      <div className={cn('mt-4', content.cardAlign === 'center' && 'flex justify-center')}>
+                      <div className={cn('cms-actions mt-4', content.cardAlign === 'center' && 'flex justify-center')}>
                         <CtaLink label={item.ctaLabel} url={item.ctaUrl} variant="outline" size="sm" />
                       </div>
                     ) : item.ctaLabel ? (
@@ -215,7 +215,7 @@ export async function IconCardsBlock({
                       </p>
                     ) : null}
                     {item.ctaLabel && !item.linkUrl ? (
-                      <div className={cn('mt-4', !beside && content.cardAlign === 'center' && 'flex justify-center')}>
+                      <div className={cn('cms-actions mt-4', !beside && content.cardAlign === 'center' && 'flex justify-center')}>
                         <CtaLink label={item.ctaLabel} url={item.ctaUrl} variant="outline" size="sm" />
                       </div>
                     ) : item.ctaLabel ? (
@@ -251,7 +251,7 @@ export async function ImageBoxBlock({ content, ctx }: { content: ImageBoxContent
         className={cn('mt-5', (ctx.inverted || content.layout === 'backgroundImage') && 'text-white/85')}
       />
       {content.ctaLabel ? (
-        <div className="mt-7">
+        <div className="cms-actions mt-7">
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
@@ -356,7 +356,7 @@ export async function IconBoxBlock({ content, ctx }: { content: IconBoxContent; 
         </p>
       ) : null}
       {content.ctaLabel && !content.linkUrl ? (
-        <div className={cn('mt-6', centred && 'flex justify-center')}>
+        <div className={cn('cms-actions mt-6', centred && 'flex justify-center')}>
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
@@ -484,7 +484,7 @@ export function HeadingTextBlock({ content, ctx }: { content: HeadingTextContent
       />
       <RichText html={content.content} className={cn('mt-6', ctx.inverted && 'text-white/80')} />
       {content.ctaLabel ? (
-        <div className={cn('mt-8 flex flex-wrap gap-3', centred && 'justify-center')}>
+        <div className={cn('cms-actions mt-8 flex flex-wrap gap-3', centred && 'justify-center')}>
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}
@@ -535,7 +535,7 @@ export async function TextListImageBlock({
       ) : null}
 
       {content.primaryCtaLabel || content.secondaryCtaLabel ? (
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="cms-actions mt-8 flex flex-wrap gap-3">
           <CtaLink
             label={content.primaryCtaLabel}
             url={content.primaryCtaUrl}

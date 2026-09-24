@@ -65,7 +65,7 @@ export async function ImageContentBlock({
           inverted={inverted}
         />
         <RichText html={content.description} className={cn('mt-5', inverted && 'text-white/80')} />
-        <div className="mt-7">
+        <div className="cms-actions mt-7">
           <CtaLink
             label={content.ctaLabel}
             url={content.ctaUrl}

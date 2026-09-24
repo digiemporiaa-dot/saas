@@ -88,8 +88,9 @@ export type BlockDefinition = {
    *
    * Spacing, width, height, visibility, alignment, colours and type sizes reach
    * every section through the section and its container. These do not: grid
-   * columns and gaps are read by `.cms-grid`, image sizes by `.cms-media`, and
-   * only some blocks render either. The panel shows a control only to a block
+   * columns and gaps are read by `.cms-grid`, image sizes by `.cms-media`, the
+   * button position by `.cms-actions` rows and embedded forms, and only some
+   * blocks render any of them. The panel shows a control only to a block
    * that declares it here — offering one to a block that never reads it is how
    * the panel ended up mostly dead controls.
    *
@@ -107,7 +108,7 @@ export type BlockDefinition = {
   formFields?: ReadonlyArray<FormFieldGroup>;
 };
 
-export type BlockDesignCapability = 'grid' | 'image';
+export type BlockDesignCapability = 'grid' | 'image' | 'buttons';
 
 /** Label + link pair, used by nearly every block that offers a button. */
 export const linkFields = (prefix: string, label: string): FieldDescriptor[] => [

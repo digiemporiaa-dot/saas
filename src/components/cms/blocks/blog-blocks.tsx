@@ -158,7 +158,7 @@ export async function BlogHeroBlock({ content, ctx }: { content: BlogHeroContent
       {content.showCta ? (
         <div
           className={cn(
-            'mt-7 flex flex-wrap gap-3',
+            'cms-actions mt-7 flex flex-wrap gap-3',
             content.contentAlign === 'center' && 'justify-center',
           )}
         >
@@ -463,7 +463,7 @@ export async function BlogFeaturedBlock({
       />
 
       {content.showCta ? (
-        <div className="mt-6">
+        <div className="cms-actions mt-6">
           <CtaLink label={content.ctaLabel} url={href} variant="primary" size="md" />
         </div>
       ) : null}
@@ -704,7 +704,7 @@ export async function BlogGridBlock({ content, ctx }: { content: BlogGridContent
       ) : null}
 
       {content.ctaLabel ? (
-        <div className="flex justify-center">
+        <div className="cms-actions flex justify-center">
           <CtaLink label={content.ctaLabel} url={content.ctaUrl} variant="outline" size="md" />
         </div>
       ) : null}

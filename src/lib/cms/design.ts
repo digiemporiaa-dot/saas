@@ -85,6 +85,9 @@ const hex = z
   .transform((v) => normaliseColor(v))
   .default('');
 
+export const BUTTON_POSITIONS = ['inherit', 'left', 'center', 'right', 'full'] as const;
+export type ButtonPosition = (typeof BUTTON_POSITIONS)[number];
+
 /** Everything that can differ between desktop, tablet and mobile. */
 const breakpointSchema = z.object({
   margin: boxSchema.default(EMPTY_BOX),
@@ -101,6 +104,8 @@ const breakpointSchema = z.object({
   cardGap: length.default(''),
   imageWidth: length.default(''),
   imageHeight: length.default(''),
+  /** Where the section's buttons sit, or `full` to stretch them across. */
+  buttonPosition: z.enum(BUTTON_POSITIONS).catch('inherit').default('inherit'),
   hidden: z.coerce.boolean().catch(false).default(false),
 });
 
@@ -502,7 +507,39 @@ function breakpointRules(bp: BreakpointDesign, scope: string): string {
     rules.push(`${scope} :is(h1,h2,h3,h4,h5,h6,p,li,blockquote){text-align:${bp.align}}`);
   }
   if (bp.contentWidth) rules.push(`${scope} .cms-measure{max-width:none}`);
+  if (bp.buttonPosition !== 'inherit') rules.push(buttonPositionRules(bp.buttonPosition, scope));
   return rules.join('');
+}
+
+const JUSTIFY: Record<Exclude<ButtonPosition, 'inherit' | 'full'>, string> = {
+  left: 'flex-start',
+  center: 'center',
+  right: 'flex-end',
+};
+
+/**
+ * Where the section's buttons sit.
+ *
+ * Two kinds of button answer to it: a block's call-to-action row (every one
+ * is a `.cms-actions`), and the submit button of a form the section embeds —
+ * unless that form's own Form tab chose an alignment, which is the more
+ * specific choice (`FormPanel` marks a form that has not: `.cms-form-follow`).
+ *
+ * A position resets the width a larger screen may have stretched, and the
+ * form's width back to its own design's, so "full width on phones, centred
+ * on desktop" is two settings and nothing else.
+ */
+function buttonPositionRules(position: Exclude<ButtonPosition, 'inherit'>, scope: string): string {
+  const row = `${scope} .cms-actions`;
+  const form = `${scope} .cms-form-follow`;
+  if (position === 'full') {
+    return `${row}>.btn-tokens{width:100%}${form} .fd-submit{width:100%}`;
+  }
+  const justify = JUSTIFY[position];
+  return (
+    `${row},${form} .fd-actions{justify-content:${justify}}` +
+    `${row}>.btn-tokens{width:auto}${form} .fd-submit{width:var(--fd-btn-w,auto)}`
+  );
 }
 
 function widthVar(design: SectionDesign): string | null {

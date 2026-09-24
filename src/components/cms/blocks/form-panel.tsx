@@ -68,7 +68,17 @@ export function FormPanel({
   const descriptionText = description?.trim();
 
   return (
-    <div className={cn(cardClass, className)} style={formCardStyle(style)}>
+    <div
+      className={cn(
+        cardClass,
+        // The section's Button position (Responsive tab) moves the submit
+        // button too — unless this form's own Form tab chose an alignment,
+        // the more specific of the two.
+        style.buttonAlign === 'inherit' && 'cms-form-follow',
+        className,
+      )}
+      style={formCardStyle(style)}
+    >
       {headingText || descriptionText ? (
         <div className={headerClassName} style={align ? { textAlign: align } : undefined}>
           {headingText ? (

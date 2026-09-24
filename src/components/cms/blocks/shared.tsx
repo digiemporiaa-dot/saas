@@ -167,6 +167,11 @@ export function mainCtaVariant(ctx: BlockContext, dark: boolean = ctx.inverted):
   return dark && !ctx.design.colors.button ? 'outline' : 'primary';
 }
 
+/** Whether `CtaLink` would draw anything for this label and URL. */
+export function ctaVisible(label?: string | null, url?: string | null): boolean {
+  return Boolean(label?.trim() && safeUrl(url));
+}
+
 /**
  * Renders a CTA only when both a label and a safe URL are present.
  *

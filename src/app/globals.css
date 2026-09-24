@@ -468,6 +468,18 @@
   .cms-section .cms-btn-ghost {
     color: inherit;
   }
+
+  /*
+   * A block's call-to-action buttons sit in one of these, so a section's
+   * Button position (Responsive tab) has one thing to act on: it justifies
+   * the row, or stretches the buttons across it.
+   */
+  .cms-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+  }
   :root .cms-section.cms-section--button .btn-tokens.cms-btn-primary {
     background-color: var(--sec-button);
     border-color: var(--sec-button);

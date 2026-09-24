@@ -72,7 +72,7 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
       ) : null}
 
       {content.primaryCtaLabel || content.secondaryCtaLabel ? (
-        <div className={cn('mt-9 flex flex-wrap gap-3', centred && 'justify-center')}>
+        <div className={cn('cms-actions mt-9 flex flex-wrap gap-3', centred && 'justify-center')}>
           <CtaLink
             label={content.primaryCtaLabel}
             url={content.primaryCtaUrl}

@@ -22,7 +22,7 @@ import { productCardVars, productImageVars } from '@/lib/cms/product-settings';
 import { PostCard } from '@/components/blog/post-card';
 import { safeUrl } from '@/lib/utils/sanitize';
 import { cn } from '@/lib/utils/cn';
-import { SectionHeading, CtaLink, type BlockContext } from './shared';
+import { SectionHeading, CtaLink, ctaVisible, type BlockContext } from './shared';
 import { SliderCore } from './slider-core';
 
 /**
@@ -221,12 +221,11 @@ export async function ImageSliderBlock({
               {item.description ? (
                 <p className="mt-1.5 text-sm opacity-85">{item.description}</p>
               ) : null}
-              <CtaLink
-                label={item.buttonLabel}
-                url={item.buttonUrl}
-                size="sm"
-                className="mt-3 inline-flex"
-              />
+              {ctaVisible(item.buttonLabel, item.buttonUrl) ? (
+                <div className="cms-actions mt-3">
+                  <CtaLink label={item.buttonLabel} url={item.buttonUrl} size="sm" />
+                </div>
+              ) : null}
             </div>
           ) : null;
 
@@ -424,7 +423,11 @@ export async function ContentSliderBlock({
                   ))}
                 </ul>
               ) : null}
-              <CtaLink label={item.ctaLabel} url={item.ctaUrl} size="sm" className="mt-4 inline-flex" />
+              {ctaVisible(item.ctaLabel, item.ctaUrl) ? (
+                <div className="cms-actions mt-4">
+                  <CtaLink label={item.ctaLabel} url={item.ctaUrl} size="sm" />
+                </div>
+              ) : null}
             </div>
           );
 

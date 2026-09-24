@@ -1,7 +1,17 @@
 'use client';
 
 import * as React from 'react';
-import { Monitor, Tablet, Smartphone, Eye, EyeOff } from 'lucide-react';
+import {
+  Monitor,
+  Tablet,
+  Smartphone,
+  Eye,
+  EyeOff,
+  AlignHorizontalJustifyStart,
+  AlignHorizontalJustifyCenter,
+  AlignHorizontalJustifyEnd,
+  MoveHorizontal,
+} from 'lucide-react';
 import {
   BREAKPOINTS,
   BREAKPOINT_LABELS,
@@ -14,6 +24,7 @@ import {
   type SectionDesign,
   type BreakpointDesign,
   type BoxValue,
+  type ButtonPosition,
 } from '@/lib/cms/design';
 import type { BlockDesignCapability } from '@/lib/cms/block-types';
 import { Field, Input, Select, Switch, Label } from '@/components/ui/field';
@@ -83,6 +94,7 @@ export function DesignPanel({
 }) {
   const offersGrid = !supports || supports.includes('grid');
   const offersImage = !supports || supports.includes('image');
+  const offersButtons = !supports || supports.includes('buttons');
   // Always work against a fully-parsed design so a legacy or partial settings
   // object still renders every control with sensible values.
   const design = React.useMemo(() => parseSectionDesign(value), [value]);
@@ -275,6 +287,53 @@ export function DesignPanel({
                 </Select>
               </Field>
             </div>
+
+            {/*
+              * Read by the block's `.cms-actions` button rows and by the
+              * submit button of a form the section embeds, so only a block
+              * with either offers it.
+              */}
+            {offersButtons ? (
+              <Field
+                label="Button position"
+                hint={
+                  isDesktop
+                    ? 'Where this section’s buttons sit. Full stretches them across the row.'
+                    : inheritHint
+                }
+              >
+                <div
+                  role="group"
+                  aria-label="Button position"
+                  className="flex flex-wrap gap-1 rounded-lg bg-muted/[0.06] p-1"
+                >
+                  {BUTTON_POSITION_OPTIONS.map((option) => {
+                    const Icon = option.icon;
+                    const active = current.buttonPosition === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={active}
+                        title={option.title}
+                        onClick={() =>
+                          patchBreakpoint(breakpoint, { buttonPosition: option.value })
+                        }
+                        className={cn(
+                          'flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                          active
+                            ? 'bg-surface text-content shadow-sm'
+                            : 'text-muted hover:text-content',
+                        )}
+                      >
+                        {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+                        {option.value === 'inherit' && !isDesktop ? 'Inherit' : option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Field>
+            ) : null}
 
             {/*
               * Gaps are read by `.cms-grid`, so only a grid block offers them.
@@ -740,5 +799,20 @@ function countOverrides(bp: BreakpointDesign): number {
   }
   if (bp.columns !== null) count += 1;
   if (bp.align !== 'inherit') count += 1;
+  if (bp.buttonPosition !== 'inherit') count += 1;
   return count;
 }
+
+/** Elementor's Position control: where the buttons sit, or stretched across. */
+const BUTTON_POSITION_OPTIONS: ReadonlyArray<{
+  value: ButtonPosition;
+  label: string;
+  title: string;
+  icon: typeof Monitor | null;
+}> = [
+  { value: 'inherit', label: 'Default', title: 'The block’s own placement', icon: null },
+  { value: 'left', label: 'Left', title: 'Left', icon: AlignHorizontalJustifyStart },
+  { value: 'center', label: 'Centre', title: 'Centre', icon: AlignHorizontalJustifyCenter },
+  { value: 'right', label: 'Right', title: 'Right', icon: AlignHorizontalJustifyEnd },
+  { value: 'full', label: 'Full', title: 'Full width', icon: MoveHorizontal },
+];
