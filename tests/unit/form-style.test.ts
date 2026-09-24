@@ -118,6 +118,24 @@ describe('what each control changes', () => {
     expect(formCardStyle(style({ cardShadow: 'none' }))).toEqual({ boxShadow: 'none' });
   });
 
+  it('narrows the card and keeps it to a side of its column', () => {
+    expect(formCardStyle(style({ cardWidth: '380px', cardPosition: 'right' }))).toEqual({
+      maxWidth: '380px',
+      marginLeft: 'auto',
+      marginRight: '0',
+    });
+    expect(formCardStyle(style({ cardWidth: '380px' }))).toMatchObject({
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    });
+    expect(formCardStyle(style({ cardWidth: '380px', cardPosition: 'left' }))).toMatchObject({
+      marginLeft: '0',
+      marginRight: 'auto',
+    });
+    // A position alone moves nothing: the card still fills its column.
+    expect(formCardStyle(style({ cardPosition: 'right' }))).toEqual({});
+  });
+
   it('reads every value somewhere — no control on the tab is dead', () => {
     const lib = readFileSync('src/lib/cms/form-style.ts', 'utf8');
     const panel = readFileSync('src/components/cms/blocks/form-panel.tsx', 'utf8');

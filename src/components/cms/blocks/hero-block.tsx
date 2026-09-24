@@ -1,3 +1,4 @@
+import type * as React from 'react';
 import { Check } from 'lucide-react';
 import type { HeroContent } from '@/lib/cms/blocks';
 import { getMedia } from '@/lib/services/media';
@@ -34,6 +35,12 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
   // Only a content-only hero centres by default; a two-column hero reads better left-aligned.
   const centred = isBackdrop || (content.alignment === 'center' && !showImage && !showForm);
 
+  // The text's share of a two-column hero. An equal split keeps the text to a
+  // comfortable measure; a chosen split gives the text its whole column.
+  const textShare =
+    content.columnSplit === 'custom' ? content.columnSplitCustom : Number(content.columnSplit);
+  const equalSplit = textShare === 50;
+
   const copy = (
     <div className={cn(centred && 'cms-measure mx-auto max-w-3xl text-center')}>
       <SectionHeading
@@ -43,7 +50,7 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
         description={content.description}
         align={centred ? 'center' : 'left'}
         inverted={inverted}
-        className={centred ? undefined : 'cms-measure max-w-xl'}
+        className={centred ? undefined : cn('cms-measure', equalSplit && 'max-w-xl')}
       />
 
       {bullets.length > 0 ? (
@@ -189,10 +196,22 @@ export async function HeroBlock({ content, ctx }: { content: HeroContent; ctx: B
       aside
     );
 
+  // Tracks in the order they appear: the aside comes first when it is placed
+  // on the left, so it takes the first width.
+  const asideFirst = content.imagePlacement === 'left';
+  const shares = asideFirst ? [100 - textShare, textShare] : [textShare, 100 - textShare];
+  const tracks = shares.map((share) => `minmax(0,${share}fr)`).join(' ');
+
   return (
-    <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-      <div className={cn(content.imagePlacement === 'left' && 'lg:order-2')}>{copy}</div>
-      <div className={cn(content.imagePlacement === 'left' && 'lg:order-1')}>{asideContent}</div>
+    <div
+      className={cn(
+        'grid items-center gap-10 lg:gap-14',
+        equalSplit ? 'lg:grid-cols-2' : 'lg:grid-cols-[var(--hero-cols)]',
+      )}
+      style={equalSplit ? undefined : ({ '--hero-cols': tracks } as React.CSSProperties)}
+    >
+      <div className={cn(asideFirst && 'lg:order-2')}>{copy}</div>
+      <div className={cn(asideFirst && 'lg:order-1')}>{asideContent}</div>
     </div>
   );
 }

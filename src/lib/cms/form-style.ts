@@ -30,6 +30,7 @@ const length = z.preprocess(normaliseLength, z.string()).catch('').default('');
 export const FORM_HEADING_ALIGNS = ['inherit', 'left', 'center', 'right'] as const;
 export const FORM_BUTTON_ALIGNS = ['inherit', 'left', 'center', 'right', 'full'] as const;
 export const FORM_CARD_SHADOWS = ['inherit', 'none', 'sm', 'md', 'lg'] as const;
+export const FORM_CARD_POSITIONS = ['center', 'left', 'right'] as const;
 
 export const formStyleSchema = z.object({
   // Heading — the text is used by blocks with no form heading of their own.
@@ -63,6 +64,9 @@ export const formStyleSchema = z.object({
   cardRadius: length,
   cardPadding: length,
   cardShadow: z.enum(FORM_CARD_SHADOWS).catch('inherit').default('inherit'),
+  /** A narrower card than its column, and which side of the column it keeps to. */
+  cardWidth: length,
+  cardPosition: z.enum(FORM_CARD_POSITIONS).catch('center').default('center'),
 });
 
 export type FormStyle = z.infer<typeof formStyleSchema>;
@@ -130,6 +134,13 @@ export function formCardStyle(style: FormStyle): Record<string, string> {
   if (style.cardRadius) css.borderRadius = style.cardRadius;
   if (style.cardPadding) css.padding = style.cardPadding;
   if (style.cardShadow !== 'inherit') css.boxShadow = SHADOWS[style.cardShadow];
+  // Auto margins place a narrower card in its column, in a grid cell as well
+  // as in a block — whichever the block puts it in.
+  if (style.cardWidth) {
+    css.maxWidth = style.cardWidth;
+    css.marginLeft = style.cardPosition === 'left' ? '0' : 'auto';
+    css.marginRight = style.cardPosition === 'right' ? '0' : 'auto';
+  }
   return css;
 }
 
@@ -296,6 +307,25 @@ export function formStyleGroups(
       title: 'Card',
       help: 'The box the form sits in.',
       fields: [
+        {
+          kind: 'length',
+          name: 'formStyle.cardWidth',
+          label: 'Card width',
+          width: 'half',
+          help: 'Blank fills the column; 380px makes a narrow form.',
+        },
+        {
+          kind: 'select',
+          name: 'formStyle.cardPosition',
+          label: 'Card position',
+          width: 'half',
+          help: 'Where a narrower card sits in its column.',
+          options: [
+            { label: 'Centre', value: 'center' },
+            { label: 'Left', value: 'left' },
+            { label: 'Right', value: 'right' },
+          ],
+        },
         { kind: 'color', name: 'formStyle.cardBackground', label: 'Background', width: 'half' },
         { kind: 'color', name: 'formStyle.cardBorderColor', label: 'Border', width: 'half' },
         { kind: 'length', name: 'formStyle.cardRadius', label: 'Corners', width: 'half' },
