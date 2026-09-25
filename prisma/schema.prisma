@@ -882,6 +882,10 @@ model Product {
   storage       String? // "3 TB", "Unlimited"
   minUsers      Int?
   maxUsers      Int?
+  /// What the product page calls the storage and users rows. Blank keeps
+  /// "Storage" and "Users".
+  storageLabel  String?
+  usersLabel    String?
   billingPeriod BillingPeriod @default(BOTH)
 
   // Money — Decimal only.

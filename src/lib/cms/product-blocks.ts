@@ -134,10 +134,17 @@ const productDescriptionSchema = z.object({
 });
 
 const productFeaturesSchema = z.object({
+  /**
+   * One heading over both lists. `{product}` is the product's name, so the
+   * same section reads "Top benefits of Dropbox Business" on that plan's page
+   * and names each other plan on its own.
+   */
+  heading: heading('Top benefits of {product}'),
   showFeatures: bool(true),
-  featuresHeading: heading('What is included'),
+  /** The lists' own headings, for a section that sets the two apart. */
+  featuresHeading: heading(''),
   showBenefits: bool(true),
-  benefitsHeading: heading('Why teams choose it'),
+  benefitsHeading: heading(''),
   columns: z.coerce.number().int().min(1).max(3).catch(2).default(2),
   ...responsiveColumnsSchema,
   /** 0 lists every feature and benefit the product carries. */
@@ -467,10 +474,29 @@ export const PRODUCT_BLOCKS: Record<string, BlockDefinition> = {
     surfaces: ['productDetail'],
     schema: productFeaturesSchema,
     fields: [
+      {
+        kind: 'text',
+        name: 'heading',
+        label: 'Heading',
+        placeholder: 'No heading',
+        help: '{product} shows the product’s name.',
+      },
       { kind: 'boolean', name: 'showFeatures', label: 'Show features', width: 'half' },
-      { kind: 'text', name: 'featuresHeading', label: 'Features heading', width: 'half' },
+      {
+        kind: 'text',
+        name: 'featuresHeading',
+        label: 'Features sub-heading',
+        placeholder: 'None',
+        width: 'half',
+      },
       { kind: 'boolean', name: 'showBenefits', label: 'Show benefits', width: 'half' },
-      { kind: 'text', name: 'benefitsHeading', label: 'Benefits heading', width: 'half' },
+      {
+        kind: 'text',
+        name: 'benefitsHeading',
+        label: 'Benefits sub-heading',
+        placeholder: 'None',
+        width: 'half',
+      },
       { kind: 'number', name: 'columns', label: 'Columns', width: 'half', min: 1, max: 3 },
       ...responsiveColumnFields,
       {

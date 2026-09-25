@@ -54,6 +54,8 @@ describe('product lifecycle', () => {
         storage: '5 TB',
         minUsers: '3',
         maxUsers: '250',
+        storageLabel: ' Cloud storage ',
+        usersLabel: '',
         features: ['Feature one', 'Feature two'],
         benefits: ['Benefit one'],
         specs: [{ label: 'Storage', value: '5 TB' }],
@@ -69,6 +71,9 @@ describe('product lifecycle', () => {
     expect(product.annualPrice?.toString()).toBe('12500');
     expect(product.slug).toBe(`test-plan-${suffix}`);
     expect(product.features).toEqual(['Feature one', 'Feature two']);
+    // A blank heading is stored as nothing, so the page keeps "Users".
+    expect(product.storageLabel).toBe('Cloud storage');
+    expect(product.usersLabel).toBeNull();
   });
 
   it('rejects a malformed price', async () => {
@@ -96,6 +101,7 @@ describe('product lifecycle', () => {
         description: '<p>Safe</p><script>alert(1)</script>',
         monthlyPrice: '1250.55',
         // The admin form always submits the whole record, so the test does too.
+        storageLabel: 'Cloud storage',
         features: ['Feature one', 'Feature two'],
         benefits: ['Benefit one'],
       }),
@@ -126,6 +132,8 @@ describe('product lifecycle', () => {
     expect(featured).toHaveLength(1);
     expect(featured[0]!.monthlyPrice).toBe('1250.55');
     expect(featured[0]!.features).toEqual(['Feature one', 'Feature two']);
+    expect(featured[0]!.storageLabel).toBe('Cloud storage');
+    expect(featured[0]!.usersLabel).toBeNull();
   });
 
   it('preserves hand-picked product order', async () => {

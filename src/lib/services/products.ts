@@ -32,6 +32,9 @@ export type PublicProduct = {
   storage: string | null;
   minUsers: number | null;
   maxUsers: number | null;
+  /** What the product calls its storage and users rows; null keeps the built-in names. */
+  storageLabel: string | null;
+  usersLabel: string | null;
   currency: string;
   monthlyPrice: string | null;
   annualPrice: string | null;
@@ -68,6 +71,8 @@ const productSelect = {
   storage: true,
   minUsers: true,
   maxUsers: true,
+  storageLabel: true,
+  usersLabel: true,
   currency: true,
   monthlyPrice: true,
   annualPrice: true,
@@ -160,6 +165,8 @@ export function toPublicProduct(row: ProductCountryRow, country: CountryContext)
     storage: product.storage,
     minUsers: product.minUsers,
     maxUsers: product.maxUsers,
+    storageLabel: product.storageLabel,
+    usersLabel: product.usersLabel,
     currency: row.currency || country.currency,
     monthlyPrice: decimalToString(row.monthlyPrice),
     annualPrice: decimalToString(row.annualPrice),

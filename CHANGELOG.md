@@ -72,6 +72,19 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
   item, so a market with hundreds of imported records costs one query instead of
   hundreds.
 
+- **A product page's features section has one heading, "Top benefits of" the
+  product,** over both of its lists. `{product}` in the heading is the
+  product's name. The old built-in sub-headings, "What is included" and "Why
+  teams choose it", are gone; a sub-heading somebody wrote is kept.
+
+### Added
+
+- **A product can name its storage and users rows.** The product form has a
+  heading beside each value, with "Storage" and "Users" as placeholders, which
+  is also what a blank heading shows. The product page's specification list
+  and a comparison table's per-product cards use it; a table row shared by
+  several products uses it only when all of them agree.
+
 ### Database
 
 Additive migration `20260916150000_country_content_isolation`. No data is reset,
@@ -86,6 +99,11 @@ Backfill grants every existing market exactly what it can see today, so the admi
 screens and the public site are unchanged the moment it lands. Products already
 deleted globally have their market configurations marked to match, so the change
 of meaning does not bring products back into storefronts that had removed them.
+
+Migration `20260925120000_product_spec_labels` adds `Product.storageLabel` and
+`Product.usersLabel`, both nullable. `20260925130000_product_benefits_heading`
+clears the old built-in sub-headings from stored features sections and changes
+nothing else in them.
 
 ---
 

@@ -33,6 +33,8 @@ export type ProductFormValues = {
   storage: string;
   minUsers: string;
   maxUsers: string;
+  storageLabel: string;
+  usersLabel: string;
   billingPeriod: string;
   currency: string;
   monthlyPrice: string;
@@ -72,6 +74,8 @@ export const EMPTY_PRODUCT: ProductFormValues = {
   storage: '',
   minUsers: '',
   maxUsers: '',
+  storageLabel: '',
+  usersLabel: '',
   billingPeriod: 'BOTH',
   currency: 'INR',
   monthlyPrice: '',
@@ -150,6 +154,8 @@ export function ProductForm({
       'storage',
       'minUsers',
       'maxUsers',
+      'storageLabel',
+      'usersLabel',
       'billingPeriod',
       'currency',
       'monthlyPrice',
@@ -267,12 +273,43 @@ export function ProductForm({
                 />
               </Field>
 
+              {/*
+               * Each value sits beside the heading the product page gives it.
+               * The placeholder is the built-in heading, which is also what a
+               * blank one shows.
+               */}
               <div className="grid gap-4 sm:grid-cols-3">
-                <Field label="Storage" htmlFor="storage" hint="e.g. 5 TB">
+                <Field
+                  label="Storage heading"
+                  htmlFor="storageLabel"
+                  hint="Blank shows “Storage”."
+                  error={errors.storageLabel}
+                >
+                  <Input
+                    id="storageLabel"
+                    value={values.storageLabel}
+                    placeholder="Storage"
+                    onChange={(e) => set('storageLabel', e.target.value)}
+                  />
+                </Field>
+                <Field label="Storage" htmlFor="storage" hint="e.g. 5 TB" className="sm:col-span-2">
                   <Input
                     id="storage"
                     value={values.storage}
                     onChange={(e) => set('storage', e.target.value)}
+                  />
+                </Field>
+                <Field
+                  label="Users heading"
+                  htmlFor="usersLabel"
+                  hint="Blank shows “Users”."
+                  error={errors.usersLabel}
+                >
+                  <Input
+                    id="usersLabel"
+                    value={values.usersLabel}
+                    placeholder="Users"
+                    onChange={(e) => set('usersLabel', e.target.value)}
                   />
                 </Field>
                 <Field label="Minimum users" htmlFor="minUsers" error={errors.minUsers}>

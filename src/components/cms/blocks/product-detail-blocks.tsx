@@ -12,6 +12,7 @@ import type {
   ProductPriceBoxContent,
 } from '@/lib/cms/product-blocks';
 import { RATIO_CSS } from '@/lib/cms/product-settings';
+import { rowLabel, withProductName } from '@/lib/cms/product-labels';
 import { selectProducts } from '@/lib/services/products';
 import { getPublicForm } from '@/lib/services/forms';
 import { formatMoney } from '@/lib/utils/money';
@@ -356,52 +357,74 @@ export function ProductFeaturesBlock({
   const benefits = content.showBenefits ? cap(product.benefits) : [];
   if (features.length === 0 && benefits.length === 0) return null;
 
+  const named = (text: string) => withProductName(text, product.name);
+  const heading = named(content.heading);
+  const featuresHeading = named(content.featuresHeading);
+  const benefitsHeading = named(content.benefitsHeading);
+
   const columns = blockColumnVars(ctx.design, content);
+  const headingId = `product-highlights-${ctx.sectionId}`;
   const featuresHeadingId = `product-features-${ctx.sectionId}`;
   const benefitsHeadingId = `product-benefits-${ctx.sectionId}`;
+  // Under the section's heading, a list's own heading is a level down.
+  const ListHeading = heading ? 'h3' : 'h2';
+  const listHeadingClass = cn(
+    'font-heading font-bold text-content',
+    heading ? 'text-lg' : 'text-xl',
+  );
+
+  const ticked = features.map((text) => ({ text, Icon: Check }));
+  const sparkled = benefits.map((text) => ({ text, Icon: Sparkles }));
+  const list = (items: typeof ticked, className?: string) => (
+    <ul className={cn('cms-grid gap-3', className)} style={columns}>
+      {items.map(({ text, Icon }, index) => (
+        <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
+          {content.showIcons ? (
+            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
+          ) : null}
+          <span>{text}</span>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
-    <div className="space-y-12">
-      {features.length > 0 ? (
-        <section aria-labelledby={featuresHeadingId}>
-          {content.featuresHeading ? (
-            <h2 id={featuresHeadingId} className="font-heading text-xl font-bold text-content">
-              {content.featuresHeading}
-            </h2>
-          ) : null}
-          <ul className="cms-grid mt-5 gap-3" style={columns}>
-            {features.map((feature, index) => (
-              <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
-                {content.showIcons ? (
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
-                ) : null}
-                <span>{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
+    <section aria-labelledby={heading ? headingId : undefined}>
+      {heading ? (
+        <h2 id={headingId} className="font-heading text-xl font-bold text-content">
+          {heading}
+        </h2>
       ) : null}
 
-      {benefits.length > 0 ? (
-        <section aria-labelledby={benefitsHeadingId}>
-          {content.benefitsHeading ? (
-            <h2 id={benefitsHeadingId} className="font-heading text-xl font-bold text-content">
-              {content.benefitsHeading}
-            </h2>
+      {featuresHeading || benefitsHeading ? (
+        <div className={cn('space-y-12', heading && 'mt-8')}>
+          {ticked.length > 0 ? (
+            <section aria-labelledby={featuresHeading ? featuresHeadingId : undefined}>
+              {featuresHeading ? (
+                <ListHeading id={featuresHeadingId} className={listHeadingClass}>
+                  {featuresHeading}
+                </ListHeading>
+              ) : null}
+              {list(ticked, featuresHeading ? 'mt-5' : undefined)}
+            </section>
           ) : null}
-          <ul className="cms-grid mt-5 gap-3" style={columns}>
-            {benefits.map((benefit, index) => (
-              <li key={index} className="flex items-start gap-2.5 text-sm text-muted">
-                {content.showIcons ? (
-                  <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-brand" aria-hidden="true" />
-                ) : null}
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </div>
+
+          {sparkled.length > 0 ? (
+            <section aria-labelledby={benefitsHeading ? benefitsHeadingId : undefined}>
+              {benefitsHeading ? (
+                <ListHeading id={benefitsHeadingId} className={listHeadingClass}>
+                  {benefitsHeading}
+                </ListHeading>
+              ) : null}
+              {list(sparkled, benefitsHeading ? 'mt-5' : undefined)}
+            </section>
+          ) : null}
+        </div>
+      ) : (
+        // With no headings of their own, the two lists read as one.
+        list([...ticked, ...sparkled], heading ? 'mt-5' : undefined)
+      )}
+    </section>
   );
 }
 
@@ -413,7 +436,7 @@ function specRows(
   const rows = [...product.specs];
 
   if (content.showStorage && product.storage) {
-    rows.unshift({ label: 'Storage', value: product.storage });
+    rows.unshift({ label: rowLabel(product.storageLabel, 'Storage'), value: product.storage });
   }
   if (content.showUsers && (product.minUsers || product.maxUsers)) {
     const users =
@@ -422,7 +445,7 @@ function specRows(
         : product.minUsers
           ? `${product.minUsers}+`
           : `Up to ${product.maxUsers}`;
-    rows.unshift({ label: 'Users', value: users });
+    rows.unshift({ label: rowLabel(product.usersLabel, 'Users'), value: users });
   }
   if (content.showSku && product.sku) rows.push({ label: 'SKU', value: product.sku });
 

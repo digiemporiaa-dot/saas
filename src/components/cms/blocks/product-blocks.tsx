@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils/cn';
 import { ProductCard } from '@/components/products/product-card';
 import { getProductSettings } from '@/lib/services/product-cms';
 import { productCardVars, productImageVars } from '@/lib/cms/product-settings';
+import { rowLabel, sharedRowLabel } from '@/lib/cms/product-labels';
 import { ProductCta } from '@/components/products/product-cta';
 import { SectionHeading, blockColumnVars, type BlockContext } from './shared';
 
@@ -129,18 +130,29 @@ export async function ProductTableBlock({
     );
   }
 
-  const rows: Array<{ label: string; render: (p: (typeof products)[number]) => React.ReactNode }> =
-    [];
+  /*
+   * A product can give its storage and users rows headings of its own. A
+   * stacked card shows one product, so it uses that product's; the table's row
+   * is shared by every product in it — see `sharedRowLabel`.
+   */
+  const rows: Array<{
+    label: string;
+    /** The row's heading on one product's card, where products name it themselves. */
+    labelFor?: (p: (typeof products)[number]) => string;
+    render: (p: (typeof products)[number]) => React.ReactNode;
+  }> = [];
 
   if (content.showStorage) {
     rows.push({
-      label: 'Storage',
+      label: sharedRowLabel(products.map((p) => p.storageLabel), 'Storage'),
+      labelFor: (p) => rowLabel(p.storageLabel, 'Storage'),
       render: (p) => p.storage ?? <Minus className="h-4 w-4 text-muted" />,
     });
   }
   if (content.showUsers) {
     rows.push({
-      label: 'Users',
+      label: sharedRowLabel(products.map((p) => p.usersLabel), 'Users'),
+      labelFor: (p) => rowLabel(p.usersLabel, 'Users'),
       render: (p) => {
         if (p.minUsers && p.maxUsers) return `${p.minUsers}–${p.maxUsers}`;
         if (p.minUsers) return `${p.minUsers}+`;
@@ -236,8 +248,8 @@ export async function ProductTableBlock({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.label}>
+            {rows.map((row, index) => (
+              <tr key={index}>
                 <th
                   scope="row"
                   className="border-b border-hairline px-5 py-3.5 text-left font-medium text-muted"
@@ -347,9 +359,9 @@ export async function ProductTableBlock({
             ) : null}
 
             <dl className="mt-4 divide-y divide-hairline border-y border-hairline text-sm">
-              {rows.map((row) => (
-                <div key={row.label} className="flex items-center justify-between gap-4 py-2.5">
-                  <dt className="text-muted">{row.label}</dt>
+              {rows.map((row, index) => (
+                <div key={index} className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-muted">{row.labelFor?.(product) ?? row.label}</dt>
                   <dd className="text-right text-content">{row.render(product)}</dd>
                 </div>
               ))}

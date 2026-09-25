@@ -56,6 +56,9 @@ export const productInputSchema = z
     storage: optional(60),
     minUsers: intField(0, 1_000_000),
     maxUsers: intField(0, 1_000_000),
+    /** What the product page calls those two rows. Blank keeps "Storage" and "Users". */
+    storageLabel: optional(60),
+    usersLabel: optional(60),
     billingPeriod: z.enum(['MONTHLY', 'ANNUAL', 'BOTH', 'ONE_TIME']).default('BOTH'),
 
     currency: z.string().length(3).default('INR'),

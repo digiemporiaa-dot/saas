@@ -92,6 +92,8 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
     storage: product.storage ?? '',
     minUsers: product.minUsers === null ? '' : String(product.minUsers),
     maxUsers: product.maxUsers === null ? '' : String(product.maxUsers),
+    storageLabel: product.storageLabel ?? '',
+    usersLabel: product.usersLabel ?? '',
     billingPeriod: product.billingPeriod,
     currency: product.currency,
     monthlyPrice: decimalToString(product.monthlyPrice) ?? '',
