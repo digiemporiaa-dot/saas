@@ -46,6 +46,13 @@ describe('where the tags are rendered', () => {
     expect(root).toContain('<TrackingRouteGuard measurementIds={measurementIds} />');
   });
 
+  it('still renders every page per request', () => {
+    // Reading the consent cookie in the root layout made every route dynamic.
+    // Without it the build pre-renders /_not-found, which reads the database
+    // the Docker build cannot reach — so the root layout says it outright.
+    expect(root).toContain("export const dynamic = 'force-dynamic';");
+  });
+
   it('renders them, and the consent banner, in the public layout', () => {
     expect(publicLayout).toContain('<HeadTracking');
     expect(publicLayout).toContain('placement="BODY_START"');
