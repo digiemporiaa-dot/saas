@@ -64,6 +64,21 @@ export function joinLength(amount: string, unit: LengthUnit): string {
 
 const length = z.preprocess(normaliseLength, z.string());
 
+/**
+ * A line height, stored as a plain multiplier ("1.5"), which is what CSS
+ * means by a unitless line height and what scales with whatever size the text
+ * ends up. Anything else — including a length, which would pin the spacing
+ * whatever the text's size — becomes `''`, meaning "inherit".
+ */
+export function normaliseLineHeight(raw: unknown): string {
+  const value = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : '';
+  if (!/^\d+(\.\d+)?$/.test(value)) return '';
+  const amount = Number(value);
+  return amount > 0 && amount <= 10 ? value : '';
+}
+
+const lineHeight = z.preprocess(normaliseLineHeight, z.string());
+
 const boxSchema = z.object({
   top: length.default(''),
   right: length.default(''),
@@ -97,7 +112,13 @@ const breakpointSchema = z.object({
   minHeight: length.default(''),
   align: z.enum(['inherit', 'left', 'center', 'right']).catch('inherit').default('inherit'),
   headingSize: length.default(''),
+  headingLineHeight: lineHeight.default(''),
+  headingLetterSpacing: length.default(''),
+  headingWordSpacing: length.default(''),
   bodySize: length.default(''),
+  bodyLineHeight: lineHeight.default(''),
+  bodyLetterSpacing: length.default(''),
+  bodyWordSpacing: length.default(''),
   rowGap: length.default(''),
   columnGap: length.default(''),
   contentGap: length.default(''),
@@ -489,7 +510,9 @@ function breakpointVars(bp: BreakpointDesign, includeDisplay: boolean): VarMap {
  * Tailwind size class of its own, which sits later in the stylesheet at the
  * same specificity and so won every time. The control saved, the variable was
  * written, and nothing on the page moved. Scoped to the section's own class,
- * `.sec-x :is(h1, h2, h3)` outranks a single utility class wherever it sits.
+ * `.sec-x :is(h1, h2, h3)` outranks a single utility class wherever it sits —
+ * which is also what lets line height, letter spacing and word spacing beat
+ * the `leading-*` and `tracking-*` classes the blocks carry.
  *
  * Content width is here for the same reason from the other side: the section's
  * container did widen, but the text inside kept its own `max-w-*` measure, so a
@@ -501,14 +524,34 @@ function breakpointVars(bp: BreakpointDesign, includeDisplay: boolean): VarMap {
  */
 function breakpointRules(bp: BreakpointDesign, scope: string): string {
   const rules: string[] = [];
-  if (bp.headingSize) rules.push(`${scope} :is(h1,h2,h3){font-size:${bp.headingSize}}`);
-  if (bp.bodySize) rules.push(`${scope} :is(p,li){font-size:${bp.bodySize}}`);
+  const heading = declarations([
+    ['font-size', bp.headingSize],
+    ['line-height', bp.headingLineHeight],
+    ['letter-spacing', bp.headingLetterSpacing],
+    ['word-spacing', bp.headingWordSpacing],
+  ]);
+  if (heading) rules.push(`${scope} :is(h1,h2,h3){${heading}}`);
+  const body = declarations([
+    ['font-size', bp.bodySize],
+    ['line-height', bp.bodyLineHeight],
+    ['letter-spacing', bp.bodyLetterSpacing],
+    ['word-spacing', bp.bodyWordSpacing],
+  ]);
+  if (body) rules.push(`${scope} :is(p,li){${body}}`);
   if (bp.align !== 'inherit') {
     rules.push(`${scope} :is(h1,h2,h3,h4,h5,h6,p,li,blockquote){text-align:${bp.align}}`);
   }
   if (bp.contentWidth) rules.push(`${scope} .cms-measure{max-width:none}`);
   if (bp.buttonPosition !== 'inherit') rules.push(buttonPositionRules(bp.buttonPosition, scope));
   return rules.join('');
+}
+
+/** `name:value` pairs for the values that were set, `;`-separated. */
+function declarations(pairs: Array<[string, string]>): string {
+  return pairs
+    .filter(([, value]) => value)
+    .map(([name, value]) => `${name}:${value}`)
+    .join(';');
 }
 
 const JUSTIFY: Record<Exclude<ButtonPosition, 'inherit' | 'full'>, string> = {

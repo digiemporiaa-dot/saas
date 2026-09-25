@@ -166,6 +166,66 @@ describe('the settings that used to lose to a utility class', () => {
     expect(css.slice(0, mobile)).toContain('@media (max-width:767px)');
   });
 
+  it('sets line height, letter spacing and word spacing on headings and body text', () => {
+    const { css } = styles({
+      desktop: {
+        headingSize: '48px',
+        headingLineHeight: '1.1',
+        headingLetterSpacing: '-0.02em',
+        headingWordSpacing: '2px',
+        bodyLineHeight: '1.7',
+        bodyLetterSpacing: '0.01em',
+        bodyWordSpacing: '0.1em',
+      },
+    });
+    expect(css).toContain(
+      '.sec-abc :is(h1,h2,h3){font-size:48px;line-height:1.1;letter-spacing:-0.02em;word-spacing:2px}',
+    );
+    expect(css).toContain('.sec-abc :is(p,li){line-height:1.7;letter-spacing:0.01em;word-spacing:0.1em}');
+  });
+
+  it('lets a phone have its own text spacing', () => {
+    const { css } = styles({
+      desktop: { headingLineHeight: '1.2' },
+      mobile: { headingLineHeight: '1.35', bodyLetterSpacing: '0.02em' },
+    });
+    const mobile = css.slice(css.indexOf('@media (max-width:767px)'));
+    expect(mobile).toContain('.sec-abc :is(h1,h2,h3){line-height:1.35}');
+    expect(mobile).toContain('.sec-abc :is(p,li){letter-spacing:0.02em}');
+  });
+
+  it('keeps line height a plain multiplier, and spacing a real length', () => {
+    const parsed = (raw: Record<string, unknown>) => parseSectionDesign({ desktop: raw }).desktop;
+    expect(parsed({ bodyLineHeight: '1.5' }).bodyLineHeight).toBe('1.5');
+    expect(parsed({ bodyLineHeight: 2 }).bodyLineHeight).toBe('2');
+    for (const bad of ['28px', '-1', '0', 'normal', '1.5;color:red', '99']) {
+      expect(parsed({ bodyLineHeight: bad }).bodyLineHeight, bad).toBe('');
+    }
+    expect(parsed({ headingLetterSpacing: '-0.02em' }).headingLetterSpacing).toBe('-0.02em');
+    // A bare number is what people type; it means pixels, as for every length.
+    expect(parsed({ bodyWordSpacing: '3' }).bodyWordSpacing).toBe('3px');
+    expect(parsed({ bodyWordSpacing: 'wide' }).bodyWordSpacing).toBe('');
+  });
+
+  it('offers the text spacing controls for both kinds of text, on every screen size', () => {
+    const panel = readFileSync('src/components/cms/design-panel.tsx', 'utf8');
+    for (const key of [
+      'headingLineHeight',
+      'headingLetterSpacing',
+      'headingWordSpacing',
+      'bodyLineHeight',
+      'bodyLetterSpacing',
+      'bodyWordSpacing',
+    ]) {
+      // In the rows the panel draws, and counted on the breakpoint's badge.
+      expect(panel, key).toContain(`'${key}'`);
+      expect(panel.split(`'${key}'`).length - 1, key).toBeGreaterThanOrEqual(2);
+    }
+    expect(panel).toContain('Line height');
+    expect(panel).toContain('Letter spacing');
+    expect(panel).toContain('Word spacing');
+  });
+
   it('cannot be made to write a rule of its own', () => {
     // Every value is validated before it gets here; a length that is not one
     // is dropped rather than interpolated.

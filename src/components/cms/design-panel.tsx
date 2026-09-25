@@ -365,32 +365,95 @@ export function DesignPanel({
             ) : null}
           </DesignGroup>
 
-          <DesignGroup title="Typography & images" description="Sizes for this screen size">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {(
-                [
-                  ['headingSize', 'Heading size'],
-                  ['bodySize', 'Body text size'],
-                  ...(offersImage
-                    ? ([
-                        ['imageWidth', 'Image width'],
-                        ['imageHeight', 'Image height'],
-                      ] as const)
-                    : []),
-                ] as const
-              ).map(([key, label]) => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`${idPrefix}-${breakpoint}-${key}`}>{label}</Label>
-                  <UnitInput
-                    id={`${idPrefix}-${breakpoint}-${key}`}
-                    value={current[key]}
-                    aria-label={label}
-                    placeholder="default"
-                    onChange={(next) => patchBreakpoint(breakpoint, { [key]: next })}
-                  />
+          <DesignGroup
+            title="Typography & images"
+            description="Sizes and spacing for this screen size"
+          >
+            {TYPE_ROWS.map((row) => (
+              <div key={row.title} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {row.title}
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`${idPrefix}-${breakpoint}-${row.size}`}>Size</Label>
+                    <UnitInput
+                      id={`${idPrefix}-${breakpoint}-${row.size}`}
+                      value={current[row.size]}
+                      aria-label={`${row.title} size`}
+                      placeholder="default"
+                      onChange={(next) => patchBreakpoint(breakpoint, { [row.size]: next })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`${idPrefix}-${breakpoint}-${row.lineHeight}`}>
+                      Line height
+                    </Label>
+                    {/* A multiplier, so the spacing grows with the text. */}
+                    <Input
+                      id={`${idPrefix}-${breakpoint}-${row.lineHeight}`}
+                      type="number"
+                      inputMode="decimal"
+                      step="0.05"
+                      min="0.5"
+                      max="10"
+                      value={current[row.lineHeight]}
+                      placeholder="default, e.g. 1.5"
+                      aria-label={`${row.title} line height`}
+                      onChange={(e) =>
+                        patchBreakpoint(breakpoint, { [row.lineHeight]: e.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`${idPrefix}-${breakpoint}-${row.letter}`}>
+                      Letter spacing
+                    </Label>
+                    <UnitInput
+                      id={`${idPrefix}-${breakpoint}-${row.letter}`}
+                      value={current[row.letter]}
+                      units={SPACING_UNITS}
+                      aria-label={`${row.title} letter spacing`}
+                      placeholder="default"
+                      onChange={(next) => patchBreakpoint(breakpoint, { [row.letter]: next })}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`${idPrefix}-${breakpoint}-${row.word}`}>Word spacing</Label>
+                    <UnitInput
+                      id={`${idPrefix}-${breakpoint}-${row.word}`}
+                      value={current[row.word]}
+                      units={SPACING_UNITS}
+                      aria-label={`${row.title} word spacing`}
+                      placeholder="default"
+                      onChange={(next) => patchBreakpoint(breakpoint, { [row.word]: next })}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+
+            {offersImage ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {(
+                  [
+                    ['imageWidth', 'Image width'],
+                    ['imageHeight', 'Image height'],
+                  ] as const
+                ).map(([key, label]) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label htmlFor={`${idPrefix}-${breakpoint}-${key}`}>{label}</Label>
+                    <UnitInput
+                      id={`${idPrefix}-${breakpoint}-${key}`}
+                      value={current[key]}
+                      aria-label={label}
+                      placeholder="default"
+                      onChange={(next) => patchBreakpoint(breakpoint, { [key]: next })}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </DesignGroup>
         </>
       ) : null}
@@ -787,7 +850,13 @@ function countOverrides(bp: BreakpointDesign): number {
     'contentWidth',
     'minHeight',
     'headingSize',
+    'headingLineHeight',
+    'headingLetterSpacing',
+    'headingWordSpacing',
     'bodySize',
+    'bodyLineHeight',
+    'bodyLetterSpacing',
+    'bodyWordSpacing',
     'rowGap',
     'columnGap',
     'contentGap',
@@ -802,6 +871,31 @@ function countOverrides(bp: BreakpointDesign): number {
   if (bp.buttonPosition !== 'inherit') count += 1;
   return count;
 }
+
+/**
+ * The text controls, per kind of text. Headings are the section's h1–h3 and
+ * body text its paragraphs and list items — the elements the rules in
+ * `breakpointRules` reach.
+ */
+const TYPE_ROWS = [
+  {
+    title: 'Headings',
+    size: 'headingSize',
+    lineHeight: 'headingLineHeight',
+    letter: 'headingLetterSpacing',
+    word: 'headingWordSpacing',
+  },
+  {
+    title: 'Body text',
+    size: 'bodySize',
+    lineHeight: 'bodyLineHeight',
+    letter: 'bodyLetterSpacing',
+    word: 'bodyWordSpacing',
+  },
+] as const;
+
+/** Spacing between letters and words reads best in em (it scales) or px. */
+const SPACING_UNITS = ['em', 'px', 'rem'] as const;
 
 /** Elementor's Position control: where the buttons sit, or stretched across. */
 const BUTTON_POSITION_OPTIONS: ReadonlyArray<{
