@@ -89,6 +89,20 @@ of meaning does not bring products back into storefronts that had removed them.
 
 ---
 
+## [1.1.1] — 2026-09-25
+
+### Fixed
+
+- **GA4, GTM and every other marketing tag loaded on the admin too.** The root
+  layout rendered the tags and the consent banner, and the root layout wraps
+  every route — so they also loaded on `/admin`, the sign-in screen, two-factor
+  setup and previews. They now render in the public layout only.
+  `isPrivatePath` names the private routes, and a small route guard sets GA's
+  `ga-disable-<ID>` flag when a tag loaded on a public page is still in memory
+  after a client-side navigation into the admin.
+
+---
+
 ## [1.1.0] — 2026-09-16
 
 ### Fixed
