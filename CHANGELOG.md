@@ -12,6 +12,18 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ### Fixed
 
+- **"Off" switches in country settings and country pricing saved as "on".**
+  `z.coerce.boolean()` reads any non-empty string as true, so a form posting
+  `"false"` for *Hide this country from search engines*, *Leave this country
+  out of the sitemap*, a market's noindex or its Featured flag stored `true`.
+  Those four fields now read `"true"`, `"on"` and `"1"` as on and anything else
+  as off. Worth checking those settings on each market once this is deployed.
+
+- **A product's structured data named the website as its brand.** The Product
+  JSON-LD now uses the product's own brand, falling back to the site name only
+  when it has none, and a product page with visible FAQ sections now describes
+  them as `FAQPage`, as CMS pages already did.
+
 - **Deleting a product from one market deleted it from every market.** The
   product screen is country-scoped, but delete set the global `Product.deletedAt`
   — so removing a plan from the UAE catalogue removed it from India and Qatar
@@ -79,6 +91,29 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ### Added
 
+- **SEO Intelligence.** Every public URL — pages, the home page, each product in
+  each market, articles, blog categories, tags and the blog archive — gets SEO,
+  AEO and GEO scores from 0 to 100 and an overall score (SEO 50%, AEO 25%,
+  GEO 25%). Scores are deterministic checks of what the site actually serves:
+  metadata, headings, copy, keywords, links, images, social tags, canonical,
+  robots, sitemap, hreflang and structured data. Each check shows its points,
+  what it found and how to fix it. A deliberate noindex is reported, never
+  scored down, and nothing claims to be a Google or AI platform score.
+  - *Content & SEO → SEO Intelligence*: site scores weighted by page type (from
+    live, indexable URLs only), score distribution, what needs attention, and a
+    searchable, filterable, sortable list with one row per URL per market.
+    *Recalculate all* and *Recalculate outdated* run in batches of twenty.
+  - A full analysis per URL: every check by section, keyword placement,
+    structured data gaps and the JSON-LD emitted, outline, images, links and
+    overlap with other pages in the same market.
+  - A live score panel in the page, product, product-market and article
+    editors, updated as you type without saving, with a button beside each
+    issue that goes to the field that fixes it.
+- **Three primary keywords** on pages, products, each product market, articles
+  and blog categories. Blank is fine, a repeat is refused (case and spacing
+  ignored), and a product market with none uses the product's. They are output
+  as `<meta name="keywords">`, which search engines do not use for ranking. An
+  article's focus keyword became its first primary keyword.
 - **A product can name its storage and users rows.** The product form has a
   heading beside each value, with "Storage" and "Users" as placeholders, which
   is also what a blank heading shows. The product page's specification list
@@ -99,6 +134,12 @@ Backfill grants every existing market exactly what it can see today, so the admi
 screens and the public site are unchanged the moment it lands. Products already
 deleted globally have their market configurations marked to match, so the change
 of meaning does not bring products back into storefronts that had removed them.
+
+Additive migration `20260925140000_seo_intelligence`: nullable
+`primaryKeyword1`–`3` on `Page`, `Product`, `ProductCountry`, `BlogPost` and
+`BlogCategory`, and a `SeoAudit` table caching one row of scores per URL and
+market (removed with its market). Existing focus keywords are copied into
+`BlogPost.primaryKeyword1`; `focusKeyword` itself is kept and stays in step.
 
 Migration `20260925120000_product_spec_labels` adds `Product.storageLabel` and
 `Product.usersLabel`, both nullable. `20260925130000_product_benefits_heading`

@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from '@/lib/db/prisma';
+import { keywordColumns } from '@/lib/seo/keywords';
 import { localiseContent } from '@/lib/country/routing';
 import { offerIn } from '@/lib/country/availability';
 import type { CountryContext } from '@/lib/country/types';
@@ -628,6 +629,7 @@ async function syncProducts(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
         ctaUrl: row.ctaUrl,
         seoTitle: row.seoTitle,
         seoDescription: row.seoDescription,
+        ...keywordColumns(row),
         /*
          * `canonicalUrl` is deliberately left empty rather than copied: the
          * source value names a URL on the source market's site, and a page in
@@ -741,6 +743,7 @@ async function syncPages(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
           showFooter: page.showFooter,
           seoTitle: page.seoTitle,
           seoDescription: page.seoDescription,
+          ...keywordColumns(page),
           /*
            * `canonicalUrl` is left empty rather than copied. The source value
            * names a URL on the source market's site; keeping it would tell

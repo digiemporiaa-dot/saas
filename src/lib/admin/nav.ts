@@ -256,6 +256,12 @@ export const ADMIN_NAV: AdminNavModule[] = [
         description: 'Titles, social sharing and indexing',
       },
       {
+        label: 'SEO Intelligence',
+        href: '/admin/seo-intelligence',
+        permission: 'seo.manage',
+        description: 'SEO, AEO and GEO scores for every page',
+      },
+      {
         label: 'Redirects',
         href: '/admin/redirects',
         permission: 'seo.manage',

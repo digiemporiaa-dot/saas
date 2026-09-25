@@ -4,9 +4,10 @@ import { getMediaByIds } from '@/lib/services/media';
 import { redirectOrNotFound } from '@/lib/services/redirects';
 import { taxonomyHrefs } from '@/lib/services/taxonomy-pages';
 import { getWebsiteSettings } from '@/lib/services/settings';
-import { buildMetadata, absoluteCountryUrl } from '@/lib/seo/metadata';
+import { buildMetadata } from '@/lib/seo/metadata';
+import { effectiveKeywords } from '@/lib/seo/keywords';
 import { JsonLd } from '@/components/seo/json-ld';
-import { countryBreadcrumbSchema, productSchema } from '@/lib/seo/structured-data';
+import { productPageJsonLd } from '@/lib/seo/page-schema';
 import { SectionList, type RenderableSection } from '@/components/cms/section-renderer';
 import { getProductSections, getProductSettings } from '@/lib/services/product-cms';
 import { productStyleVars } from '@/lib/cms/product-settings';
@@ -45,6 +46,8 @@ export async function productMetadata(
     noIndex: row.noIndex || product.noIndex,
     ogImageUrl: row.ogImage?.url ?? product.ogImage?.url ?? product.image?.url ?? null,
     type: 'product',
+    // The market's own keywords, or the product's when the market set none.
+    keywords: effectiveKeywords(row, product).keywords,
   });
 }
 
@@ -133,25 +136,7 @@ export async function ProductSurface({
         </div>
       </div>
 
-      <JsonLd
-        data={[
-          productSchema({
-            name: product.name,
-            description: product.shortDescription,
-            url: absoluteCountryUrl(country, `products/${product.slug}`),
-            imageUrl: product.imageUrl,
-            price: product.monthlyPrice,
-            currency: product.currency,
-            sku: product.sku,
-            brand: site.siteName,
-          }),
-          countryBreadcrumbSchema(country, [
-            { name: 'Home', path: '' },
-            { name: 'Plans', path: 'pricing' },
-            { name: product.name, path: `products/${product.slug}` },
-          ]),
-        ]}
-      />
+      <JsonLd data={productPageJsonLd(country, product, site.siteName, detail)} />
     </div>
   );
 }

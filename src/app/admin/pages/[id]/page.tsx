@@ -80,6 +80,9 @@ export default async function EditPage({ params }: { params: Promise<{ id: strin
     twitterTitle: page.twitterTitle ?? '',
     twitterDescription: page.twitterDescription ?? '',
     twitterImageId: page.twitterImageId,
+    primaryKeyword1: page.primaryKeyword1 ?? '',
+    primaryKeyword2: page.primaryKeyword2 ?? '',
+    primaryKeyword3: page.primaryKeyword3 ?? '',
   };
 
   const sections: BuilderSection[] = page.sections.map((section) => ({

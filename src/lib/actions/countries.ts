@@ -23,6 +23,7 @@ import {
 import { listAccessibleCountries, assertCountryAccess } from '@/lib/country/access';
 import { ADMIN_COUNTRY_COOKIE } from '@/lib/country/admin';
 import { revalidateCountryPage } from '@/lib/country/revalidate';
+import { refreshSeoScores } from '@/lib/seo/intelligence/refresh';
 import {
   describeContents,
   deletionWarning,
@@ -451,6 +452,7 @@ export async function saveProductCountry(formData: FormData): Promise<ActionResu
 
     revalidatePath(`/admin/products/${productId}`);
     revalidateCountryPage(country, `products/${product.slug}`);
+    refreshSeoScores([{ type: 'PRODUCT_MARKET', id: productId, countryId }]);
     return success(undefined, `${country.name} pricing saved.`);
   } catch (error) {
     return toActionError(error);

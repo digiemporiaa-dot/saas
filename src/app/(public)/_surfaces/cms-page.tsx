@@ -6,8 +6,8 @@ import { getWebsiteSettings } from '@/lib/services/settings';
 import { SectionList } from '@/components/cms/section-renderer';
 import { JsonLd } from '@/components/seo/json-ld';
 import { buildMetadata } from '@/lib/seo/metadata';
-import { countryBreadcrumbSchema, faqSchema } from '@/lib/seo/structured-data';
-import { parseBlockContent, type FaqContent } from '@/lib/cms/blocks';
+import { cmsPageJsonLd } from '@/lib/seo/page-schema';
+import { primaryKeywords } from '@/lib/seo/keywords';
 import type { CountryContext } from '@/lib/country/types';
 
 /**
@@ -50,6 +50,7 @@ export async function cmsPageMetadata(
     twitterTitle: page.twitterTitle,
     twitterDescription: page.twitterDescription,
     twitterImageUrl: twitterImage?.url ?? null,
+    keywords: primaryKeywords(page),
   });
 }
 
@@ -71,25 +72,16 @@ export async function CmsPageSurface({
 
   const site = await getWebsiteSettings();
 
-  // FAQ structured data is derived from any FAQ sections on the page.
-  const faqItems = page.sections
-    .filter((s) => s.blockType === 'faq' && s.isVisible)
-    .flatMap((s) => parseBlockContent<FaqContent>('faq', s.content).items);
-  const faq = faqSchema(faqItems);
-
-  const crumbs =
-    slug === ''
-      ? null
-      : countryBreadcrumbSchema(country, [
-          { name: site.siteName, path: '' },
-          { name: page.title, path: slug },
-        ]);
+  // FAQ markup from the page's FAQ sections, and its breadcrumb trail — built
+  // by the same function SEO Intelligence analyses.
+  const jsonLd = cmsPageJsonLd(country, { title: page.title, slug, sections: page.sections }, site.siteName);
 
   return (
     <>
       <SectionList sections={page.sections} country={country} />
-      {faq ? <JsonLd data={faq} /> : null}
-      {crumbs ? <JsonLd data={crumbs} /> : null}
+      {jsonLd.map((data, index) => (
+        <JsonLd key={index} data={data} />
+      ))}
     </>
   );
 }

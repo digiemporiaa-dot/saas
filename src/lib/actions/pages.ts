@@ -12,11 +12,13 @@ import { uniqueSlug, pageSlug } from '@/lib/utils/slug';
 import { sectionCopies } from '@/lib/cms/section-copy';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { sanitizeText } from '@/lib/utils/sanitize';
+import { keywordColumns, keywordsFromForm } from '@/lib/seo/keywords';
 import { resolveActionCountry } from '@/lib/country/admin';
 import { assertCountryAccess } from '@/lib/country/access';
 import { getCountryById } from '@/lib/country/registry';
 import { revalidateCountryPage } from '@/lib/country/revalidate';
 import type { CountryContext } from '@/lib/country/types';
+import { refreshSeoScores } from '@/lib/seo/intelligence/refresh';
 
 /** Revalidates the public surfaces a page change can affect, in its market. */
 async function revalidatePage(countryId: string, slug: string) {
@@ -64,6 +66,7 @@ export async function createPage(formData: FormData): Promise<ActionResult<{ id:
       twitterTitle: formData.get('twitterTitle'),
       twitterDescription: formData.get('twitterDescription'),
       twitterImageId: formData.get('twitterImageId'),
+      ...keywordsFromForm(formData),
     });
 
     if (parsed.status === 'PUBLISHED') await authorize('pages.publish');
@@ -149,6 +152,7 @@ export async function updatePage(pageId: string, formData: FormData): Promise<Ac
       twitterTitle: formData.get('twitterTitle'),
       twitterDescription: formData.get('twitterDescription'),
       twitterImageId: formData.get('twitterImageId'),
+      ...keywordsFromForm(formData),
     });
 
     if (parsed.status === 'PUBLISHED' && before.status !== 'PUBLISHED') {
@@ -203,6 +207,7 @@ export async function updatePage(pageId: string, formData: FormData): Promise<Ac
     revalidatePath(`/admin/pages/${pageId}`);
     await revalidatePage(before.countryId, before.slug);
     if (slug !== before.slug) await revalidatePage(before.countryId, slug);
+    refreshSeoScores([{ type: 'PAGE', id: pageId, countryId: before.countryId }]);
     return success(undefined, 'Page saved.');
   } catch (error) {
     return toActionError(error);
@@ -281,6 +286,7 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ id: 
         ogTitle: source.ogTitle,
         ogDescription: source.ogDescription,
         ogImageId: source.ogImageId,
+        ...keywordColumns(source),
         createdById: user.id,
         updatedById: user.id,
         sections: { create: sectionCopies(source.sections) },
@@ -373,6 +379,9 @@ export async function duplicatePageToCountry(
       twitterTitle: source.twitterTitle,
       twitterDescription: source.twitterDescription,
       twitterImageId: source.twitterImageId,
+      // A starting point for the other market, like the title: it may well
+      // target different searches there, and can change them.
+      ...keywordColumns(source),
       updatedById: user.id,
     };
 

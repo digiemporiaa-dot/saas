@@ -10,6 +10,9 @@ import { Field, Input, Select, Textarea, Switch } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { AdminTabs, TabPanel } from '@/components/admin/admin-tabs';
 import { MediaPicker } from '@/components/admin/media-picker';
+import { PrimaryKeywordsFields } from '@/components/admin/seo/primary-keywords-fields';
+import { SeoScorePanel } from '@/components/admin/seo/seo-score-panel';
+import { jumpResolver } from '@/components/admin/seo/jump';
 import { RichTextEditor } from '@/components/cms/rich-text-editor';
 import { FormSelect } from '@/components/cms/form-select';
 import { useToast } from '@/components/ui/toast';
@@ -36,6 +39,30 @@ const TABS = [
   { id: 'display', label: 'Display' },
   { id: 'seo', label: 'SEO & sharing' },
 ];
+
+/** Where each field an SEO check can point at lives on this form. */
+const SEO_FIELDS: Partial<Record<string, { tab?: string; id: string }>> = {
+  title: { tab: 'content', id: 'post-title' },
+  slug: { tab: 'content', id: 'post-slug' },
+  content: { tab: 'content', id: 'post-content' },
+  status: { id: 'post-status' },
+  author: { tab: 'organise', id: 'post-author' },
+  seoTitle: { tab: 'seo', id: 'post-seo-title' },
+  seoDescription: { tab: 'seo', id: 'post-seo-description' },
+  canonicalUrl: { tab: 'seo', id: 'post-canonical' },
+  noIndex: { tab: 'seo', id: 'post-noindex' },
+  primaryKeyword1: { tab: 'seo', id: 'post-primaryKeyword1' },
+  ogTitle: { tab: 'seo', id: 'post-og-title' },
+  ogDescription: { tab: 'seo', id: 'post-og-description' },
+  ogImage: { tab: 'seo', id: 'post-og-image' },
+};
+
+/** A datetime-local value as an instant, so the server reads the editor's time zone. */
+function localToIso(value: string): string {
+  if (!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString();
+}
 
 const OVERRIDE_LABELS: Record<Override, string> = {
   default: 'Blog default',
@@ -75,6 +102,51 @@ export function PostForm({
   const set = <K extends keyof PostFormValues>(key: K, value: PostFormValues[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
 
+  const resolveJump = React.useMemo(
+    () =>
+      jumpResolver<string>({
+        fields: SEO_FIELDS,
+        areas: {
+          general: { tab: 'content', id: 'post-title', label: 'Go to title' },
+          content: { tab: 'content', id: 'post-content', label: 'Go to content' },
+          sections: { tab: 'content', id: 'post-content', label: 'Go to content' },
+          media: { id: 'post-featured-image', label: 'Go to featured image' },
+          organise: { tab: 'organise', label: 'Go to category and tags' },
+          seo: { tab: 'seo', label: 'Go to SEO settings' },
+          social: { tab: 'seo', id: 'post-og-title', label: 'Go to sharing settings' },
+        },
+        openTab: setTab,
+      }),
+    [],
+  );
+
+  // What the score panel scores: the form as it stands, saved or not.
+  const seoDraft = {
+    title: values.title,
+    slug: values.slug,
+    subtitle: values.subtitle,
+    status: values.status,
+    publishedAt: localToIso(values.publishedAt),
+    excerpt: values.excerpt,
+    content: values.content,
+    categoryId: values.categoryId,
+    authorId: values.authorId,
+    tags: values.tags,
+    featuredImageId: values.featuredImageId,
+    ogImageId: values.ogImageId,
+    twitterImageId: values.twitterImageId,
+    seoTitle: values.seoTitle,
+    seoDescription: values.seoDescription,
+    canonicalUrl: values.canonicalUrl,
+    noIndex: values.noIndex,
+    noFollow: values.noFollow,
+    ogTitle: values.ogTitle,
+    ogDescription: values.ogDescription,
+    primaryKeyword1: values.primaryKeyword1,
+    primaryKeyword2: values.primaryKeyword2,
+    primaryKeyword3: values.primaryKeyword3,
+  };
+
   const setOption = <K extends keyof PostFormValues['options']>(
     key: K,
     value: PostFormValues['options'][K],
@@ -106,7 +178,9 @@ export function PostForm({
       'sidebarMode',
       'seoTitle',
       'seoDescription',
-      'focusKeyword',
+      'primaryKeyword1',
+      'primaryKeyword2',
+      'primaryKeyword3',
       'canonicalUrl',
       'ogTitle',
       'ogDescription',
@@ -204,6 +278,7 @@ export function PostForm({
                 </Field>
 
                 <Field
+                  id="post-content"
                   label="Content"
                   hint={`About ${readingTimeMinutes(values.content)} min read. H2 and H3 headings build the table of contents.`}
                 >
@@ -460,26 +535,20 @@ export function PostForm({
                     onChange={(e) => set('seoDescription', e.target.value)}
                   />
                 </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field
-                    label="Focus keyword"
-                    htmlFor="post-focus-keyword"
-                    hint="Optional. For your own reference — it is never published."
-                  >
-                    <Input
-                      id="post-focus-keyword"
-                      value={values.focusKeyword}
-                      onChange={(e) => set('focusKeyword', e.target.value)}
-                    />
-                  </Field>
-                  <Field label="Canonical URL" htmlFor="post-canonical">
-                    <Input
-                      id="post-canonical"
-                      value={values.canonicalUrl}
-                      onChange={(e) => set('canonicalUrl', e.target.value)}
-                    />
-                  </Field>
-                </div>
+                <PrimaryKeywordsFields
+                  idPrefix="post-"
+                  values={values}
+                  onChange={(field, value) => set(field, value)}
+                  errors={errors}
+                  description="The searches this article is written to answer. Keyword 1 is what used to be the focus keyword. SEO Intelligence checks for them in the title, description, URL, headings and copy. They are also output as a meta keywords tag, which search engines do not use for ranking."
+                />
+                <Field label="Canonical URL" htmlFor="post-canonical">
+                  <Input
+                    id="post-canonical"
+                    value={values.canonicalUrl}
+                    onChange={(e) => set('canonicalUrl', e.target.value)}
+                  />
+                </Field>
                 <Field label="Open Graph title" htmlFor="post-og-title">
                   <Input
                     id="post-og-title"
@@ -497,7 +566,7 @@ export function PostForm({
                   />
                 </Field>
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Social share image" hint="Falls back to the featured image.">
+                  <Field id="post-og-image" label="Social share image" hint="Falls back to the featured image.">
                     <MediaPicker
                       value={values.ogImageId}
                       onChange={(id) => set('ogImageId', id)}
@@ -515,6 +584,7 @@ export function PostForm({
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border border-hairline p-4">
                     <Switch
+                      id="post-noindex"
                       checked={values.noIndex}
                       onChange={(next) => set('noIndex', next)}
                       label="Hide from search engines (noindex)"
@@ -565,7 +635,7 @@ export function PostForm({
                 />
               </Field>
 
-              <Field label="Featured image" hint="Recommended 1200×675.">
+              <Field id="post-featured-image" label="Featured image" hint="Recommended 1200×675.">
                 <MediaPicker
                   value={values.featuredImageId}
                   onChange={(id) => set('featuredImageId', id)}
@@ -632,6 +702,13 @@ export function PostForm({
             </div>
           ) : null}
         </Card>
+
+        <SeoScorePanel
+          entity={initial.id ? { type: 'BLOG_POST', id: initial.id } : null}
+          payload={{ draft: seoDraft }}
+          resolveJump={resolveJump}
+          emptyMessage="Save this article to see its SEO, AEO and GEO scores. From then on they update as you edit."
+        />
       </div>
     </form>
   );

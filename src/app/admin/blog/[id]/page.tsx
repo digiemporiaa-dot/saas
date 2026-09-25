@@ -102,7 +102,11 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
     sidebarMode: post.sidebarMode,
     seoTitle: post.seoTitle ?? '',
     seoDescription: post.seoDescription ?? '',
-    focusKeyword: post.focusKeyword ?? '',
+    // The migration copied every focus keyword into keyword 1; the fallback
+    // covers an article saved by an older build in between.
+    primaryKeyword1: post.primaryKeyword1 ?? post.focusKeyword ?? '',
+    primaryKeyword2: post.primaryKeyword2 ?? '',
+    primaryKeyword3: post.primaryKeyword3 ?? '',
     canonicalUrl: post.canonicalUrl ?? '',
     noIndex: post.noIndex,
     noFollow: post.noFollow,

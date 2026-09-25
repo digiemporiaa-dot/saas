@@ -11,10 +11,12 @@ import {
   type ProductCountryValues,
 } from '@/components/admin/products/product-country-pricing';
 import { listAccessibleCountries } from '@/lib/country/access';
+import { scopeForUser } from '@/lib/country/admin';
 import { countryPath } from '@/lib/country/routing';
 import { ContentStatusBadge } from '@/components/admin/lead-status-badge';
 import { buttonClasses } from '@/components/ui/button';
 import { decimalToString } from '@/lib/utils/money';
+import { primaryKeywords } from '@/lib/seo/keywords';
 import type { SpecItem } from '@/components/admin/list-editor';
 
 export const dynamic = 'force-dynamic';
@@ -49,7 +51,7 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
   const user = await requirePermission('products.view');
   const { id } = await params;
 
-  const [product, categories, brands, forms, countries] = await Promise.all([
+  const [product, categories, brands, forms, countries, scope] = await Promise.all([
     prisma.product.findFirst({
       where: { id, deletedAt: null },
       include: {
@@ -74,6 +76,7 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
       select: { id: true, slug: true, name: true },
     }),
     listAccessibleCountries(user),
+    scopeForUser(user),
   ]);
   if (!product) notFound();
 
@@ -117,6 +120,9 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
     seoDescription: product.seoDescription ?? '',
     canonicalUrl: product.canonicalUrl ?? '',
     noIndex: product.noIndex,
+    primaryKeyword1: product.primaryKeyword1 ?? '',
+    primaryKeyword2: product.primaryKeyword2 ?? '',
+    primaryKeyword3: product.primaryKeyword3 ?? '',
   };
 
   /*
@@ -154,6 +160,9 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
       seoDescription: row?.seoDescription ?? '',
       canonicalUrl: row?.canonicalUrl ?? '',
       noIndex: row?.noIndex ?? false,
+      primaryKeyword1: row?.primaryKeyword1 ?? '',
+      primaryKeyword2: row?.primaryKeyword2 ?? '',
+      primaryKeyword3: row?.primaryKeyword3 ?? '',
     };
   });
 
@@ -201,6 +210,9 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
         brands={brands}
         formIdBySlug={Object.fromEntries(forms.map((f) => [f.slug, f.id]))}
         mode="edit"
+        // Saving this form updates the product in the market being worked
+        // in, so that is the product page its SEO score describes.
+        seoMarket={{ id: scope.country.id, name: scope.country.name }}
       />
 
       <ProductCountryPricing
@@ -208,6 +220,7 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
         rows={countryRows}
         forms={forms.map((form) => ({ id: form.id, name: form.name }))}
         canEdit={userCan(user, 'products.edit')}
+        sharedKeywords={primaryKeywords(product)}
       />
     </div>
   );

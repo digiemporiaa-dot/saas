@@ -13,7 +13,7 @@ import { PopupHost } from "@/components/public/popup-host";
 import { HeadTracking, BodyTracking } from "@/components/analytics/tracking-scripts";
 import { ConsentBanner } from "@/components/analytics/consent-banner";
 import { JsonLd } from "@/components/seo/json-ld";
-import { organizationSchema, websiteSchema } from "@/lib/seo/structured-data";
+import { siteJsonLd } from "@/lib/seo/page-schema";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { resolveCountryPath } from "@/lib/country/registry";
 import { getCountrySettings } from "@/lib/country/settings";
@@ -183,7 +183,7 @@ export default async function PublicLayout({
             .map((t) => t.page.slug),
         }))}
       />
-      <JsonLd data={[organizationSchema(country, local, site), websiteSchema(country, site)]} />
+      <JsonLd data={siteJsonLd(country, local, site)} />
       {consentUndecided ? (
         <ConsentBanner
           message={

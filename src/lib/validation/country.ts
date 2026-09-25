@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { isReservedCountryPrefix } from '@/lib/country/routing';
+import { primaryKeywordShape, rejectDuplicateKeywords } from '@/lib/seo/keywords';
 
 /**
  * Country validation.
@@ -18,6 +19,22 @@ const optional = (max: number) =>
     .optional()
     .nullable()
     .transform((value) => (value?.trim() ? value.trim() : null));
+
+/**
+ * A switch as a form submits it.
+ *
+ * These schemas read `Object.fromEntries(formData)`, so a switch arrives as
+ * the string "true" or "false". `z.coerce.boolean()` turns any non-empty
+ * string into true — "false" included — which switched a market to noindex
+ * every time its settings were saved. Only an explicit yes counts as yes;
+ * a missing value keeps the default.
+ */
+const formBoolean = (fallback: boolean) =>
+  z.preprocess((value) => {
+    if (value === undefined || value === null) return fallback;
+    if (typeof value === 'boolean') return value;
+    return ['true', 'on', '1'].includes(String(value).trim().toLowerCase());
+  }, z.boolean());
 
 export const countrySlugSchema = z
   .string()
@@ -74,8 +91,8 @@ export const countrySettingsSchema = z.object({
   // two places to keep in agreement.
   robotsDisallow: optional(2000),
   robotsAllow: optional(2000),
-  noIndexCountry: z.coerce.boolean().default(false),
-  excludeFromSitemap: z.coerce.boolean().default(false),
+  noIndexCountry: formBoolean(false),
+  excludeFromSitemap: formBoolean(false),
   companyName: optional(160),
   legalName: optional(160),
   salesPhone: optional(40),
@@ -132,7 +149,7 @@ export const productCountrySchema = z.object({
     .nullable()
     .transform((value) => (value ? new Date(value) : null))
     .refine((date) => date === null || !Number.isNaN(date.getTime()), 'Enter a valid date'),
-  isFeatured: z.coerce.boolean().default(false),
+  isFeatured: formBoolean(false),
   sortOrder: z.coerce.number().int().min(0).max(9999).default(0),
   featuredOrder: z.coerce.number().int().min(0).max(9999).default(0),
   currency: z
@@ -161,8 +178,10 @@ export const productCountrySchema = z.object({
   seoTitle: optional(200),
   seoDescription: optional(400),
   canonicalUrl: optional(500),
-  noIndex: z.coerce.boolean().default(false),
+  noIndex: formBoolean(false),
   ogImageId: optional(40),
-});
+  /** This market's own keywords; all blank uses the product's. */
+  ...primaryKeywordShape,
+}).superRefine(rejectDuplicateKeywords);
 
 export type ProductCountryInput = z.infer<typeof productCountrySchema>;

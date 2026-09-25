@@ -312,6 +312,7 @@ model Country {
   syncMappingsAsTarget CountrySyncMapping[]     @relation("SyncTarget")
   syncRunsAsSource     CountrySyncRun[]         @relation("SyncRunSource")
   syncRunsAsTarget     CountrySyncRun[]         @relation("SyncRunTarget")
+  seoAudits            SeoAudit[]
 
   @@index([isActive, sortOrder])
   @@index([isActive, isPublished])
@@ -695,6 +696,13 @@ model Page {
   twitterDescription String? @db.Text
   twitterImageId     String?
 
+  /// Up to three keywords this page is written for, in this market.
+  /// Internal optimisation targets for SEO Intelligence, also emitted as
+  /// <meta name="keywords">. Never treated as a ranking signal.
+  primaryKeyword1 String?
+  primaryKeyword2 String?
+  primaryKeyword3 String?
+
   createdById String?
   updatedById String?
 
@@ -921,6 +929,14 @@ model Product {
   noIndex        Boolean @default(false)
   ogImageId      String?
 
+  /// Up to three keywords the product is written for. Every market uses
+  /// them unless it sets its own on its `ProductCountry` row.
+  /// Internal optimisation targets for SEO Intelligence, also emitted as
+  /// <meta name="keywords">. Never treated as a ranking signal.
+  primaryKeyword1 String?
+  primaryKeyword2 String?
+  primaryKeyword3 String?
+
   createdById String?
   updatedById String?
 
@@ -1017,6 +1033,14 @@ model ProductCountry {
   canonicalUrl   String?
   noIndex        Boolean @default(false)
   ogImageId      String?
+
+  /// This market's own primary keywords. All three blank means the
+  /// product's shared keywords apply here.
+  /// Internal optimisation targets for SEO Intelligence, also emitted as
+  /// <meta name="keywords">. Never treated as a ranking signal.
+  primaryKeyword1 String?
+  primaryKeyword2 String?
+  primaryKeyword3 String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -1133,6 +1157,13 @@ model BlogCategory {
   noIndex        Boolean @default(false)
   noFollow       Boolean @default(false)
 
+  /// Up to three keywords the category archive is written for.
+  /// Internal optimisation targets for SEO Intelligence, also emitted as
+  /// <meta name="keywords">. Never treated as a ranking signal.
+  primaryKeyword1 String?
+  primaryKeyword2 String?
+  primaryKeyword3 String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1209,6 +1240,9 @@ model BlogPost {
 
   seoTitle       String?
   seoDescription String? @db.Text
+  /// The single keyword articles had before primary keywords. Kept, and kept
+  /// equal to primaryKeyword1 on every save, so nothing that reads it breaks
+  /// and no article loses the keyword it was written for.
   focusKeyword   String?
   canonicalUrl   String?
   noIndex        Boolean @default(false)
@@ -1217,6 +1251,14 @@ model BlogPost {
   ogDescription  String? @db.Text
   ogImageId      String?
   twitterImageId String?
+
+  /// Up to three keywords the article is written for. The first replaces
+  /// focusKeyword, which the migration copied into it.
+  /// Internal optimisation targets for SEO Intelligence, also emitted as
+  /// <meta name="keywords">. Never treated as a ranking signal.
+  primaryKeyword1 String?
+  primaryKeyword2 String?
+  primaryKeyword3 String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -2663,4 +2705,75 @@ model CountrySyncRun {
 
   @@index([targetCountryId, startedAt])
   @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// SEO INTELLIGENCE
+// ---------------------------------------------------------------------------
+
+/// Cached SEO Intelligence results, one row per audited URL.
+///
+/// A cache, never a source of truth: every value is calculated from the page,
+/// product, article or archive it describes, and a row is stale the moment
+/// that content, or a setting that shapes every score, changes. Deleting
+/// every row loses nothing but the time it takes to recalculate them.
+model SeoAudit {
+  id         String @id @default(cuid())
+  /// PAGE, PRODUCT_MARKET, BLOG_POST, BLOG_CATEGORY, BLOG_TAG or BLOG_ARCHIVE.
+  entityType String
+  /// The page, article, category or tag id; the product id for a market
+  /// version; "blog" for the blog archive.
+  entityId   String
+  /// The market the URL belongs to. A market version is its own row, so India
+  /// and the UAE are never scored as one page.
+  countryId  String
+
+  // What the row describes, copied here so the dashboard filters and sorts in
+  // the database rather than in memory.
+  /// homepage, page, product, article, category, tag or archive.
+  kind      String
+  title     String
+  url       String  @db.Text
+  /// live, scheduled, draft, archived or not-served.
+  status    String
+  /// Live and not noindex: what counts towards the site score.
+  indexable Boolean
+  noIndex   Boolean
+
+  seoScore     Int
+  aeoScore     Int
+  geoScore     Int
+  overallScore Int
+
+  criticalCount   Int @default(0)
+  warningCount    Int @default(0)
+  suggestionCount Int @default(0)
+  issueCount      Int @default(0)
+
+  missingMetadata  Boolean @default(false)
+  missingSchema    Boolean @default(false)
+  missingKeywords  Boolean @default(false)
+  indexingConflict Boolean @default(false)
+
+  /// Every check that did not pass, with its points, message and fix.
+  issues   Json @default("[]")
+  /// Per-keyword placement analysis.
+  keywords Json @default("[]")
+
+  engineVersion      String
+  /// When the audited content last changed, and a fingerprint that also
+  /// moves when a section is added, removed or hidden.
+  contentUpdatedAt   DateTime
+  contentFingerprint String
+  /// The settings every score depends on: templates, robots, market indexing.
+  contextFingerprint String
+  calculatedAt       DateTime @default(now())
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, countryId])
+  @@index([countryId, overallScore])
+  @@index([entityType, overallScore])
+  @@index([overallScore])
+  @@index([calculatedAt])
 }

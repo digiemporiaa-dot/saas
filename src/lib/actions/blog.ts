@@ -10,12 +10,14 @@ import { blogPostSchema, blogCategorySchema } from '@/lib/validation/blog';
 import { uniqueSlug, slugify } from '@/lib/utils/slug';
 import { sectionCopy } from '@/lib/cms/section-copy';
 import { sanitizeHtml, sanitizeText } from '@/lib/utils/sanitize';
+import { keywordColumns, keywordsFromForm } from '@/lib/seo/keywords';
 import { readingTimeMinutes, plainExcerpt } from '@/lib/utils/format';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { resolveActionCountry } from '@/lib/country/admin';
 import { assertCountryAccess } from '@/lib/country/access';
 import { getCountryById, listActiveCountries } from '@/lib/country/registry';
 import { revalidateCountryBlog, revalidateAllCountryBlogs } from '@/lib/country/revalidate';
+import { refreshSeoScores } from '@/lib/seo/intelligence/refresh';
 
 /** Revalidates a market's blog surfaces. */
 async function revalidatePost(countryId: string, slug?: string | null) {
@@ -63,7 +65,23 @@ function readPostForm(formData: FormData) {
     ogDescription: formData.get('ogDescription'),
     ogImageId: formData.get('ogImageId'),
     twitterImageId: formData.get('twitterImageId'),
+    ...postKeywordsFromForm(formData),
   });
+}
+
+/**
+ * The three keywords, from a form that may still send the old focus keyword.
+ *
+ * The editor sends primaryKeyword1–3. A caller written before they existed
+ * sends focusKeyword only, and that keyword becomes the first primary one
+ * rather than being dropped.
+ */
+function postKeywordsFromForm(formData: FormData) {
+  const keywords = keywordsFromForm(formData);
+  if (!formData.has('primaryKeyword1') && formData.has('focusKeyword')) {
+    keywords.primaryKeyword1 = String(formData.get('focusKeyword') ?? '');
+  }
+  return keywords;
 }
 
 /** Resolves tag names to ids, creating any that do not exist yet. */
@@ -130,7 +148,9 @@ export async function createBlogPost(formData: FormData): Promise<ActionResult<{
         sidebarMode: input.sidebarMode,
         seoTitle: input.seoTitle,
         seoDescription: input.seoDescription,
-        focusKeyword: input.focusKeyword,
+        // Kept equal to the first primary keyword, which replaced it.
+        focusKeyword: input.primaryKeyword1,
+        ...keywordColumns(input),
         canonicalUrl: input.canonicalUrl,
         noIndex: input.noIndex,
         noFollow: input.noFollow,
@@ -214,7 +234,9 @@ export async function updateBlogPost(postId: string, formData: FormData): Promis
           sidebarMode: input.sidebarMode,
           seoTitle: input.seoTitle,
           seoDescription: input.seoDescription,
-          focusKeyword: input.focusKeyword,
+          // Kept equal to the first primary keyword, which replaced it.
+          focusKeyword: input.primaryKeyword1,
+          ...keywordColumns(input),
           canonicalUrl: input.canonicalUrl,
           noIndex: input.noIndex,
           noFollow: input.noFollow,
@@ -244,6 +266,7 @@ export async function updateBlogPost(postId: string, formData: FormData): Promis
     revalidatePath(`/admin/blog/${postId}`);
     await revalidatePost(before.countryId, before.slug);
     if (slug !== before.slug) await revalidatePost(before.countryId, slug);
+    refreshSeoScores([{ type: 'BLOG_POST', id: postId, countryId: before.countryId }]);
     return success(undefined, 'Post saved.');
   } catch (error) {
     return toActionError(error);
@@ -347,6 +370,7 @@ export async function duplicateBlogPostToCountry(
       seoTitle: source.seoTitle,
       seoDescription: source.seoDescription,
       focusKeyword: source.focusKeyword,
+      ...keywordColumns(source),
       // Not copied on purpose: a market canonicals to its own URL.
       canonicalUrl: null,
       noIndex: source.noIndex,
@@ -449,6 +473,7 @@ export async function duplicateBlogPost(postId: string): Promise<ActionResult<{ 
         seoTitle: source.seoTitle,
         seoDescription: source.seoDescription,
         focusKeyword: source.focusKeyword,
+        ...keywordColumns(source),
         noIndex: source.noIndex,
         noFollow: source.noFollow,
         ogTitle: source.ogTitle,
@@ -539,6 +564,7 @@ export async function saveBlogCategory(
       ogImageId: formData.get('ogImageId'),
       noIndex: formData.get('noIndex') === 'true',
       noFollow: formData.get('noFollow') === 'true',
+      ...keywordsFromForm(formData),
     });
 
     // A category may not sit inside itself or inside one of its own children;
@@ -585,6 +611,7 @@ export async function saveBlogCategory(
       ogImageId: input.ogImageId,
       noIndex: input.noIndex,
       noFollow: input.noFollow,
+      ...keywordColumns(input),
     };
 
     const category = categoryId
@@ -602,6 +629,7 @@ export async function saveBlogCategory(
     revalidatePath('/admin/blog/categories');
     // Categories are shared by every market, so every blog is affected.
     await revalidateAllCountryBlogs();
+    refreshSeoScores([{ type: 'BLOG_CATEGORY', id: category.id }]);
     return success({ id: category.id }, 'Category saved.');
   } catch (error) {
     return toActionError(error);

@@ -10,6 +10,7 @@ import { productInputSchema, productCategorySchema, brandSchema } from '@/lib/va
 import { uniqueSlug, slugify, originalSlug } from '@/lib/utils/slug';
 import { toDecimal } from '@/lib/utils/money';
 import { sanitizeHtml, sanitizeText } from '@/lib/utils/sanitize';
+import { keywordsFromForm } from '@/lib/seo/keywords';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import { listActiveCountries } from '@/lib/country/registry';
 import { scopeForUser } from '@/lib/country/admin';
@@ -19,6 +20,7 @@ import { ensureTaxonomyPage } from '@/lib/services/taxonomy-pages';
 import type { TaxonomyKind } from '@/lib/cms/taxonomy-pages';
 import { countryPath } from '@/lib/country/routing';
 import type { SessionUser } from '@/lib/auth/guards';
+import { refreshSeoScores } from '@/lib/seo/intelligence/refresh';
 
 /**
  * Revalidates a product's page in every market that could be serving it.
@@ -87,6 +89,7 @@ function readProductForm(formData: FormData) {
     canonicalUrl: formData.get('canonicalUrl'),
     noIndex: formData.get('noIndex') === 'true',
     ogImageId: formData.get('ogImageId'),
+    ...keywordsFromForm(formData),
   });
 }
 
@@ -130,6 +133,9 @@ function toPrismaData(input: ReturnType<typeof readProductForm>) {
     canonicalUrl: input.canonicalUrl,
     noIndex: input.noIndex,
     ogImageId: input.ogImageId,
+    primaryKeyword1: input.primaryKeyword1,
+    primaryKeyword2: input.primaryKeyword2,
+    primaryKeyword3: input.primaryKeyword3,
   };
 }
 
@@ -304,6 +310,15 @@ export async function updateProduct(productId: string, formData: FormData): Prom
     revalidatePath(`/admin/products/${productId}`);
     await revalidateProduct(before.slug);
     if (slug !== before.slug) await revalidateProduct(slug);
+    // The shared fields show in every market that sells the product.
+    refreshSeoScores(async () =>
+      (
+        await prisma.productCountry.findMany({
+          where: { productId, deletedAt: null },
+          select: { countryId: true },
+        })
+      ).map((row) => ({ type: 'PRODUCT_MARKET' as const, id: productId, countryId: row.countryId })),
+    );
     return success(undefined, 'Product saved.');
   } catch (error) {
     return toActionError(error);

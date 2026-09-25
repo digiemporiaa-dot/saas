@@ -10,9 +10,15 @@ import {
 import { getBlogSettings } from '@/lib/services/blog-cms';
 import { redirectOrNotFound } from '@/lib/services/redirects';
 import { getSeoSettings, getWebsiteSettings } from '@/lib/services/settings';
-import { buildMetadata, absoluteCountryUrl } from '@/lib/seo/metadata';
+import { buildMetadata } from '@/lib/seo/metadata';
+import { primaryKeywords } from '@/lib/seo/keywords';
 import { JsonLd } from '@/components/seo/json-ld';
-import { blogPostingSchema, countryBreadcrumbSchema } from '@/lib/seo/structured-data';
+import {
+  blogArchiveJsonLd,
+  blogCategoryJsonLd,
+  blogPostJsonLd,
+  blogTagJsonLd,
+} from '@/lib/seo/page-schema';
 import { BlogArchive } from '@/components/blog/blog-archive';
 import { BlogArticle } from '@/components/blog/blog-article';
 import { blogPath, categoryPath, tagPath } from '@/lib/cms/blog-render';
@@ -67,12 +73,7 @@ export async function BlogArchiveSurface({
   return (
     <>
       <BlogArchive country={country} basePath={blogPath(country)} searchParams={searchParams} />
-      <JsonLd
-        data={countryBreadcrumbSchema(country, [
-          { name: 'Home', path: '' },
-          { name: 'Blog', path: 'blog' },
-        ])}
-      />
+      <JsonLd data={blogArchiveJsonLd(country)} />
     </>
   );
 }
@@ -108,6 +109,7 @@ export async function blogPostMetadata(
     publishedTime: post.publishedAt,
     modifiedTime: post.updatedAt,
     authorName: post.author?.name ?? null,
+    keywords: primaryKeywords(post),
   });
 }
 
@@ -132,39 +134,7 @@ export async function BlogPostSurface({
     <>
       <BlogArticle post={post} country={country} />
 
-      <JsonLd
-        data={[
-          blogPostingSchema({
-            title: post.title,
-            description: post.seoDescription || post.excerpt,
-            url: absoluteCountryUrl(country, `blog/${post.slug}`),
-            locale: country.locale,
-            imageUrl: post.featuredImage?.url ?? post.ogImage?.url ?? null,
-            publishedAt: post.publishedAt,
-            updatedAt: post.updatedAt,
-            wordCount: post.content.replace(/<[^>]*>/g, ' ').split(/\s+/).filter(Boolean).length,
-            keywords: post.tags.map(({ tag }) => tag.name),
-            section: post.category?.name ?? null,
-            author: post.author
-              ? {
-                  name: post.author.name,
-                  jobTitle: post.author.jobTitle,
-                  url: post.author.linkedinUrl || post.author.websiteUrl,
-                }
-              : null,
-            organizationName: seo.organizationName || site.siteName,
-            logoUrl: seo.organizationLogoUrl ?? site.logoUrl,
-          }),
-          countryBreadcrumbSchema(country, [
-            { name: 'Home', path: '' },
-            { name: 'Blog', path: 'blog' },
-            ...(post.category
-              ? [{ name: post.category.name, path: `blog/category/${post.category.slug}` }]
-              : []),
-            { name: post.title, path: `blog/${post.slug}` },
-          ]),
-        ]}
-      />
+      <JsonLd data={blogPostJsonLd(country, post, site, seo)} />
     </>
   );
 }
@@ -206,6 +176,7 @@ export async function blogCategoryMetadata(
     ogTitle: local?.ogTitle || category.ogTitle,
     ogDescription: local?.ogDescription || category.ogDescription,
     ogImageUrl: category.ogImage?.url ?? category.bannerImage?.url ?? null,
+    keywords: primaryKeywords(category),
   });
 }
 
@@ -234,16 +205,7 @@ export async function BlogCategorySurface({
         categoryId={category.id}
         searchParams={searchParams}
       />
-      <JsonLd
-        data={countryBreadcrumbSchema(country, [
-          { name: 'Home', path: '' },
-          { name: 'Blog', path: 'blog' },
-          ...(category.parent
-            ? [{ name: category.parent.name, path: `blog/category/${category.parent.slug}` }]
-            : []),
-          { name: category.name, path: `blog/category/${slug}` },
-        ])}
-      />
+      <JsonLd data={blogCategoryJsonLd(country, { ...category, slug })} />
     </>
   );
 }
@@ -292,13 +254,7 @@ export async function BlogTagSurface({
         tagSlug={slug}
         searchParams={searchParams}
       />
-      <JsonLd
-        data={countryBreadcrumbSchema(country, [
-          { name: 'Home', path: '' },
-          { name: 'Blog', path: 'blog' },
-          { name: tag.name, path: `blog/tag/${slug}` },
-        ])}
-      />
+      <JsonLd data={blogTagJsonLd(country, { name: tag.name, slug })} />
     </>
   );
 }

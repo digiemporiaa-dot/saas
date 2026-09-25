@@ -39,6 +39,14 @@ export type SeoInput = {
   publishedTime?: Date | null;
   modifiedTime?: Date | null;
   authorName?: string | null;
+  /**
+   * The entity's primary keywords, output as `<meta name="keywords">`.
+   *
+   * Search engines do not use that tag for ranking and nothing in this
+   * application scores it; it is emitted because the keywords exist and some
+   * tools read it. Omitted entirely when there are none.
+   */
+  keywords?: readonly string[] | null;
 };
 
 export function absoluteUrl(path = '/'): string {
@@ -110,6 +118,8 @@ export async function buildMetadata(input: SeoInput): Promise<Metadata> {
     }
   }
 
+  const keywords = (input.keywords ?? []).map((keyword) => keyword.trim()).filter(Boolean);
+
   return {
     metadataBase: new URL(siteUrl()),
     /*
@@ -119,6 +129,9 @@ export async function buildMetadata(input: SeoInput): Promise<Metadata> {
      */
     title: { absolute: title },
     description,
+    // A string, so the tag reads "one, two, three" rather than Next's
+    // space-less join of an array.
+    ...(keywords.length > 0 ? { keywords: keywords.join(', ') } : {}),
     alternates: {
       canonical,
       ...(Object.keys(languages).length > 0 ? { languages } : {}),

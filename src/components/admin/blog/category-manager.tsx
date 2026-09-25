@@ -36,6 +36,14 @@ const EXTRA_FIELDS: CategoryExtraField[] = [
   { name: 'ogTitle', kind: 'text', label: 'Open Graph title' },
   { name: 'ogDescription', kind: 'textarea', label: 'Open Graph description' },
   { name: 'ogImageId', kind: 'media', label: 'Social share image' },
+  {
+    name: 'primaryKeyword1',
+    kind: 'text',
+    label: 'Primary keyword 1',
+    hint: 'Up to three searches this archive should answer. Used by SEO Intelligence and output as a meta keywords tag, which search engines do not use for ranking.',
+  },
+  { name: 'primaryKeyword2', kind: 'text', label: 'Primary keyword 2' },
+  { name: 'primaryKeyword3', kind: 'text', label: 'Primary keyword 3' },
   { name: 'noIndex', kind: 'switch', label: 'Hide from search engines (noindex)' },
   { name: 'noFollow', kind: 'switch', label: 'Do not follow links (nofollow)' },
 ];
