@@ -189,8 +189,8 @@ openssl rand -base64 32   # ENCRYPTION_KEY
 | `DATABASE_URL` | yes | PostgreSQL connection string |
 | `AUTH_SECRET` | yes | Signs session tokens. At least 16 characters |
 | `ENCRYPTION_KEY` | recommended | Encrypts the stored SMTP password. Falls back to `AUTH_SECRET` |
-| `NEXTAUTH_URL` | yes in production | The deployment's public URL |
-| `NEXT_PUBLIC_SITE_URL` | yes in production | Used for canonical URLs, the sitemap and email links |
+| `NEXTAUTH_URL` | yes in production | The deployment's public URL — the address visitors end up on after any redirect |
+| `NEXT_PUBLIC_SITE_URL` | yes in production | Used for canonical URLs, the sitemap and email links. Same value as `NEXTAUTH_URL`: if the bare domain redirects to www, both are `https://www.…` |
 | `STORAGE_DRIVER` | no | `local` (default), `s3` or `r2`. Nothing else is needed for `local` |
 | `UPLOAD_DIR` | no | Where `local` writes. Default `/data/uploads`. Must be a persistent volume |
 | `MEDIA_PUBLIC_PATH` | no | URL prefix media is served under. Default `/media` |
@@ -390,6 +390,18 @@ That checks the homepage, `/api/health`, `/api/ready`, `robots.txt`,
 `sitemap.xml`, the login page, and that `/admin` is gated. No credentials needed,
 nothing destructive.
 
+Two more checks, both read-only:
+
+```bash
+# Every address (bare and www, http and https) arrives at the real one with a
+# permanent redirect, keeping the path and query, and the canonical tags,
+# og:url, robots.txt and the sitemaps all use that address.
+npm run check:domain -- https://www.your-domain.com /pricing
+
+# Which pages ask not to be indexed: X-Robots-Tag and the robots meta tag.
+npm run check:indexing -- https://www.your-domain.com / /pricing /ae
+```
+
 ## File storage: local, S3 and Cloudflare R2
 
 The CMS never knows which backend is in use — everything goes through
@@ -584,6 +596,14 @@ it was writable.
 **Sign-in loops back to `/auth-control-panel/admin`.** `NEXTAUTH_URL` does not
 match the URL you are actually visiting, so the session cookie is scoped to a
 different origin.
+
+**Canonical URLs and the sitemap point at an address that redirects.** The
+domain moved — typically the bare domain now redirects to www — and
+`NEXT_PUBLIC_SITE_URL` / `NEXTAUTH_URL` still name the old address. Admin →
+SEO warns when the address you are browsing differs from the site address.
+Set both to the address the redirect ends on and redeploy; they are read at
+startup, so no rebuild of the image is needed. `npm run check:domain` confirms
+it.
 
 **Emails are not arriving.** Check that email is switched on in Admin →
 Settings → Email, then use **Test connection** followed by **Send test** — the

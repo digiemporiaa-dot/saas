@@ -26,6 +26,7 @@
     "verify:production": "node scripts/verify-production.mjs",
     "db:rehearse": "node scripts/rehearse-migration.mjs",
     "check:indexing": "node scripts/check-indexing.mjs",
+    "check:domain": "node scripts/check-domain.mjs",
     "market:clone": "node scripts/clone-market.mjs",
     "release": "node scripts/release.mjs"
   },

@@ -115,6 +115,13 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ### Added
 
+- **Domain and redirect checks.** `npm run check:domain -- https://www.your-domain`
+  follows the bare and www addresses over http and https, hop by hop, and
+  fails on a temporary (302/307) redirect, a chain, a loop or a lost path or
+  query; then it checks the canonical tags, og:url, hreflang, robots.txt and
+  the sitemaps all use the real address. Admin → SEO warns when the address
+  it is open on differs from `NEXT_PUBLIC_SITE_URL`, which is what happens
+  when the bare domain is redirected to www and the setting is not moved.
 - **SEO Intelligence.** Every public URL — pages, the home page, each product in
   each market, articles, blog categories, tags and the blog archive — gets SEO,
   AEO and GEO scores from 0 to 100 and an overall score (SEO 50%, AEO 25%,
