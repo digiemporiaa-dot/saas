@@ -3,6 +3,8 @@ import { prisma } from '@/lib/db/prisma';
 import { keywordColumns } from '@/lib/seo/keywords';
 import { localiseContent } from '@/lib/country/routing';
 import { offerIn } from '@/lib/country/availability';
+import { syncRoutes } from '@/lib/urls/content-sync';
+import { UrlRegistryError } from '@/lib/urls/errors';
 import type { CountryContext } from '@/lib/country/types';
 import { Prisma } from '@prisma/client';
 
@@ -599,7 +601,16 @@ async function syncProducts(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
 
     if (ctx.previewOnly) continue;
 
-    const created = await prisma.productCountry.create({
+    /*
+     * The market's configuration and the product's address there are created
+     * together. When the address is already taken in this market — by a page,
+     * say — nothing is created and the item is reported as a conflict, like
+     * any other clash the sync refuses to resolve on its own.
+     */
+    let created: { id: string; updatedAt: Date };
+    try {
+      created = await prisma.$transaction(async (tx) => {
+        const config = await tx.productCountry.create({
       data: {
         productId: row.productId,
         countryId: ctx.target.id,
@@ -646,8 +657,27 @@ async function syncProducts(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
         ogImageId: row.ogImageId,
       },
       select: { id: true, updatedAt: true },
-    });
+        });
+        await syncRoutes(tx, [{ type: 'PRODUCT', entityId: row.productId, countryId: ctx.target.id }], {
+          actor: null,
+          reason: 'CREATE',
+        });
+        return config;
+      });
+    } catch (error) {
+      if (!(error instanceof UrlRegistryError)) throw error;
+      retractCreated(log, row.id);
+      log.push({ entity: 'PRODUCT', outcome: 'conflict', label, sourceId: row.id, note: error.message });
+      continue;
+    }
     await remember(ctx, 'PRODUCT', row.id, created.id, row.updatedAt, created.updatedAt);
+  }
+}
+
+/** Takes back the "created" lines already logged for an item that was not created after all. */
+function retractCreated(log: SyncLogEntry[], sourceId: string): void {
+  for (let index = log.length - 1; index >= 0; index -= 1) {
+    if (log[index]!.sourceId === sourceId && log[index]!.outcome === 'created') log.splice(index, 1);
   }
 }
 
@@ -726,12 +756,26 @@ async function syncPages(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
      * and there is no reason to risk leaving one behind. Per page rather than
      * per run, so a large sync never holds one long lock over the whole table.
      */
-    const created = await prisma.$transaction(async (tx) =>
-      tx.page.create({
+    /*
+     * The copy is the same page in another market, so it joins the source's
+     * group — which is how the market switcher and hreflang pair them even if
+     * either is later given a different URL — and its address is registered
+     * in the same transaction. A copy whose address is taken in this market
+     * is not created; it is reported as a conflict.
+     */
+    const groupKey = page.groupKey ?? page.id;
+    let created: { id: string; updatedAt: Date };
+    try {
+      created = await prisma.$transaction(async (tx) => {
+        if (!page.groupKey) await tx.page.update({ where: { id: page.id }, data: { groupKey } });
+        const copy = await tx.page.create({
         data: {
           countryId: ctx.target.id,
           title: page.title,
           slug: page.slug,
+          groupKey,
+          landingCategoryId: page.landingCategoryId,
+          landingBrandId: page.landingBrandId,
           // Draft, always. Imported content is reviewed before it is published,
           // which is also what keeps it out of the sitemaps until then.
           status: 'DRAFT',
@@ -777,8 +821,19 @@ async function syncPages(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
           },
         },
         select: { id: true, updatedAt: true },
-      }),
-    );
+        });
+        await syncRoutes(tx, [{ type: 'PAGE', entityId: copy.id, countryId: ctx.target.id }], {
+          actor: null,
+          reason: 'CREATE',
+        });
+        return copy;
+      });
+    } catch (error) {
+      if (!(error instanceof UrlRegistryError)) throw error;
+      retractCreated(log, page.id);
+      log.push({ entity: 'PAGE', outcome: 'conflict', label, sourceId: page.id, note: error.message });
+      continue;
+    }
     await remember(ctx, 'PAGE', page.id, created.id, page.updatedAt, created.updatedAt);
   }
 }

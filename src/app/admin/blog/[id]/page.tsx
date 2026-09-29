@@ -14,7 +14,8 @@ import type { BuilderSection } from '@/components/cms/section-builder';
 import { ContentStatusBadge } from '@/components/admin/lead-status-badge';
 import { buttonClasses } from '@/components/ui/button';
 import { getCountryById, getDefaultCountry, listActiveCountries } from '@/lib/country/registry';
-import { countryPath } from '@/lib/country/routing';
+import { postPath } from '@/lib/cms/blog-render';
+import { getUrlSnapshot } from '@/lib/urls/load';
 import { parseBlockContent } from '@/lib/cms/blocks';
 
 export const dynamic = 'force-dynamic';
@@ -79,7 +80,10 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
     getCountryById(post.countryId).then(async (row) => row ?? (await getDefaultCountry())),
     listActiveCountries(),
   ]);
-  const publicPath = countryPath(country, `blog/${post.slug}`);
+  // Where the article lives, from the URL registry. The blog is root-only, so
+  // an article in another market has no address of its own.
+  await getUrlSnapshot();
+  const publicPath = postPath(post);
 
   const initial: PostFormValues = {
     id: post.id,

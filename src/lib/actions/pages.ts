@@ -19,6 +19,15 @@ import { getCountryById } from '@/lib/country/registry';
 import { revalidateCountryPage } from '@/lib/country/revalidate';
 import type { CountryContext } from '@/lib/country/types';
 import { refreshSeoScores } from '@/lib/seo/intelligence/refresh';
+import {
+  captureBefore,
+  describeTakenAddress,
+  isAddressTaken,
+  releaseRoutes,
+  syncRoutes,
+} from '@/lib/urls/content-sync';
+import { joinMarket } from '@/lib/urls/path';
+import { revalidateAddresses } from '@/lib/urls/revalidate';
 
 /** Revalidates the public surfaces a page change can affect, in its market. */
 async function revalidatePage(countryId: string, slug: string) {
@@ -76,14 +85,26 @@ export async function createPage(formData: FormData): Promise<ActionResult<{ id:
     const country = await resolveActionCountry(user, formData.get('countryId')?.toString() || null);
 
     // Slugs are unique per market, so the UAE can own "dropbox-business" while
-    // India already does.
-    const slug = await uniqueSlug(parsed.slug || pageSlug(parsed.title), async (candidate) => {
+    // India already does — and an address is unique across every kind of
+    // content, so a page cannot take a product's URL either.
+    const taken = async (candidate: string) => {
       const existing = await prisma.page.findUnique({
         where: { countryId_slug: { countryId: country.id, slug: candidate } },
         select: { id: true },
       });
-      return Boolean(existing);
-    });
+      return Boolean(existing) || (await isAddressTaken(prisma, joinMarket(country.slug, candidate)));
+    };
+    // A slug the editor typed is theirs: if it is taken, say so rather than
+    // quietly publishing the page somewhere else. One made from the title can
+    // simply be made unique.
+    const typed = String(formData.get('slug') ?? '').trim() !== '';
+    if (typed && parsed.slug && (await taken(parsed.slug))) {
+      const why =
+        (await describeTakenAddress(prisma, joinMarket(country.slug, parsed.slug))) ??
+        'Another page already uses that URL.';
+      return failure(why, { slug: [why] });
+    }
+    const slug = await uniqueSlug(parsed.slug || pageSlug(parsed.title), taken);
 
     const page = await prisma.$transaction(async (tx) => {
       if (parsed.isHomepage) {
@@ -93,7 +114,7 @@ export async function createPage(formData: FormData): Promise<ActionResult<{ id:
           data: { isHomepage: false },
         });
       }
-      return tx.page.create({
+      const created = await tx.page.create({
         data: {
           ...parsed,
           countryId: country.id,
@@ -105,6 +126,13 @@ export async function createPage(formData: FormData): Promise<ActionResult<{ id:
           updatedById: user.id,
         },
       });
+      // A new page is its own group until it is copied to another market.
+      await tx.page.update({ where: { id: created.id }, data: { groupKey: created.id } });
+      await syncRoutes(tx, [{ type: 'PAGE', entityId: created.id, countryId: country.id }], {
+        actor: user,
+        reason: 'CREATE',
+      });
+      return created;
     });
 
     await recordAudit({
@@ -171,14 +199,21 @@ export async function updatePage(pageId: string, formData: FormData): Promise<Ac
         return failure('Another page already uses that URL.', { slug: ['This URL is taken'] });
     }
 
-    const updated = await prisma.$transaction(async (tx) => {
+    /*
+     * The page, its address, the redirect from the address it leaves (when it
+     * had been public) and the URL history are saved together. If the new
+     * address belongs to anything else, none of it is.
+     */
+    const ref = { type: 'PAGE' as const, entityId: pageId, countryId: before.countryId };
+    const [updated, moves] = await prisma.$transaction(async (tx) => {
+      const snapshot = await captureBefore(tx, [ref]);
       if (parsed.isHomepage && !before.isHomepage) {
         await tx.page.updateMany({
           where: { isHomepage: true, countryId: before.countryId },
           data: { isHomepage: false },
         });
       }
-      return tx.page.update({
+      const saved = await tx.page.update({
         where: { id: pageId },
         data: {
           ...parsed,
@@ -191,6 +226,12 @@ export async function updatePage(pageId: string, formData: FormData): Promise<Ac
           updatedById: user.id,
         },
       });
+      const outcome = await syncRoutes(tx, [ref], {
+        actor: user,
+        reason: slug !== before.slug ? 'SLUG' : 'EDIT',
+        before: snapshot,
+      });
+      return [saved, outcome] as const;
     });
 
     await recordAudit({
@@ -207,8 +248,13 @@ export async function updatePage(pageId: string, formData: FormData): Promise<Ac
     revalidatePath(`/admin/pages/${pageId}`);
     await revalidatePage(before.countryId, before.slug);
     if (slug !== before.slug) await revalidatePage(before.countryId, slug);
+    revalidateAddresses(moves.flatMap((move) => [move.oldPath, move.newPath]));
     refreshSeoScores([{ type: 'PAGE', id: pageId, countryId: before.countryId }]);
-    return success(undefined, 'Page saved.');
+    const moved = moves.find((move) => move.status === 'moved' && move.redirectId);
+    return success(
+      undefined,
+      moved ? `Page saved. ${moved.oldPath} now redirects to ${moved.newPath}.` : 'Page saved.',
+    );
   } catch (error) {
     return toActionError(error);
   }
@@ -262,35 +308,48 @@ export async function duplicatePage(pageId: string): Promise<ActionResult<{ id: 
     if (!source) return failure('That page no longer exists.');
     await assertPageAccess(user, source.countryId);
 
+    const market = await getCountryById(source.countryId);
     const slug = await uniqueSlug(`${source.slug || 'home'}-copy`, async (candidate) => {
       const existing = await prisma.page.findUnique({
         where: { countryId_slug: { countryId: source.countryId, slug: candidate } },
         select: { id: true },
       });
-      return Boolean(existing);
+      return (
+        Boolean(existing) ||
+        (await isAddressTaken(prisma, joinMarket(market?.slug ?? '', candidate)))
+      );
     });
 
-    const copy = await prisma.page.create({
-      data: {
-        countryId: source.countryId,
-        title: `${source.title} (copy)`,
-        slug,
-        status: 'DRAFT',
-        isHomepage: false,
-        showHeader: source.showHeader,
-        showFooter: source.showFooter,
-        seoTitle: source.seoTitle,
-        seoDescription: source.seoDescription,
-        noIndex: source.noIndex,
-        noFollow: source.noFollow,
-        ogTitle: source.ogTitle,
-        ogDescription: source.ogDescription,
-        ogImageId: source.ogImageId,
-        ...keywordColumns(source),
-        createdById: user.id,
-        updatedById: user.id,
-        sections: { create: sectionCopies(source.sections) },
-      },
+    const copy = await prisma.$transaction(async (tx) => {
+      const created = await tx.page.create({
+        data: {
+          countryId: source.countryId,
+          title: `${source.title} (copy)`,
+          slug,
+          status: 'DRAFT',
+          isHomepage: false,
+          showHeader: source.showHeader,
+          showFooter: source.showFooter,
+          seoTitle: source.seoTitle,
+          seoDescription: source.seoDescription,
+          noIndex: source.noIndex,
+          noFollow: source.noFollow,
+          ogTitle: source.ogTitle,
+          ogDescription: source.ogDescription,
+          ogImageId: source.ogImageId,
+          ...keywordColumns(source),
+          createdById: user.id,
+          updatedById: user.id,
+          sections: { create: sectionCopies(source.sections) },
+        },
+      });
+      // A copy in the same market is a different page, not the same page's twin.
+      await tx.page.update({ where: { id: created.id }, data: { groupKey: created.id } });
+      await syncRoutes(tx, [{ type: 'PAGE', entityId: created.id, countryId: source.countryId }], {
+        actor: user,
+        reason: 'CREATE',
+      });
+      return created;
     });
 
     await recordAudit({
@@ -385,28 +444,44 @@ export async function duplicatePageToCountry(
       updatedById: user.id,
     };
 
+    // The copy is the same page in another market: it joins the source's group,
+    // which is how the market switcher and hreflang find it even after either
+    // page is given a different URL.
+    const groupKey = source.groupKey ?? source.id;
     const copy = await prisma.$transaction(async (tx) => {
+      let saved;
       if (existing) {
         await tx.pageSection.deleteMany({ where: { pageId: existing.id } });
-        return tx.page.update({
+        saved = await tx.page.update({
           where: { id: existing.id },
           data: {
             ...shared,
             slug: source.slug,
+            groupKey,
             deletedAt: null,
             sections: { create: sectionData },
           },
         });
+      } else {
+        saved = await tx.page.create({
+          data: {
+            ...shared,
+            countryId: target.id,
+            slug: source.slug,
+            groupKey,
+            createdById: user.id,
+            sections: { create: sectionData },
+          },
+        });
       }
-      return tx.page.create({
-        data: {
-          ...shared,
-          countryId: target.id,
-          slug: source.slug,
-          createdById: user.id,
-          sections: { create: sectionData },
-        },
+      if (!source.groupKey) {
+        await tx.page.update({ where: { id: source.id }, data: { groupKey } });
+      }
+      await syncRoutes(tx, [{ type: 'PAGE', entityId: saved.id, countryId: target.id }], {
+        actor: user,
+        reason: existing ? 'EDIT' : 'CREATE',
       });
+      return saved;
     });
 
     await recordAudit({
@@ -439,14 +514,21 @@ export async function deletePage(pageId: string): Promise<ActionResult> {
     if (page.isHomepage)
       return failure('Set another page as the homepage before deleting this one.');
 
-    // Soft delete keeps inbound lead attribution intact.
-    await prisma.page.update({
-      where: { id: pageId },
-      data: {
-        deletedAt: new Date(),
-        status: 'ARCHIVED',
-        slug: `${page.slug}-deleted-${Date.now()}`,
-      },
+    // Soft delete keeps inbound lead attribution intact. The address is
+    // released, not redirected: where a deleted page's visitors should go is a
+    // decision for a person (Slug & URL Manager → History), never a default.
+    await prisma.$transaction(async (tx) => {
+      await tx.page.update({
+        where: { id: pageId },
+        data: {
+          deletedAt: new Date(),
+          status: 'ARCHIVED',
+          slug: `${page.slug}-deleted-${Date.now()}`,
+        },
+      });
+      await releaseRoutes(tx, [{ type: 'PAGE', entityId: pageId, countryId: page.countryId, label: page.title }], {
+        actor: user,
+      });
     });
 
     await recordAudit({
@@ -718,18 +800,23 @@ export async function bulkPageAction(input: unknown): Promise<ActionResult> {
     const targets = action === 'delete' ? pages.filter((p) => !p.isHomepage) : pages;
 
     if (action === 'delete') {
-      await prisma.$transaction(
-        targets.map((page) =>
-          prisma.page.update({
+      await prisma.$transaction(async (tx) => {
+        for (const page of targets) {
+          await tx.page.update({
             where: { id: page.id },
             data: {
               deletedAt: new Date(),
               status: 'ARCHIVED',
               slug: `${page.slug}-deleted-${Date.now()}`,
             },
-          }),
-        ),
-      );
+          });
+        }
+        await releaseRoutes(
+          tx,
+          targets.map((page) => ({ type: 'PAGE' as const, entityId: page.id, countryId: page.countryId, label: page.title })),
+          { actor: user },
+        );
+      });
     } else {
       const status = action === 'publish' ? 'PUBLISHED' : action === 'draft' ? 'DRAFT' : 'ARCHIVED';
       await prisma.page.updateMany({

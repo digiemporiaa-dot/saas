@@ -1,5 +1,6 @@
 import 'server-only';
 import { countryPath } from '@/lib/country/routing';
+import { isRootOnlyLink } from '@/lib/urls/links';
 import type { CountryContext, CountrySettingsView } from '@/lib/country/types';
 import { blockingRule } from '@/lib/seo/robots-match';
 import type { SeoCountryRef, SeoDocument } from '@/lib/seo/types';
@@ -90,8 +91,8 @@ export function renderCanonical(
       if (url.host.replace(/^www\./, '') === origin.host.replace(/^www\./, '')) {
         const first = url.pathname.split('/').filter(Boolean)[0] ?? '';
         const prefixed = ctx.countries.find((candidate) => candidate.slug && candidate.slug === first);
-        // Blog URLs are root-only, so a canonical to /blog/… is never another market's.
-        const owner = prefixed ?? (first === 'blog' ? country : ctx.root);
+        // Blog URLs are root-only, so a canonical to the blog is never another market's.
+        const owner = prefixed ?? (isRootOnlyLink(url.pathname) ? country : ctx.root);
         if (owner && owner.id !== country.id) otherMarket = owner.name;
       }
     } catch {

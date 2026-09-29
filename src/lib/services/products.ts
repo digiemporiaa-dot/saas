@@ -2,7 +2,8 @@ import 'server-only';
 import { cache } from 'react';
 import { prisma } from '@/lib/db/prisma';
 import { decimalToString } from '@/lib/utils/money';
-import { countryPath, countryHref, localiseHtml } from '@/lib/country/routing';
+import { countryHref, localiseHtml } from '@/lib/country/routing';
+import { productHref } from '@/lib/urls/links';
 import type { CountryContext } from '@/lib/country/types';
 import type { Prisma } from '@prisma/client';
 
@@ -156,7 +157,7 @@ export function toPublicProduct(row: ProductCountryRow, country: CountryContext)
     id: product.id,
     name: product.name,
     slug: product.slug,
-    href: countryPath(country, `products/${product.slug}`),
+    href: productHref(country, product),
     sku: product.sku,
     // Copy can carry links the editor typed by hand, and a market's page must
     // not send its visitor into another market's.
@@ -290,35 +291,58 @@ export const getPublicProduct = cache(
   },
 );
 
-/** The market-level SEO record for a product page, without loading the product. */
-export const getProductSeo = cache(async (countryId: string, slug: string) => {
+/** A product on sale in a market, by the stable id the URL registry resolves to. */
+export const getPublicProductById = cache(
+  async (country: CountryContext, productId: string): Promise<PublicProduct | null> => {
+    const row = await prisma.productCountry.findFirst({
+      where: { ...publishedProductWhere(country.id), productId },
+      select: countrySelect,
+    });
+    return row ? toPublicProduct(row, country) : null;
+  },
+);
+
+/** The market-level SEO record for a product page, by product id. */
+export const getProductSeoById = cache(async (countryId: string, productId: string) => {
   return prisma.productCountry.findFirst({
-    where: { ...publishedProductWhere(countryId), product: { deletedAt: null, slug } },
+    where: { ...publishedProductWhere(countryId), productId },
+    select: productSeoSelect,
+  });
+});
+
+/** The market-level SEO record for a product page, without loading the product. */
+const productSeoSelect = {
+  seoTitle: true,
+  seoDescription: true,
+  canonicalUrl: true,
+  noIndex: true,
+  primaryKeyword1: true,
+  primaryKeyword2: true,
+  primaryKeyword3: true,
+  ogImage: { select: { url: true } },
+  product: {
     select: {
+      id: true,
+      name: true,
+      slug: true,
       seoTitle: true,
       seoDescription: true,
+      shortDescription: true,
       canonicalUrl: true,
       noIndex: true,
       primaryKeyword1: true,
       primaryKeyword2: true,
       primaryKeyword3: true,
       ogImage: { select: { url: true } },
-      product: {
-        select: {
-          name: true,
-          seoTitle: true,
-          seoDescription: true,
-          shortDescription: true,
-          canonicalUrl: true,
-          noIndex: true,
-          primaryKeyword1: true,
-          primaryKeyword2: true,
-          primaryKeyword3: true,
-          ogImage: { select: { url: true } },
-          image: { select: { url: true } },
-        },
-      },
+      image: { select: { url: true } },
     },
+  },
+} satisfies Prisma.ProductCountrySelect;
+
+export const getProductSeo = cache(async (countryId: string, slug: string) => {
+  return prisma.productCountry.findFirst({
+    where: { ...publishedProductWhere(countryId), product: { deletedAt: null, slug } },
+    select: productSeoSelect,
   });
 });
 

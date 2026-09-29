@@ -26,6 +26,18 @@ export type SeoInput = {
    * draft, a missing page or a URL that would 404.
    */
   alternateCountryIds?: readonly string[];
+  /**
+   * The page's public address, market prefix included, as the URL registry
+   * resolved it. Takes precedence over `path`, because a market's address
+   * need not be the root market's address with a prefix.
+   */
+  publicPath?: string;
+  /**
+   * Each market's own address for the same content, found by identity rather
+   * than by assuming every market uses the same path. Takes precedence over
+   * `alternateCountryIds`.
+   */
+  alternates?: ReadonlyArray<{ countryId: string; path: string }>;
   canonicalUrl?: string | null;
   noIndex?: boolean;
   noFollow?: boolean;
@@ -86,7 +98,9 @@ export async function buildMetadata(input: SeoInput): Promise<Metadata> {
 
   const description = input.description?.trim() || local.defaultDescription;
   const path = input.path ?? '/';
-  const canonical = input.canonicalUrl?.trim() || absoluteCountryUrl(country, path);
+  const canonical =
+    input.canonicalUrl?.trim() ||
+    (input.publicPath ? absoluteUrl(input.publicPath) : absoluteCountryUrl(country, path));
   const ogImage = input.ogImageUrl || local.defaultOgImageUrl || site.ogImageUrl || null;
 
   /*
@@ -109,7 +123,16 @@ export async function buildMetadata(input: SeoInput): Promise<Metadata> {
    * exists in one market alone simply gets no hreflang, which is exactly right.
    */
   const languages: Record<string, string> = {};
-  if (!noIndex && input.alternateCountryIds && input.alternateCountryIds.length > 1) {
+  if (!noIndex && input.alternates && input.alternates.length > 1) {
+    const byCountry = new Map(input.alternates.map((alternate) => [alternate.countryId, alternate.path]));
+    for (const candidate of activeCountries) {
+      const alternatePath = byCountry.get(candidate.id);
+      if (alternatePath) languages[candidate.locale] = absoluteUrl(alternatePath);
+    }
+    const root = activeCountries.find((candidate) => candidate.isDefault);
+    const rootPath = root ? byCountry.get(root.id) : undefined;
+    if (rootPath) languages['x-default'] = absoluteUrl(rootPath);
+  } else if (!noIndex && input.alternateCountryIds && input.alternateCountryIds.length > 1) {
     const allowed = new Set(input.alternateCountryIds);
     for (const candidate of activeCountries) {
       if (!allowed.has(candidate.id)) continue;

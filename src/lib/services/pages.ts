@@ -36,6 +36,21 @@ export const getPublishedPage = cache(
   },
 );
 
+/**
+ * A published page by its stable id, in the market it belongs to.
+ *
+ * What the URL registry resolves to: an address names a page by id, so the
+ * page is found the same way whatever its slug is today.
+ */
+export const getPublishedPageById = cache(
+  async (countryId: string, id: string): Promise<PageWithSections | null> => {
+    return prisma.page.findFirst({
+      where: { ...publishedPageWhere(), countryId, id },
+      include: { sections: { orderBy: { sortOrder: 'asc' } } },
+    });
+  },
+);
+
 /** Preview bypasses the publish gate. Callers must check authorisation first. */
 export const getPageForPreview = cache(async (id: string): Promise<PageWithSections | null> => {
   return prisma.page.findFirst({

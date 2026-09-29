@@ -2,10 +2,13 @@ import 'server-only';
 import type { SeoSettings, WebsiteSettings } from '@prisma/client';
 import { parseBlockContent, type FaqContent } from '@/lib/cms/blocks';
 import type { CountryContext, CountrySettingsView } from '@/lib/country/types';
-import { absoluteCountryUrl } from './metadata';
+import { countryPath } from '@/lib/country/routing';
+import { blogPath, categoryPath, postPath, tagPath } from '@/lib/cms/blog-render';
+import { registeredLink } from '@/lib/urls/links';
+import { absoluteUrl } from './metadata';
 import {
   blogPostingSchema,
-  countryBreadcrumbSchema,
+  breadcrumbSchema,
   faqSchema,
   organizationSchema,
   productSchema,
@@ -43,18 +46,23 @@ export function faqItemsOf(sections: readonly SectionLike[]): Array<{ question: 
 
 export function cmsPageJsonLd(
   country: CountryContext,
-  page: { title: string; slug: string; sections: readonly SectionLike[] },
+  page: { title: string; slug: string; path?: string; sections: readonly SectionLike[] },
   siteName: string,
 ): Json[] {
   const faq = faqSchema(faqItemsOf(page.sections));
   const crumbs =
     page.slug === ''
       ? null
-      : countryBreadcrumbSchema(country, [
-          { name: siteName, path: '' },
-          { name: page.title, path: page.slug },
+      : breadcrumbSchema([
+          { name: siteName, path: countryPath(country) },
+          { name: page.title, path: page.path ?? countryPath(country, page.slug) },
         ]);
   return [faq, crumbs].filter((item): item is Json => item !== null);
+}
+
+/** Where the "Plans" crumb goes: the market's pricing page, wherever it now lives. */
+function plansPath(country: CountryContext): string {
+  return registeredLink(country, '/pricing') ?? countryPath(country, 'pricing');
 }
 
 export function productPageJsonLd(
@@ -62,6 +70,8 @@ export function productPageJsonLd(
   product: {
     name: string;
     slug: string;
+    /** The product's address in this market, from the URL registry. */
+    href: string;
     shortDescription: string | null;
     imageUrl: string | null;
     monthlyPrice: string | null;
@@ -78,7 +88,7 @@ export function productPageJsonLd(
     productSchema({
       name: product.name,
       description: product.shortDescription,
-      url: absoluteCountryUrl(country, `products/${product.slug}`),
+      url: absoluteUrl(product.href),
       imageUrl: product.imageUrl,
       price: product.monthlyPrice,
       currency: product.currency,
@@ -88,16 +98,17 @@ export function productPageJsonLd(
       // declared before brands were read here.
       brand: product.brandName || siteName,
     }),
-    countryBreadcrumbSchema(country, [
-      { name: 'Home', path: '' },
-      { name: 'Plans', path: 'pricing' },
-      { name: product.name, path: `products/${product.slug}` },
+    breadcrumbSchema([
+      { name: 'Home', path: countryPath(country) },
+      { name: 'Plans', path: plansPath(country) },
+      { name: product.name, path: product.href },
     ]),
     ...(faq ? [faq] : []),
   ];
 }
 
 export type BlogPostForSchema = {
+  id: string;
   title: string;
   slug: string;
   seoDescription: string | null;
@@ -108,7 +119,7 @@ export type BlogPostForSchema = {
   featuredImage: { url: string } | null;
   ogImage: { url: string } | null;
   tags: Array<{ tag: { name: string } }>;
-  category: { name: string; slug: string } | null;
+  category: { id: string; name: string; slug: string } | null;
   author: {
     name: string;
     jobTitle: string | null;
@@ -117,17 +128,23 @@ export type BlogPostForSchema = {
   } | null;
 };
 
+/*
+ * The blog is root-only, so its trail starts at the root home page whichever
+ * market's layout wraps it, and every blog address comes from the registry.
+ */
+
 export function blogPostJsonLd(
   country: CountryContext,
   post: BlogPostForSchema,
   site: Pick<WebsiteSettings, 'siteName' | 'logoUrl'>,
   seo: Pick<SeoSettings, 'organizationName' | 'organizationLogoUrl'>,
 ): Json[] {
+  const url = postPath(post);
   return [
     blogPostingSchema({
       title: post.title,
       description: post.seoDescription || post.excerpt,
-      url: absoluteCountryUrl(country, `blog/${post.slug}`),
+      url: absoluteUrl(url),
       locale: country.locale,
       imageUrl: post.featuredImage?.url ?? post.ogImage?.url ?? null,
       publishedAt: post.publishedAt,
@@ -145,42 +162,46 @@ export function blogPostJsonLd(
       organizationName: seo.organizationName || site.siteName,
       logoUrl: seo.organizationLogoUrl ?? site.logoUrl,
     }),
-    countryBreadcrumbSchema(country, [
-      { name: 'Home', path: '' },
-      { name: 'Blog', path: 'blog' },
-      ...(post.category
-        ? [{ name: post.category.name, path: `blog/category/${post.category.slug}` }]
-        : []),
-      { name: post.title, path: `blog/${post.slug}` },
+    breadcrumbSchema([
+      { name: 'Home', path: countryPath(country) },
+      { name: 'Blog', path: blogPath() },
+      ...(post.category ? [{ name: post.category.name, path: categoryPath(post.category) }] : []),
+      { name: post.title, path: url },
     ]),
   ];
 }
 
 export function blogArchiveJsonLd(country: CountryContext): Json {
-  return countryBreadcrumbSchema(country, [
-    { name: 'Home', path: '' },
-    { name: 'Blog', path: 'blog' },
+  return breadcrumbSchema([
+    { name: 'Home', path: countryPath(country) },
+    { name: 'Blog', path: blogPath() },
   ]);
 }
 
 export function blogCategoryJsonLd(
   country: CountryContext,
-  category: { name: string; slug: string; parent: { name: string; slug: string } | null },
+  category: {
+    id: string;
+    name: string;
+    slug: string;
+    parent: { id: string; name: string; slug: string } | null;
+  },
 ): Json {
-  return countryBreadcrumbSchema(country, [
-    { name: 'Home', path: '' },
-    { name: 'Blog', path: 'blog' },
-    ...(category.parent
-      ? [{ name: category.parent.name, path: `blog/category/${category.parent.slug}` }]
-      : []),
-    { name: category.name, path: `blog/category/${category.slug}` },
+  return breadcrumbSchema([
+    { name: 'Home', path: countryPath(country) },
+    { name: 'Blog', path: blogPath() },
+    ...(category.parent ? [{ name: category.parent.name, path: categoryPath(category.parent) }] : []),
+    { name: category.name, path: categoryPath(category) },
   ]);
 }
 
-export function blogTagJsonLd(country: CountryContext, tag: { name: string; slug: string }): Json {
-  return countryBreadcrumbSchema(country, [
-    { name: 'Home', path: '' },
-    { name: 'Blog', path: 'blog' },
-    { name: tag.name, path: `blog/tag/${tag.slug}` },
+export function blogTagJsonLd(
+  country: CountryContext,
+  tag: { id: string; name: string; slug: string },
+): Json {
+  return breadcrumbSchema([
+    { name: 'Home', path: countryPath(country) },
+    { name: 'Blog', path: blogPath() },
+    { name: tag.name, path: tagPath(tag) },
   ]);
 }

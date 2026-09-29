@@ -12,6 +12,7 @@ import { fingerprint } from '@/lib/seo/content/text';
 import type { SectionForExtraction } from '@/lib/seo/content/sections';
 import { SEO_ENGINE_VERSION } from '@/lib/seo/types';
 import { siteUrl } from '@/lib/env';
+import { getUrlSnapshot } from '@/lib/urls/load';
 
 /**
  * Everything outside a page that shapes its score.
@@ -66,6 +67,9 @@ export function loadSeoContext(options: { fresh?: boolean } = {}): Promise<SeoCo
 }
 
 async function readContext(): Promise<SeoContext> {
+  // Documents are built with the registry's addresses; the snapshot is
+  // loaded first so every link helper they call reads the current one.
+  const urls = await getUrlSnapshot();
   const [seo, site, blog, countries, settingsRows, articleRows, listingRows] = await Promise.all([
     getSeoSettings(),
     getWebsiteSettings(),
@@ -168,6 +172,9 @@ async function readContext(): Promise<SeoContext> {
         country.isDefault,
       ]),
       markets: settingsRows.map((row) => [row.countryId, row.updatedAt.getTime()]),
+      // A pattern change or switching the registry on moves many addresses at
+      // once; single-address edits refresh their own score instead.
+      urls: [urls.enabled, [...urls.patterns.entries()].sort()],
       article: articleSections.map((section) => [section.blockType, section.isVisible, section.sortOrder, section.content]),
       listing: listingSections.map((section) => [section.blockType, section.isVisible, section.sortOrder, section.content]),
     }),

@@ -313,6 +313,8 @@ model Country {
   syncRunsAsSource     CountrySyncRun[]         @relation("SyncRunSource")
   syncRunsAsTarget     CountrySyncRun[]         @relation("SyncRunTarget")
   seoAudits            SeoAudit[]
+  urlRoutes            UrlRoute[]
+  urlPatterns          UrlPattern[]
 
   @@index([isActive, sortOrder])
   @@index([isActive, isPublished])
@@ -710,16 +712,31 @@ model Page {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
+  /// Pages that are the same page in different markets share a group key,
+  /// so a market's equivalent is found by identity even when the two pages
+  /// have different URLs.
+  groupKey String?
+
+  /// The product category or brand this page is the landing page for, by
+  /// stable id. Product pages link here rather than to an assumed URL.
+  landingCategoryId String?
+  landingBrandId    String?
+
   country         Country           @relation(fields: [countryId], references: [id], onDelete: Restrict)
   category        PageCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   ogImage         Media?            @relation("PageOgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
   twitterImage    Media?            @relation("PageTwitterImage", fields: [twitterImageId], references: [id], onDelete: SetNull)
+  landingCategory ProductCategory?  @relation("CategoryLandingPage", fields: [landingCategoryId], references: [id], onDelete: SetNull)
+  landingBrand    Brand?            @relation("BrandLandingPage", fields: [landingBrandId], references: [id], onDelete: SetNull)
   sections        PageSection[]
   leads           Lead[]            @relation("LeadLandingPage")
   popups          PopupPageTarget[]
   navigationItems NavigationItem[]
 
   @@unique([countryId, slug])
+  @@unique([countryId, landingCategoryId])
+  @@unique([countryId, landingBrandId])
+  @@index([groupKey])
   @@index([slug])
   @@index([countryId])
   @@index([countryId, status, publishedAt])
@@ -766,9 +783,10 @@ model ProductCategory {
   /// Soft delete. See `Brand.deletedAt` — same reasoning, same recycle bin.
   deletedAt DateTime?
 
-  image     Media?                   @relation("CategoryImage", fields: [imageId], references: [id], onDelete: SetNull)
-  products  Product[]
-  countries ProductCategoryCountry[]
+  image        Media?                   @relation("CategoryImage", fields: [imageId], references: [id], onDelete: SetNull)
+  products     Product[]
+  countries    ProductCategoryCountry[]
+  landingPages Page[]                   @relation("CategoryLandingPage")
 
   @@index([slug])
   @@index([deletedAt])
@@ -861,9 +879,10 @@ model Brand {
   /// at it keep pointing at it.
   deletedAt DateTime?
 
-  logo      Media?         @relation("BrandLogo", fields: [logoId], references: [id], onDelete: SetNull)
-  products  Product[]
-  countries BrandCountry[]
+  logo         Media?         @relation("BrandLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  products     Product[]
+  countries    BrandCountry[]
+  landingPages Page[]         @relation("BrandLandingPage")
 
   @@index([slug])
   @@index([sortOrder])
@@ -2196,12 +2215,12 @@ model WebsiteSettings {
   cardRadius           String @default("1rem")
 
   // Buttons
-  buttonRadius         String @default("0.5rem")
-  buttonPaddingX       String @default("1.25rem")
-  buttonPaddingY       String @default("0.625rem")
-  buttonPrimaryStyle   String @default("solid")
-  buttonSecondaryStyle String @default("outline")
-  buttonTextTransform  String @default("none")
+  buttonRadius               String @default("0.5rem")
+  buttonPaddingX             String @default("1.25rem")
+  buttonPaddingY             String @default("0.625rem")
+  buttonPrimaryStyle         String @default("solid")
+  buttonSecondaryStyle       String @default("outline")
+  buttonTextTransform        String @default("none")
   /// Primary and secondary button colours. Blank means "keep the look the
   /// style above gives it" — only what somebody set is emitted as CSS.
   buttonBorderWidth          String @default("")
@@ -2327,17 +2346,263 @@ model EmailTemplate {
 
 model Redirect {
   id          String       @id @default(cuid())
-  source      String       @unique
+  /// The address as written. Uniqueness of addresses is enforced by
+  /// `UrlRoute.pathKey`, which every active rule claims, not by this column:
+  /// a dormant rule written before the registry may share a spelling with a
+  /// newer one.
+  source      String
+  /// Where the redirect sends visitors when it has no content target: an
+  /// internal path or a full external URL. For a redirect with a target this is
+  /// the target's URL at the time it was written, kept for display only.
   destination String
   type        RedirectType @default(PERMANENT)
   isActive    Boolean      @default(true)
   hitCount    Int          @default(0)
   note        String?
 
+  /// MANUAL rules are written by people; AUTOMATIC ones are written by the URL
+  /// registry when a published address changes.
+  origin          RedirectOrigin  @default(MANUAL)
+  /// The market whose address space the source lives in, for permissions and
+  /// filtering. Null only on rules written before the URL registry existed.
+  countryId       String?
+  /// A market-relative rule that applies under every market prefix, which is
+  /// how rules written before the URL registry behaved. New rules apply to one
+  /// exact address.
+  allMarkets      Boolean         @default(false)
+  /// The content this redirect sends visitors to, by stable identity. When set,
+  /// the destination is always that content's current URL, so a redirect never
+  /// points at an address that has itself moved: no chains, whatever happens
+  /// to the content later.
+  targetType      UrlContentType?
+  targetEntityId  String?
+  targetCountryId String?
+  lastHitAt       DateTime?
+  createdById     String?
+  updatedById     String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// The public addresses this rule answers for (one, or one per market for an
+  /// every-market rule). A rule with no claim is dormant: its address is owned
+  /// by content, or it could not be imported.
+  claims UrlRoute[]
+
+  @@index([source])
   @@index([isActive])
+  @@index([origin])
+  @@index([countryId])
+  @@index([targetEntityId, targetCountryId])
+}
+
+// ---------------------------------------------------------------------------
+// URL REGISTRY
+// ---------------------------------------------------------------------------
+
+/// What a public address serves. CATEGORY_PAGE and BRAND_PAGE are CMS pages
+/// linked to a product category or brand; their entity is the page.
+enum UrlContentType {
+  PAGE
+  CATEGORY_PAGE
+  BRAND_PAGE
+  PRODUCT
+  BLOG_POST
+  BLOG_CATEGORY
+  BLOG_TAG
+  BLOG_ARCHIVE
+}
+
+enum UrlRouteKind {
+  CONTENT
+  REDIRECT
+}
+
+/// PATTERN follows the inherited URL pattern; CUSTOM is an explicit override
+/// for one piece of content in one market, which pattern changes never touch.
+enum UrlRouteMode {
+  PATTERN
+  CUSTOM
+}
+
+enum RedirectOrigin {
+  MANUAL
+  AUTOMATIC
+}
+
+enum UrlChangeReason {
+  CREATE
+  EDIT
+  SLUG
+  PATTERN
+  BULK
+  IMPORT
+  RESTORE
+  DELETE
+  BACKFILL
+  MARKET
+}
+
+enum UrlHealthStatus {
+  OPEN
+  IGNORED
+  RESOLVED
+}
+
+enum UrlOperationStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  PARTIAL
+  FAILED
+}
+
+/// The authoritative map of every public address the site answers for.
+///
+/// Each row claims one normalised path. A CONTENT row serves a piece of
+/// content in one market; a REDIRECT row is the address a redirect answers
+/// for. Because both live in one table under one unique key, no two things can
+/// ever own the same address — a page, a product, an article and a redirect
+/// source all compete for the same `pathKey`.
+model UrlRoute {
+  id        String       @id @default(cuid())
+  kind      UrlRouteKind @default(CONTENT)
+  /// The public path, market prefix included: "/", "/ae", "/dropbox",
+  /// "/ae/software/dropbox-business".
+  path      String
+  /// `path` normalised for comparison: lower case, no trailing slash.
+  pathKey   String       @unique
+  /// The market whose address space the path lives in.
+  countryId String
+
+  type     UrlContentType?
+  /// The content's stable id: Page, Product, BlogPost, BlogCategory or BlogTag
+  /// id, or "blog" for the blog archive. Never a slug.
+  entityId String?
+  mode     UrlRouteMode    @default(PATTERN)
+
+  redirectId String?
+
+  /// Bumped on every change, so a stale edit screen cannot overwrite a newer
+  /// one.
+  version     Int      @default(1)
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  country  Country   @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  redirect Redirect? @relation(fields: [redirectId], references: [id], onDelete: Cascade)
+
+  @@unique([entityId, countryId])
+  @@index([countryId, kind, type])
+  @@index([redirectId])
+  @@index([type])
+}
+
+/// URL patterns: a global default per content type, optionally overridden per
+/// market. `{slug}` is replaced by the content's slug.
+model UrlPattern {
+  id          String         @id @default(cuid())
+  type        UrlContentType
+  /// Null for the global default.
+  countryId   String?
+  /// `${type}:${countryId ?? "*"}` — one pattern per type per scope.
+  scopeKey    String         @unique
+  pattern     String
+  version     Int            @default(1)
+  updatedById String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  country Country? @relation(fields: [countryId], references: [id], onDelete: Cascade)
+
+  @@index([type])
+}
+
+/// Every change to a piece of content's public address, including the ones
+/// that removed it. Kept after the content is deleted, so its old URLs can
+/// still be given a deliberate new home.
+model UrlHistory {
+  id         String          @id @default(cuid())
+  type       UrlContentType
+  entityId   String
+  countryId  String
+  /// The content's name when the change was made.
+  label      String
+  oldPath    String?
+  newPath    String?
+  reason     UrlChangeReason
+  /// The automatic redirect this change created, if any. No foreign key: the
+  /// redirect can be deleted without rewriting history.
+  redirectId String?
+  batchId    String?
+  actorId    String?
+  actorEmail String?
+  createdAt  DateTime        @default(now())
+
+  @@index([entityId, countryId, createdAt])
+  @@index([createdAt])
+  @@index([countryId])
+  @@index([batchId])
+}
+
+/// Addresses that answered 404, recorded for URL Health. One row per path,
+/// counted rather than logged per hit, and bounded in size.
+model UrlNotFound {
+  id           String          @id @default(cuid())
+  pathKey      String          @unique
+  path         String
+  countryId    String?
+  hits         Int             @default(1)
+  firstSeenAt  DateTime        @default(now())
+  lastSeenAt   DateTime        @default(now())
+  /// Referring site and path only — never a query string.
+  lastReferrer String?
+  status       UrlHealthStatus @default(OPEN)
+  redirectId   String?
+
+  @@index([status, lastSeenAt])
+  @@index([hits])
+}
+
+/// One bulk URL change, applied in batches so a large one can be followed and
+/// resumed.
+model UrlOperation {
+  id         String             @id @default(cuid())
+  kind       String
+  status     UrlOperationStatus @default(PENDING)
+  summary    String
+  total      Int
+  processed  Int                @default(0)
+  succeeded  Int                @default(0)
+  failed     Int                @default(0)
+  /// The validated items, each with the route version it was validated against.
+  plan       Json
+  results    Json?
+  actorId    String?
+  actorEmail String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  finishedAt DateTime?
+
+  @@index([createdAt])
+}
+
+/// The registry's own state.
+model UrlSettings {
+  id              String    @id @default("singleton")
+  /// Bumped on every registry write. Link generation caches the registry and
+  /// reloads it when this changes, so an edit is live on every instance
+  /// without a rebuild.
+  version         Int       @default(1)
+  /// Whether public requests are resolved through the registry. Off until an
+  /// administrator has reviewed the first scan and switched it on.
+  resolverEnabled Boolean   @default(false)
+  activatedAt     DateTime?
+  activatedById   String?
+  lastScanAt      DateTime?
+  lastScan        Json?
+  updatedAt       DateTime  @updatedAt
 }
 
 // ---------------------------------------------------------------------------

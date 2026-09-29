@@ -4,11 +4,13 @@ import { prisma } from '@/lib/db/prisma';
 import { publishedPageWhere } from '@/lib/services/pages';
 import { publishedPostWhere } from '@/lib/services/blog';
 import { synthesiseProductSections } from '@/lib/cms/product-defaults';
-import { taxonomyPageSlug } from '@/lib/cms/taxonomy-pages';
 import { parseBlockContent } from '@/lib/cms/blocks';
 import { decimalToString } from '@/lib/utils/money';
 import { pageSlug, slugify } from '@/lib/utils/slug';
 import { countryPath } from '@/lib/country/routing';
+import { pageHref, productHref, registeredLink } from '@/lib/urls/links';
+import { stripMarket } from '@/lib/urls/path';
+import { blogPath, categoryPath, postPath, tagPath } from '@/lib/cms/blog-render';
 import type { CountryContext } from '@/lib/country/types';
 import { effectiveKeywords, primaryKeywords } from '@/lib/seo/keywords';
 import {
@@ -175,11 +177,18 @@ export async function buildPageDocuments(
     };
   });
 
+  // The same page in other markets: by group where pages have been grouped,
+  // by slug where they have not yet.
   const slugs = [...new Set(pages.map((page) => page.slug))];
+  const groups = [...new Set(pages.map((page) => page.groupKey).filter((key): key is string => Boolean(key)))];
   const [liveRows, media] = await Promise.all([
     prisma.page.findMany({
-      where: { ...publishedPageWhere(), noIndex: false, slug: { in: slugs } },
-      select: { id: true, slug: true, countryId: true },
+      where: {
+        ...publishedPageWhere(),
+        noIndex: false,
+        OR: [{ slug: { in: slugs } }, ...(groups.length > 0 ? [{ groupKey: { in: groups } }] : [])],
+      },
+      select: { id: true, slug: true, countryId: true, groupKey: true },
     }),
     loadMedia(
       pages.flatMap((page) => [
@@ -207,7 +216,9 @@ export async function buildPageDocuments(
     // hreflang: the markets where an indexable page with this slug is live,
     // this page's own draft state standing in for its saved one.
     const liveIn = new Set(
-      liveRows.filter((row) => row.slug === page.slug && row.id !== page.id).map((row) => row.countryId),
+      liveRows
+        .filter((row) => (page.groupKey ? row.groupKey === page.groupKey : row.slug === page.slug) && row.id !== page.id)
+        .map((row) => row.countryId),
     );
     if (published && !page.noIndex) liveIn.add(page.countryId);
 
@@ -335,8 +346,8 @@ export async function buildProductMarketDocuments(
     sidebar: SectionForExtraction[];
     imageId: string | null;
     galleryIds: string[];
-    category: { name: string; slug: string } | null;
-    brand: { name: string; slug: string } | null;
+    category: { id: string; name: string; slug: string } | null;
+    brand: { id: string; name: string; slug: string } | null;
   };
 
   const resolved: Resolved[] = [];
@@ -370,16 +381,25 @@ export async function buildProductMarketDocuments(
     });
   }
 
-  const taxonomySlugs = new Set<string>();
+  // Landing pages are linked to their category or brand by id, so a page that
+  // was renamed is still found and a page that merely shares the URL is not.
+  const categoryIds = new Set<string>();
+  const brandIds = new Set<string>();
   for (const item of resolved) {
-    if (item.category) taxonomySlugs.add(taxonomyPageSlug('category', item.category.slug));
-    if (item.brand) taxonomySlugs.add(taxonomyPageSlug('brand', item.brand.slug));
+    if (item.category) categoryIds.add(item.category.id);
+    if (item.brand) brandIds.add(item.brand.id);
   }
   const [taxonomyPages, media] = await Promise.all([
-    taxonomySlugs.size > 0
+    categoryIds.size + brandIds.size > 0
       ? prisma.page.findMany({
-          where: { ...publishedPageWhere(), slug: { in: [...taxonomySlugs] } },
-          select: { slug: true, countryId: true },
+          where: {
+            ...publishedPageWhere(),
+            OR: [
+              { landingCategoryId: { in: [...categoryIds] } },
+              { landingBrandId: { in: [...brandIds] } },
+            ],
+          },
+          select: { id: true, slug: true, countryId: true, landingCategoryId: true, landingBrandId: true },
         })
       : [],
     loadMedia(
@@ -483,19 +503,19 @@ export async function buildProductMarketDocuments(
     // working in, so its draft previews the product as sold there.
     const sold = Boolean(saved) || Boolean(market) || Boolean(shared);
     const published = Boolean(row && sold && isPublished(row.status, row.publishedAt, now));
-    const path = marketPath(country, `products/${slug}`);
+    const path = productHref(country, { id: product.id, slug });
     const image = item.imageId ? (media.get(item.imageId) ?? null) : null;
     const gallery = item.galleryIds.map((id) => media.get(id)).filter((entry): entry is ExtractMedia => Boolean(entry));
     const shortDescription = pick(row?.shortDescription, sharedShort);
     const descriptionHtml = pick(row?.description, sharedDescription);
-    const categoryHref =
-      item.category && taxonomyPages.some((page) => page.countryId === country.id && page.slug === taxonomyPageSlug('category', item.category!.slug))
-        ? countryPath(country, taxonomyPageSlug('category', item.category.slug))
-        : null;
-    const brandHref =
-      item.brand && taxonomyPages.some((page) => page.countryId === country.id && page.slug === taxonomyPageSlug('brand', item.brand!.slug))
-        ? countryPath(country, taxonomyPageSlug('brand', item.brand.slug))
-        : null;
+    const categoryPage = item.category
+      ? taxonomyPages.find((page) => page.countryId === country.id && page.landingCategoryId === item.category!.id)
+      : undefined;
+    const brandPage = item.brand
+      ? taxonomyPages.find((page) => page.countryId === country.id && page.landingBrandId === item.brand!.id)
+      : undefined;
+    const categoryHref = categoryPage ? pageHref(country, categoryPage) : null;
+    const brandHref = brandPage ? pageHref(country, brandPage) : null;
 
     const facts: ProductFacts = {
       name,
@@ -523,7 +543,7 @@ export async function buildProductMarketDocuments(
       priceNote: pick(row?.priceNote, product.priceNote),
       ctaLabel: pick(row?.ctaLabel, product.ctaLabel) || 'Get Started',
       homeHref: countryPath(country),
-      productsHref: countryPath(country, 'pricing'),
+      productsHref: registeredLink(country, '/pricing') ?? countryPath(country, 'pricing'),
     };
 
     const visible = [...item.detail, ...item.sidebar].filter((section) => section.isVisible);
@@ -575,7 +595,7 @@ export async function buildProductMarketDocuments(
       name,
       country: countryRef(country),
       path,
-      slug: `products/${slug}`,
+      slug: stripMarket(country.slug, path).replace(/^\//, ''),
       absoluteUrl: absolute(ctx, path),
       editPath: editPathFor('PRODUCT_MARKET', product.id),
       status: {
@@ -622,6 +642,7 @@ export async function buildProductMarketDocuments(
           {
             name,
             slug,
+            href: path,
             shortDescription,
             imageUrl: image?.url ?? null,
             monthlyPrice: row?.monthlyPrice ?? null,
@@ -673,11 +694,13 @@ export async function buildPostDocuments(
   const rows = await prisma.blogPost.findMany({
     where: { ...where, deletedAt: null },
     include: {
-      category: { select: { id: true, name: true, slug: true, parent: { select: { name: true, slug: true } } } },
+      category: {
+        select: { id: true, name: true, slug: true, parent: { select: { id: true, name: true, slug: true } } },
+      },
       author: {
         select: { id: true, name: true, jobTitle: true, bio: true, linkedinUrl: true, websiteUrl: true },
       },
-      tags: { include: { tag: { select: { name: true, slug: true } } } },
+      tags: { include: { tag: { select: { id: true, name: true, slug: true } } } },
     },
   });
   if (rows.length === 0) return [];
@@ -692,7 +715,7 @@ export async function buildPostDocuments(
     draftCategoryIds.size > 0
       ? prisma.blogCategory.findMany({
           where: { id: { in: [...draftCategoryIds] } },
-          select: { id: true, name: true, slug: true, parent: { select: { name: true, slug: true } } },
+          select: { id: true, name: true, slug: true, parent: { select: { id: true, name: true, slug: true } } },
         })
       : [],
     draftAuthorIds.size > 0
@@ -725,7 +748,7 @@ export async function buildPostDocuments(
       authorId,
       author: authorId === row.authorId ? row.author : (draftAuthors.find((entry) => entry.id === authorId) ?? null),
       tags: draft.tags
-        ? draft.tags.map((name) => ({ tag: { name, slug: slugify(name) } }))
+        ? draft.tags.map((name) => ({ tag: { id: `draft:${slugify(name)}`, name, slug: slugify(name) } }))
         : row.tags,
       featuredImageId: draft.featuredImageId === undefined ? row.featuredImageId : draft.featuredImageId,
       ogImageId: draft.ogImageId === undefined ? row.ogImageId : draft.ogImageId,
@@ -762,7 +785,7 @@ export async function buildPostDocuments(
 
   return posts.map((post) => {
     const country = marketOf(ctx, post.countryId);
-    const path = `/blog/${post.slug}`;
+    const path = postPath(post);
     const published = isPublished(post.status, post.publishedAt, now);
     const atRoot = post.countryId === root.id;
     const featured = post.featuredImageId ? (media.get(post.featuredImageId) ?? null) : null;
@@ -784,8 +807,9 @@ export async function buildPostDocuments(
       .map((row) => row.countryId);
     if (published) liveIn.push(post.countryId);
 
-    const tagLinks = post.tags.map(({ tag }) => ({ name: tag.name, href: `/blog/tag/${tag.slug}` }));
+    const tagLinks = post.tags.map(({ tag }) => ({ name: tag.name, href: tagPath(tag) }));
     const schemaPost = {
+      id: post.id,
       title: post.title,
       slug: post.slug,
       seoDescription: post.seoDescription,
@@ -796,7 +820,9 @@ export async function buildPostDocuments(
       featuredImage: featured ? { url: featured.url } : null,
       ogImage: ogImage ? { url: ogImage.url } : null,
       tags: post.tags.map(({ tag }) => ({ tag: { name: tag.name } })),
-      category: post.category ? { name: post.category.name, slug: post.category.slug } : null,
+      category: post.category
+        ? { id: post.category.id, name: post.category.name, slug: post.category.slug }
+        : null,
       author: post.author
         ? {
             name: post.author.name,
@@ -857,12 +883,12 @@ export async function buildPostDocuments(
           excerpt: post.excerpt,
           contentHtml: post.content,
           categoryName: post.category?.name ?? null,
-          categoryHref: post.category ? `/blog/category/${post.category.slug}` : null,
+          categoryHref: post.category ? categoryPath(post.category) : null,
           featuredImage: featured,
           author: post.author ? { name: post.author.name, jobTitle: post.author.jobTitle, bio: post.author.bio } : null,
           tags: tagLinks,
           hasPublishedDate: Boolean(post.publishedAt),
-          blogHref: '/blog',
+          blogHref: blogPath(),
           homeHref: '/',
         },
       }),
@@ -926,7 +952,7 @@ export async function buildArchiveDocument(ctx: SeoContext): Promise<SeoDocument
   const root = ctx.root;
   const local = localOf(ctx, root);
   const blog = ctx.blog;
-  const path = '/blog';
+  const path = blogPath();
   const [postCount, archiveContent] = await Promise.all([
     prisma.blogPost.count({ where: publishedPostWhere(root.id) }),
     archiveContentFor(ctx),
@@ -946,7 +972,7 @@ export async function buildArchiveDocument(ctx: SeoContext): Promise<SeoDocument
     name: 'Blog',
     country: countryRef(root),
     path,
-    slug: 'blog',
+    slug: path.replace(/^\//, ''),
     absoluteUrl: absolute(ctx, path),
     editPath: editPathFor('BLOG_ARCHIVE', 'blog'),
     status: { value: 'PUBLISHED', live: root.isActive, publishedAt: null, notServedReason: null },
@@ -989,7 +1015,7 @@ export async function buildCategoryDocuments(
   const categories = await prisma.blogCategory.findMany({
     where,
     include: {
-      parent: { select: { name: true, slug: true } },
+      parent: { select: { id: true, name: true, slug: true } },
       countries: { where: { countryId: root.id }, take: 1 },
     },
   });
@@ -1015,7 +1041,7 @@ export async function buildCategoryDocuments(
 
   return categories.map((category, index) => {
     const override = category.countries[0] ?? null;
-    const path = `/blog/category/${category.slug}`;
+    const path = categoryPath(category);
     const title = renderTitle(ctx, local, {
       seo: [override?.seoTitle, category.seoTitle],
       fallback: [override?.archiveTitle, category.archiveTitle, `${category.name} articles`],
@@ -1045,7 +1071,7 @@ export async function buildCategoryDocuments(
       name: category.name,
       country: countryRef(root),
       path,
-      slug: `blog/category/${category.slug}`,
+      slug: path.replace(/^\//, ''),
       absoluteUrl: absolute(ctx, path),
       editPath: editPathFor('BLOG_CATEGORY', category.id),
       status: { value: 'PUBLISHED', live: root.isActive, publishedAt: null, notServedReason: null },
@@ -1074,7 +1100,12 @@ export async function buildCategoryDocuments(
       content: listing[index]!,
       schema: [
         ...siteJsonLd(root, local, ctx.site),
-        blogCategoryJsonLd(root, { name: category.name, slug: category.slug, parent: category.parent }),
+        blogCategoryJsonLd(root, {
+          id: category.id,
+          name: category.name,
+          slug: category.slug,
+          parent: category.parent,
+        }),
       ],
       alternates: alternatesOf(ctx, [], reasons.length > 0),
       entity: entityOf(ctx, local),
@@ -1111,7 +1142,7 @@ export async function buildTagDocuments(
   const exclusionBase = blogSitemapExclusion(ctx);
 
   return tags.map((tag, index) => {
-    const path = `/blog/tag/${tag.slug}`;
+    const path = tagPath(tag);
     const title = renderTitle(ctx, local, { seo: [tag.seoTitle], fallback: [`${tag.name} articles`] });
     const description = renderDescription(local, { seo: [tag.seoDescription], fallback: [tag.description] });
     const reasons = noIndexReasons(ctx, local, { entity: tag.noIndex });
@@ -1129,7 +1160,7 @@ export async function buildTagDocuments(
       name: tag.name,
       country: countryRef(root),
       path,
-      slug: `blog/tag/${tag.slug}`,
+      slug: path.replace(/^\//, ''),
       absoluteUrl: absolute(ctx, path),
       editPath: editPathFor('BLOG_TAG', tag.id),
       status: { value: 'PUBLISHED', live: root.isActive, publishedAt: null, notServedReason: null },
@@ -1149,7 +1180,7 @@ export async function buildTagDocuments(
       }),
       social: socialOf(ctx, local, { title: title.title, description: description.description }),
       content: listing[index]!,
-      schema: [...siteJsonLd(root, local, ctx.site), blogTagJsonLd(root, { name: tag.name, slug: tag.slug })],
+      schema: [...siteJsonLd(root, local, ctx.site), blogTagJsonLd(root, { id: tag.id, name: tag.name, slug: tag.slug })],
       alternates: alternatesOf(ctx, [], reasons.length > 0),
       entity: entityOf(ctx, local),
       archive: { itemCount: count(rootCounts, tag.id) },

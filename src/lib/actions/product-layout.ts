@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
+import { addressesOf, revalidateAddresses } from '@/lib/urls/revalidate';
 import { ProductSurface } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
 import { authorize } from '@/lib/auth/guards';
@@ -42,9 +43,10 @@ async function revalidateProduct(productId: string, slug?: string) {
   revalidatePath(`/admin/products/${productId}/layout`);
   revalidatePath('/admin/products/design');
   if (slug) {
-    // Every market's copy of this product page, not just the root market's.
+    // Every market's copy of this product page, at whatever address the URL
+    // registry has it — not just the root market's `/products/<slug>`.
     revalidatePath(`/products/${slug}`);
-    revalidatePath(`/[country]/products/${slug}`, 'page');
+    revalidateAddresses(await addressesOf(productId));
   }
 }
 

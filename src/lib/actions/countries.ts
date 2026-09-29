@@ -9,6 +9,9 @@ import { recordAudit } from '@/lib/services/audit';
 import { sanitizeText } from '@/lib/utils/sanitize';
 import { toDecimal } from '@/lib/utils/money';
 import { uniqueSlug } from '@/lib/utils/slug';
+import { releaseRoutes, syncRoutes } from '@/lib/urls/content-sync';
+import { addressesOf, revalidateAddresses } from '@/lib/urls/revalidate';
+import { claimEveryMarketRules, lockRegistry, prefixConflict, rePrefixMarket } from '@/lib/urls/registry';
 import { success, failure, toActionError, type ActionResult } from '@/lib/utils/result';
 import {
   countrySchema,
@@ -156,18 +159,69 @@ export async function saveCountry(
       return failure('The default country cannot be deactivated.');
     }
 
-    const country = await prisma.$transaction(async (tx) => {
-      if (input.isDefault) {
-        await tx.country.updateMany({
-          where: { isDefault: true, ...(countryId ? { id: { not: countryId } } : {}) },
-          data: { isDefault: false },
+    /*
+     * A market prefix is the first segment of every address in that market, so
+     * it cannot be a word the root market already uses as one: with a root
+     * page at `/pricing`, a market called "pricing" would shadow it.
+     */
+    const prefixChanged = !input.isDefault && input.slug !== (before?.slug ?? null);
+    if (prefixChanged) {
+      const root = await prisma.country.findFirst({ where: { isDefault: true }, select: { id: true } });
+      const shadowed = root ? await prefixConflict(prisma, input.slug, root.id) : null;
+      if (shadowed) {
+        return failure(`The root market already has an address at ${shadowed}, so “${input.slug}” cannot be a market prefix.`, {
+          slug: [`Used by ${shadowed}`],
         });
       }
-      const data = { ...input, name: sanitizeText(input.name) };
-      return countryId
-        ? tx.country.update({ where: { id: countryId }, data })
-        : tx.country.create({ data });
-    });
+    }
+
+    const country = await prisma.$transaction(
+      async (tx) => {
+        if (input.isDefault) {
+          await tx.country.updateMany({
+            where: { isDefault: true, ...(countryId ? { id: { not: countryId } } : {}) },
+            data: { isDefault: false },
+          });
+        }
+        const data = { ...input, name: sanitizeText(input.name) };
+        const saved = countryId
+          ? await tx.country.update({ where: { id: countryId }, data })
+          : await tx.country.create({ data });
+
+        /*
+         * Every address in the market moves with its prefix, and each one that
+         * had been public keeps working through a redirect from the old prefix
+         * — in the same transaction as the rename.
+         */
+        if (before && prefixChanged && before.slug) {
+          await lockRegistry(tx);
+          const [pages, products] = await Promise.all([
+            tx.page.findMany({
+              where: { countryId: saved.id, deletedAt: null, publishedAt: { not: null } },
+              select: { id: true },
+            }),
+            tx.productCountry.findMany({
+              where: { countryId: saved.id, deletedAt: null, publishedAt: { not: null } },
+              select: { productId: true },
+            }),
+          ]);
+          await rePrefixMarket(tx, {
+            countryId: saved.id,
+            fromSlug: before.slug,
+            toSlug: saved.slug,
+            actor: user,
+            publicIds: new Set([...pages.map((row) => row.id), ...products.map((row) => row.productId)]),
+          });
+        }
+        // A new market answers the every-market redirect rules, as they always did.
+        if (!before) {
+          await lockRegistry(tx);
+          await claimEveryMarketRules(tx, { id: saved.id, slug: saved.slug });
+        }
+        return saved;
+      },
+      { timeout: 60_000, maxWait: 10_000 },
+    );
 
     await recordAudit({
       actor: user,
@@ -427,13 +481,21 @@ export async function saveProductCountry(formData: FormData): Promise<ActionResu
         rest.status === 'PUBLISHED' ? (rest.publishedAt ?? new Date()) : rest.publishedAt,
     };
 
-    await prisma.productCountry.upsert({
-      where: { productId_countryId: { productId, countryId } },
-      // Entering pricing for a market that had withdrawn the product is an
-      // explicit decision to offer it again, so the withdrawal is lifted here
-      // rather than leaving a configured row the storefront still ignores.
-      update: { ...data, deletedAt: null },
-      create: { productId, countryId, ...data },
+    // Offered here, so it has an address here — registered in the same
+    // transaction, or the whole save is refused with the owner of the address.
+    await prisma.$transaction(async (tx) => {
+      await tx.productCountry.upsert({
+        where: { productId_countryId: { productId, countryId } },
+        // Entering pricing for a market that had withdrawn the product is an
+        // explicit decision to offer it again, so the withdrawal is lifted here
+        // rather than leaving a configured row the storefront still ignores.
+        update: { ...data, deletedAt: null },
+        create: { productId, countryId, ...data },
+      });
+      await syncRoutes(tx, [{ type: 'PRODUCT', entityId: productId, countryId }], {
+        actor: user,
+        reason: 'EDIT',
+      });
     });
 
     await recordAudit({
@@ -452,6 +514,7 @@ export async function saveProductCountry(formData: FormData): Promise<ActionResu
 
     revalidatePath(`/admin/products/${productId}`);
     revalidateCountryPage(country, `products/${product.slug}`);
+    revalidateAddresses(await addressesOf(productId));
     refreshSeoScores([{ type: 'PRODUCT_MARKET', id: productId, countryId }]);
     return success(undefined, `${country.name} pricing saved.`);
   } catch (error) {
@@ -479,9 +542,15 @@ export async function removeProductCountry(input: unknown): Promise<ActionResult
      * withdrawal, so re-offering the product later does not mean re-entering
      * everything — and the sync's tombstone still sees a row it can recognise.
      */
-    await prisma.productCountry.updateMany({
-      where: { productId, countryId, deletedAt: null },
-      data: { deletedAt: new Date(), status: 'ARCHIVED', isFeatured: false },
+    await prisma.$transaction(async (tx) => {
+      await tx.productCountry.updateMany({
+        where: { productId, countryId, deletedAt: null },
+        data: { deletedAt: new Date(), status: 'ARCHIVED', isFeatured: false },
+      });
+      // Its address here is released, never redirected by default.
+      await releaseRoutes(tx, [{ type: 'PRODUCT', entityId: productId, countryId, label: product.name }], {
+        actor: user,
+      });
     });
 
     await recordAudit({

@@ -1,4 +1,5 @@
 import 'server-only';
+import { headers } from 'next/headers';
 import { notFound, redirect, permanentRedirect } from 'next/navigation';
 import { prisma } from '@/lib/db/prisma';
 import {
@@ -6,15 +7,18 @@ import {
   redirectLookupPaths,
   isSelfRedirect,
 } from '@/lib/seo/redirect-paths';
+import { liveRoutePath } from '@/lib/urls/live';
+import { afterResponse, countRedirectHit, recordNotFound } from '@/lib/urls/health';
+import type { UrlContentType } from '@/lib/urls/types';
 import type { CountryContext } from '@/lib/country/types';
 
 /**
- * Redirects, for every address the site serves.
+ * Redirects for the router that ran before the URL registry.
  *
- * A rule written in the redirect manager has to apply wherever the old URL was
- * — a renamed product, a retired article, a category that moved — not only to
- * the pages the CMS happens to own. Every surface that can 404 asks the same
- * question here, so there is one answer rather than one per route.
+ * While the registry is switched off, a surface that finds nothing to show
+ * asks here, exactly as it always did. With the registry on, redirects are
+ * resolved from the registry before anything renders (src/lib/urls/resolve.ts)
+ * and this is only reached from that module's legacy path.
  */
 
 /**
@@ -23,8 +27,9 @@ import type { CountryContext } from '@/lib/country/types';
  * The full request path is tried first, so a market can redirect
  * `/ae/old-plan` independently, and the market-relative path second, so a
  * redirect defined once still applies inside whichever market asked for it.
- * Loop protection: a redirect whose destination equals its own source is
- * ignored.
+ * A rule that points at content by id goes to that content's current address,
+ * and only while it is public. Loop protection: a redirect whose destination
+ * equals its own source is ignored.
  */
 export async function findRedirect(
   path: string,
@@ -32,17 +37,25 @@ export async function findRedirect(
 ): Promise<{ destination: string; permanent: boolean } | null> {
   const rule = await prisma.redirect.findFirst({
     where: { isActive: true, source: { in: redirectCandidates(path, fallbackPath) } },
+    orderBy: { createdAt: 'desc' },
   });
   if (!rule) return null;
 
-  if (isSelfRedirect(rule.source, rule.destination)) return null;
+  let destination: string | null = rule.destination;
+  if (rule.targetEntityId && rule.targetCountryId && rule.targetType) {
+    destination = await liveRoutePath(
+      rule.targetType as UrlContentType,
+      rule.targetEntityId,
+      rule.targetCountryId,
+    );
+  }
+  if (!destination || isSelfRedirect(rule.source, destination)) return null;
 
   // Best-effort hit counter; never block the redirect on it.
-  prisma.redirect
-    .update({ where: { id: rule.id }, data: { hitCount: { increment: 1 } } })
-    .catch(() => undefined);
+  const id = rule.id;
+  afterResponse(() => countRedirectHit(id));
 
-  return { destination: rule.destination, permanent: rule.type === 'PERMANENT' };
+  return { destination, permanent: rule.type === 'PERMANENT' };
 }
 
 /**
@@ -53,10 +66,11 @@ export async function findRedirect(
  * `blog/some-article`, or the page slug — and the market's own prefix is added
  * here, so one rule can be written for every market or for one of them.
  *
- * Never returns: it either redirects or raises the not-found response.
+ * Never returns: it either redirects or raises the not-found response, and a
+ * 404 is recorded for URL Health.
  */
 export async function redirectOrNotFound(
-  country: Pick<CountryContext, 'slug'>,
+  country: Pick<CountryContext, 'slug' | 'id'>,
   path: string,
 ): Promise<never> {
   const { full, relative } = redirectLookupPaths(country, path);
@@ -66,5 +80,13 @@ export async function redirectOrNotFound(
     if (target.permanent) permanentRedirect(target.destination);
     redirect(target.destination);
   }
+
+  let from: string | null = null;
+  try {
+    from = (await headers()).get('referer');
+  } catch {
+    from = null;
+  }
+  afterResponse(() => recordNotFound(full, { countryId: country.id, referrer: from }));
   return notFound();
 }

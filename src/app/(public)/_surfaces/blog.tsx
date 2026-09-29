@@ -1,14 +1,12 @@
 import type { Metadata } from 'next';
 import { after } from 'next/server';
 import {
-  getPublishedPost,
+  getPublishedPostById,
   recordPostView,
-  getCategoryBySlug,
-  getTagBySlug,
-  findLivePostCountries,
+  getCategoryById,
+  getTagById,
 } from '@/lib/services/blog';
 import { getBlogSettings } from '@/lib/services/blog-cms';
-import { redirectOrNotFound } from '@/lib/services/redirects';
 import { getSeoSettings, getWebsiteSettings } from '@/lib/services/settings';
 import { buildMetadata } from '@/lib/seo/metadata';
 import { primaryKeywords } from '@/lib/seo/keywords';
@@ -21,25 +19,31 @@ import {
 } from '@/lib/seo/page-schema';
 import { BlogArchive } from '@/components/blog/blog-archive';
 import { BlogArticle } from '@/components/blog/blog-article';
-import { blogPath, categoryPath, tagPath } from '@/lib/cms/blog-render';
-import type { CountryContext } from '@/lib/country/types';
+import { missingContent, type PublicTarget } from '@/lib/urls/resolve';
 
 /**
- * Every blog surface, in one market.
+ * Every blog surface.
  *
- * The archive, an article, a category archive and a tag archive all render
- * through here for both the root market and every prefixed market, so the blog
- * has one implementation rather than one per market.
+ * The archive, an article, a category archive and a tag archive, rendered
+ * with the content the URL registry resolved — by id, so the blog can live at
+ * `/blog` or `/insights` and an article keep its identity through any number
+ * of renames. The blog is root-only: these surfaces are only ever reached in
+ * the root market.
  */
 
 export type BlogSearchParams = { page?: string; q?: string; tag?: string };
+
+const notFoundMeta = (what: string): Metadata => ({
+  title: `${what} not found`,
+  robots: { index: false, follow: false },
+});
 
 // ---------------------------------------------------------------------------
 // Archive
 // ---------------------------------------------------------------------------
 
 export async function blogArchiveMetadata(
-  country: CountryContext,
+  target: PublicTarget,
   params: BlogSearchParams,
 ): Promise<Metadata> {
   const settings = await getBlogSettings();
@@ -50,8 +54,8 @@ export async function blogArchiveMetadata(
     description:
       settings.seoDescription ||
       'Guides, migration playbooks and administration tips for teams running Dropbox.',
-    path: '/blog',
-    country,
+    publicPath: target.path,
+    country: target.country,
     canonicalUrl: settings.canonicalUrl,
     // A search result or page 2+ is not a page to index — the articles
     // themselves are already indexed on their own URLs.
@@ -64,16 +68,16 @@ export async function blogArchiveMetadata(
 }
 
 export async function BlogArchiveSurface({
-  country,
+  target,
   searchParams,
 }: {
-  country: CountryContext;
+  target: PublicTarget;
   searchParams: BlogSearchParams;
 }) {
   return (
     <>
-      <BlogArchive country={country} basePath={blogPath(country)} searchParams={searchParams} />
-      <JsonLd data={blogArchiveJsonLd(country)} />
+      <BlogArchive country={target.country} basePath={target.path} searchParams={searchParams} />
+      <JsonLd data={blogArchiveJsonLd(target.country)} />
     </>
   );
 }
@@ -82,22 +86,16 @@ export async function BlogArchiveSurface({
 // Article
 // ---------------------------------------------------------------------------
 
-export async function blogPostMetadata(
-  country: CountryContext,
-  slug: string,
-): Promise<Metadata> {
-  const [post, alternates] = await Promise.all([
-    getPublishedPost(country.id, slug),
-    findLivePostCountries(slug),
-  ]);
-  if (!post) return { title: 'Article not found', robots: { index: false, follow: false } };
+export async function blogPostMetadata(target: PublicTarget): Promise<Metadata> {
+  const post = target.id ? await getPublishedPostById(target.country.id, target.id) : null;
+  if (!post) return notFoundMeta('Article');
 
   return buildMetadata({
     title: post.seoTitle || post.title,
     description: post.seoDescription || post.excerpt,
-    path: `/blog/${slug}`,
-    country,
-    alternateCountryIds: alternates,
+    publicPath: target.path,
+    country: target.country,
+    // Root-only: there is one address, so there are no alternates to list.
     canonicalUrl: post.canonicalUrl,
     noIndex: post.noIndex,
     noFollow: post.noFollow,
@@ -113,16 +111,9 @@ export async function blogPostMetadata(
   });
 }
 
-export async function BlogPostSurface({
-  country,
-  slug,
-}: {
-  country: CountryContext;
-  slug: string;
-}) {
-  const post = await getPublishedPost(country.id, slug);
-  // A retired or renamed article follows a redirect written for its address.
-  if (!post) return redirectOrNotFound(country, `blog/${slug}`);
+export async function BlogPostSurface({ target }: { target: PublicTarget }) {
+  const post = target.id ? await getPublishedPostById(target.country.id, target.id) : null;
+  if (!post) return missingContent(target);
 
   const [site, seo] = await Promise.all([getWebsiteSettings(), getSeoSettings()]);
 
@@ -132,9 +123,9 @@ export async function BlogPostSurface({
 
   return (
     <>
-      <BlogArticle post={post} country={country} />
+      <BlogArticle post={post} country={target.country} />
 
-      <JsonLd data={blogPostJsonLd(country, post, site, seo)} />
+      <JsonLd data={blogPostJsonLd(target.country, post, site, seo)} />
     </>
   );
 }
@@ -144,12 +135,11 @@ export async function BlogPostSurface({
 // ---------------------------------------------------------------------------
 
 export async function blogCategoryMetadata(
-  country: CountryContext,
-  slug: string,
+  target: PublicTarget,
   params: BlogSearchParams,
 ): Promise<Metadata> {
-  const category = await getCategoryBySlug(slug, country.id);
-  if (!category) return { title: 'Category not found', robots: { index: false, follow: false } };
+  const category = target.id ? await getCategoryById(target.id, target.country.id) : null;
+  if (!category) return notFoundMeta('Category');
 
   const page = Math.max(1, Number(params.page) || 1);
   // The market's own archive copy and SEO, when it has set any.
@@ -168,8 +158,8 @@ export async function blogCategoryMetadata(
       category.seoDescription ||
       category.archiveDescription ||
       category.description,
-    path: `/blog/category/${slug}`,
-    country,
+    publicPath: target.path,
+    country: target.country,
     canonicalUrl: local?.canonicalUrl || category.canonicalUrl,
     noIndex: (local?.noIndex ?? category.noIndex) || page > 1,
     noFollow: local?.noFollow ?? category.noFollow,
@@ -181,31 +171,25 @@ export async function blogCategoryMetadata(
 }
 
 export async function BlogCategorySurface({
-  country,
-  slug,
+  target,
   searchParams,
 }: {
-  country: CountryContext;
-  slug: string;
+  target: PublicTarget;
   searchParams: BlogSearchParams;
 }) {
-  const category = await getCategoryBySlug(slug, country.id);
-  if (!category) return redirectOrNotFound(country, `blog/category/${slug}`);
-
-  // A hidden category keeps its URL working for anyone who has it bookmarked;
-  // it simply stops being advertised in the filters.
-  await getBlogSettings();
+  const category = target.id ? await getCategoryById(target.id, target.country.id) : null;
+  if (!category) return missingContent(target);
 
   return (
     <>
       <BlogArchive
-        country={country}
-        basePath={categoryPath(country, slug)}
-        categorySlug={slug}
+        country={target.country}
+        basePath={target.path}
+        categorySlug={category.slug}
         categoryId={category.id}
         searchParams={searchParams}
       />
-      <JsonLd data={blogCategoryJsonLd(country, { ...category, slug })} />
+      <JsonLd data={blogCategoryJsonLd(target.country, category)} />
     </>
   );
 }
@@ -215,46 +199,43 @@ export async function BlogCategorySurface({
 // ---------------------------------------------------------------------------
 
 export async function blogTagMetadata(
-  country: CountryContext,
-  slug: string,
+  target: PublicTarget,
   params: BlogSearchParams,
 ): Promise<Metadata> {
-  const tag = await getTagBySlug(slug);
-  if (!tag) return { title: 'Tag not found', robots: { index: false, follow: false } };
+  const tag = target.id ? await getTagById(target.id) : null;
+  if (!tag) return notFoundMeta('Tag');
 
   const page = Math.max(1, Number(params.page) || 1);
 
   return buildMetadata({
     title: tag.seoTitle || `${tag.name} articles`,
     description: tag.seoDescription || tag.description,
-    path: `/blog/tag/${slug}`,
-    country,
+    publicPath: target.path,
+    country: target.country,
     canonicalUrl: tag.canonicalUrl,
     noIndex: tag.noIndex || page > 1,
   });
 }
 
 export async function BlogTagSurface({
-  country,
-  slug,
+  target,
   searchParams,
 }: {
-  country: CountryContext;
-  slug: string;
+  target: PublicTarget;
   searchParams: BlogSearchParams;
 }) {
-  const tag = await getTagBySlug(slug);
-  if (!tag) return redirectOrNotFound(country, `blog/tag/${slug}`);
+  const tag = target.id ? await getTagById(target.id) : null;
+  if (!tag) return missingContent(target);
 
   return (
     <>
       <BlogArchive
-        country={country}
-        basePath={tagPath(country, slug)}
-        tagSlug={slug}
+        country={target.country}
+        basePath={target.path}
+        tagSlug={tag.slug}
         searchParams={searchParams}
       />
-      <JsonLd data={blogTagJsonLd(country, { name: tag.name, slug })} />
+      <JsonLd data={blogTagJsonLd(target.country, tag)} />
     </>
   );
 }

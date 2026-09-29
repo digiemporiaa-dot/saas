@@ -12,7 +12,8 @@ import {
 } from '@/components/admin/products/product-country-pricing';
 import { listAccessibleCountries } from '@/lib/country/access';
 import { scopeForUser } from '@/lib/country/admin';
-import { countryPath } from '@/lib/country/routing';
+import { productHref } from '@/lib/urls/links';
+import { getUrlSnapshot } from '@/lib/urls/load';
 import { ContentStatusBadge } from '@/components/admin/lead-status-badge';
 import { buttonClasses } from '@/components/ui/button';
 import { decimalToString } from '@/lib/utils/money';
@@ -166,7 +167,9 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
     };
   });
 
-  // "View live" points at a market that actually publishes the product.
+  // "View live" points at a market that actually publishes the product, at
+  // the address the URL registry has for it there.
+  await getUrlSnapshot();
   const liveIn = countries.find((country) =>
     product.countries.some(
       (entry) => entry.countryId === country.id && entry.status === 'PUBLISHED',
@@ -192,7 +195,7 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
             </Link>
             {liveIn ? (
               <Link
-                href={countryPath(liveIn, `products/${product.slug}`)}
+                href={productHref(liveIn, product)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={buttonClasses('outline', 'sm')}
