@@ -8,6 +8,23 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- **A deleted brand or product category still showed on product pages**, in
+  the product's structured data and in its SEO score. Deleting one puts it in
+  the recycle bin with its products still pointing at it, so restoring it
+  reconnects them; while it is deleted it is no longer shown, linked or
+  described anywhere public.
+- **Two test suites had stopped running in CI**, which kept every deployment
+  at its quality gates. The settings and menu Server Actions imported the
+  icon components just to read the list of icon names; the list now lives in
+  a module of its own. The brand-deletion test checks the recycle-bin
+  behaviour rather than the hard delete it predates.
+
+---
+
 ## [1.2.0] — 2026-09-29
 
 ### Added

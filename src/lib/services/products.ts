@@ -89,9 +89,18 @@ const productSelect = {
   ctaForm: { select: { slug: true, isActive: true } },
   image: { select: { url: true, altText: true } },
   galleryIds: true,
-  category: { select: { id: true, name: true, slug: true } },
-  brand: { select: { id: true, name: true, slug: true } },
+  category: { select: { id: true, name: true, slug: true, deletedAt: true } },
+  brand: { select: { id: true, name: true, slug: true, deletedAt: true } },
 } satisfies Prisma.ProductSelect;
+
+/**
+ * A category or brand as visitors may see it. One in the recycle bin keeps
+ * its products pointing at it, so restoring it reconnects them — but while it
+ * is deleted it is not shown, linked or described in structured data.
+ */
+function shownTaxonomy<T extends { deletedAt: Date | null }>(row: T | null): T | null {
+  return row && !row.deletedAt ? row : null;
+}
 
 const countrySelect = {
   id: true,
@@ -190,12 +199,12 @@ export function toPublicProduct(row: ProductCountryRow, country: CountryContext)
     imageUrl: product.image?.url ?? null,
     imageAlt: product.image?.altText ?? product.name,
     galleryIds: toStringArray(product.galleryIds),
-    categoryName: product.category?.name ?? null,
-    categorySlug: product.category?.slug ?? null,
-    categoryId: product.category?.id ?? null,
-    brandName: product.brand?.name ?? null,
-    brandSlug: product.brand?.slug ?? null,
-    brandId: product.brand?.id ?? null,
+    categoryName: shownTaxonomy(product.category)?.name ?? null,
+    categorySlug: shownTaxonomy(product.category)?.slug ?? null,
+    categoryId: shownTaxonomy(product.category)?.id ?? null,
+    brandName: shownTaxonomy(product.brand)?.name ?? null,
+    brandSlug: shownTaxonomy(product.brand)?.slug ?? null,
+    brandId: shownTaxonomy(product.brand)?.id ?? null,
   };
 }
 

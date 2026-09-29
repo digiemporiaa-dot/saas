@@ -299,6 +299,11 @@ const asSpecs = (value: unknown): Array<{ label: string; value: string }> =>
 const pick = (local: string | null | undefined, global: string | null | undefined) =>
   local?.trim() ? local : (global ?? null);
 
+/** A category or brand in the recycle bin is still referenced but not shown. */
+function shownTaxonomy<T extends { deletedAt: Date | null }>(row: T | null): T | null {
+  return row && !row.deletedAt ? row : null;
+}
+
 export async function buildProductMarketDocuments(
   ctx: SeoContext,
   refs: readonly ProductMarketRef[],
@@ -309,8 +314,8 @@ export async function buildProductMarketDocuments(
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, deletedAt: null },
     include: {
-      category: { select: { id: true, name: true, slug: true } },
-      brand: { select: { id: true, name: true, slug: true } },
+      category: { select: { id: true, name: true, slug: true, deletedAt: true } },
+      brand: { select: { id: true, name: true, slug: true, deletedAt: true } },
       countries: true,
       sections: { orderBy: { sortOrder: 'asc' } },
     },
@@ -327,12 +332,15 @@ export async function buildProductMarketDocuments(
   const [draftCategories, draftBrands] = await Promise.all([
     draftCategoryIds.size > 0
       ? prisma.productCategory.findMany({
-          where: { id: { in: [...draftCategoryIds] } },
+          where: { id: { in: [...draftCategoryIds] }, deletedAt: null },
           select: { id: true, name: true, slug: true },
         })
       : [],
     draftBrandIds.size > 0
-      ? prisma.brand.findMany({ where: { id: { in: [...draftBrandIds] } }, select: { id: true, name: true, slug: true } })
+      ? prisma.brand.findMany({
+          where: { id: { in: [...draftBrandIds] }, deletedAt: null },
+          select: { id: true, name: true, slug: true },
+        })
       : [],
   ]);
 
@@ -373,11 +381,15 @@ export async function buildProductMarketDocuments(
       sidebar: stored('SIDEBAR'),
       imageId: shared?.imageId === undefined ? product.imageId : shared.imageId,
       galleryIds: shared?.galleryIds ?? asStrings(product.galleryIds),
+      // As the public page shows them: nothing for one in the recycle bin.
       category:
         categoryId === product.categoryId
-          ? product.category
+          ? shownTaxonomy(product.category)
           : (draftCategories.find((entry) => entry.id === categoryId) ?? null),
-      brand: brandId === product.brandId ? product.brand : (draftBrands.find((entry) => entry.id === brandId) ?? null),
+      brand:
+        brandId === product.brandId
+          ? shownTaxonomy(product.brand)
+          : (draftBrands.find((entry) => entry.id === brandId) ?? null),
     });
   }
 
