@@ -109,12 +109,38 @@ function legacyShadow(info: ContentInfo, relative: string): string | null {
   return null;
 }
 
-export async function runUrlScan(actor: Actor): Promise<ScanReport> {
+/** Carries a dry run's report out of the transaction it rolls back. */
+class DryRun extends Error {
+  constructor(readonly report: ScanReport) {
+    super('dry run');
+  }
+}
+
+/**
+ * Runs the scan. With `dryRun` the whole scan runs — under the same lock,
+ * against the same data — and is then rolled back, so the report says exactly
+ * what a real scan would do and nothing is written.
+ */
+export async function runUrlScan(actor: Actor, options: { dryRun?: boolean } = {}): Promise<ScanReport> {
   invalidateCountryCache();
   const countries = await listCountries();
   const root = countries.find((country) => country.isDefault) ?? countries[0];
   if (!root) throw new Error('No market is configured.');
 
+  try {
+    return await scan(actor, countries, root, Boolean(options.dryRun));
+  } catch (error) {
+    if (error instanceof DryRun) return error.report;
+    throw error;
+  }
+}
+
+function scan(
+  actor: Actor,
+  countries: readonly CountryContext[],
+  root: CountryContext,
+  dryRun: boolean,
+): Promise<ScanReport> {
   return prisma.$transaction(
     async (tx) => {
       await lockRegistry(tx);
@@ -148,6 +174,7 @@ export async function runUrlScan(actor: Actor): Promise<ScanReport> {
       report.collisions = report.collisions.slice(0, REPORT_LIMIT);
       report.redirectIssues = report.redirectIssues.slice(0, REPORT_LIMIT);
 
+      if (dryRun) throw new DryRun(report);
       await tx.urlSettings.update({
         where: { id: 'singleton' },
         data: { lastScanAt: new Date(), lastScan: report as unknown as Prisma.InputJsonValue },

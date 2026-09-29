@@ -79,6 +79,7 @@ export function PostForm({
   canEdit,
   mode,
   sidebarSlot,
+  urlHint = '/blog/…',
 }: {
   initial: PostFormValues;
   categories: Array<{ id: string; name: string; parentName?: string | null }>;
@@ -89,6 +90,8 @@ export function PostForm({
   mode: 'create' | 'edit';
   /** The per-post sidebar builder, rendered inside the Display tab. */
   sidebarSlot?: React.ReactNode;
+  /** Where articles live, from the URL pattern the site serves now. */
+  urlHint?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -240,7 +243,7 @@ export function PostForm({
                   />
                 </Field>
 
-                <Field label="URL" htmlFor="post-slug" error={errors.slug} hint="/blog/…">
+                <Field label="URL" htmlFor="post-slug" error={errors.slug} hint={urlHint}>
                   <Input
                     id="post-slug"
                     value={values.slug}

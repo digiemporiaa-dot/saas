@@ -8,7 +8,77 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ---
 
-## [Unreleased]
+## [1.2.0] — 2026-09-29
+
+### Added
+
+- **Slug & URL Manager** (Admin → SEO → Slug & URL Manager, `/admin/slug-manager`)
+  and the **URL registry** behind it. Every public address now belongs to
+  exactly one thing — a page, a product in one market, an article, a blog
+  category or tag, the blog archive, or a redirect — enforced by a unique
+  database key on the normalised address and one registry lock for writers.
+  Content is identified by id and market; its URL is an attribute that can
+  change without breaking a link.
+  - **Addresses are decided** by a custom address, then the market's pattern,
+    then the global pattern, then the built-in default (which is exactly what
+    the site used before, so nothing moves on upgrade). Prefixes can be
+    removed (`/products/dropbox` → `/dropbox`), replaced
+    (`/software/{slug}`), nested, or set per market
+    (`/ae/products/dropbox` → `/ae/dropbox`), and the blog can move
+    (`/blog/article` → `/insights/article`). A custom address is kept through
+    every pattern change; a title edit never changes a published address.
+  - **All URLs**: search, market, type, status and mode filters, pagination,
+    multi-select, an edit drawer with live availability, the final URL on the
+    site's domain, the inherited pattern, redirect details and *Reset to the
+    inherited pattern* with a preview. **URL Patterns**, **Redirects**,
+    **Conflicts** (who owns a taken address, and free alternatives),
+    **History** (with a validated restore) and **URL Health** (recorded 404s,
+    redirect problems, broken internal links — from real data, without
+    fetching anything).
+  - **Automatic permanent redirects** whenever an address that has been public
+    changes. Redirects point at content by id, so they never chain, and every
+    earlier address goes straight to the current one. Loops and collisions are
+    refused; query strings, UTMs included, are carried over.
+  - **Bulk changes** — selected rows, prefix replacement, pattern changes and
+    CSV import/export keyed by id, market and target path — are previewed row
+    by row (change, unchanged, conflict, invalid, excluded, duplicate) and
+    applied only if the preview is still current. Large ones run in batches
+    with progress and can be resumed.
+  - **Permissions**: `seo.manage` to open it, plus permission to edit the kind
+    of content and access to its market for every change, checked row by row
+    on the server.
+  - Content forms, duplication, restore from trash, market copies and market
+    prefix changes go through the same validation.
+  - Every link — cards, menus, CTAs, breadcrumbs, the market switcher,
+    canonical and Open Graph URLs, JSON-LD, sitemaps, hreflang and SEO
+    Intelligence — is built from the registry, and another market's version of
+    a page or product is found by identity rather than by slug. Explicit
+    canonical URLs are listed for review, never replaced; stored links that
+    exactly match a moved address can be rewritten on request.
+  - Ships **switched off**. Adopt it with a scan
+    (`npm run urls:backfill`, `-- --dry-run` to rehearse), a review of
+    Conflicts, and *Switch on*. Switching off is the rollback: the previous
+    router takes over at once, and addresses the registry gave out redirect
+    temporarily to where that router serves the content. See
+    [docs/URL-REGISTRY.md](./docs/URL-REGISTRY.md).
+- **The bare domain redirects to the site address.** A request on the `www` or
+  bare twin of `NEXT_PUBLIC_SITE_URL` is sent to it with a 308, keeping path and
+  query. `CANONICAL_HOST_REDIRECT=false` switches it off where a proxy already
+  does it.
+
+### Changed
+
+- **Admin → SEO → Redirects** now lives in the Slug & URL Manager's Redirects
+  tab; the old address forwards there. Redirects can target content by id, be
+  enabled or disabled, carry a note, and show hits and when they last fired.
+- `Redirect.source` is no longer unique on its own: one owner per address is
+  now enforced by the registry, per market. The migration
+  (`20260929120000_url_registry`) is additive otherwise — no data is rewritten
+  and no public address changes.
+- The address hints in the product, article, category and tag forms follow the
+  URL patterns the site serves.
+- `npm run market:clone` ends with a reminder to run a URL scan, because content
+  it writes straight to the database is not registered until then.
 
 ### Fixed
 

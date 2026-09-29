@@ -353,12 +353,15 @@ export function withForwardedQuery(
   const queryIndex = withoutHash.indexOf('?');
   const base = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
   const merged = new URLSearchParams(queryIndex >= 0 ? withoutHash.slice(queryIndex + 1) : '');
+  // Only the destination's own parameters win; a visitor's repeated ones
+  // (`?tag=a&tag=b`) are all carried over.
+  const own = new Set(merged.keys());
 
   for (const [key, value] of params) {
     // The router's own cache-busting parameter never belongs to a destination.
     if (key === '_rsc') continue;
     if (external && !ATTRIBUTION_PARAMS.test(key)) continue;
-    if (merged.has(key)) continue;
+    if (own.has(key)) continue;
     merged.append(key, value);
   }
 

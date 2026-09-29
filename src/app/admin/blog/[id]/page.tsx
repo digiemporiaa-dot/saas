@@ -16,6 +16,7 @@ import { buttonClasses } from '@/components/ui/button';
 import { getCountryById, getDefaultCountry, listActiveCountries } from '@/lib/country/registry';
 import { postPath } from '@/lib/cms/blog-render';
 import { getUrlSnapshot } from '@/lib/urls/load';
+import { effectivePattern, patternHint } from '@/lib/urls/hints';
 import { parseBlockContent } from '@/lib/cms/blocks';
 
 export const dynamic = 'force-dynamic';
@@ -174,6 +175,7 @@ export default async function EditPost({ params }: { params: Promise<{ id: strin
         canPublish={userCan(user, 'blog.publish')}
         canEdit={userCan(user, 'blog.edit')}
         mode="edit"
+        urlHint={patternHint(await effectivePattern('BLOG_POST', null))}
         sidebarSlot={
           post.sidebarMode === 'CUSTOM' ? (
             <PostSidebarBuilder

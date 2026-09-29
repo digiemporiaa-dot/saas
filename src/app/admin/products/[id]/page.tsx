@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db/prisma';
 import { requirePermission, userCan } from '@/lib/auth/guards';
 import { AdminPageHeader } from '@/components/admin/page-header';
 import { ProductForm, type ProductFormValues } from '@/components/admin/products/product-form';
+import { effectivePattern, patternHint } from '@/lib/urls/hints';
 import {
   ProductCountryPricing,
   type ProductCountryValues,
@@ -216,6 +217,7 @@ export default async function EditProduct({ params }: { params: Promise<{ id: st
         // Saving this form updates the product in the market being worked
         // in, so that is the product page its SEO score describes.
         seoMarket={{ id: scope.country.id, name: scope.country.name }}
+        urlHint={patternHint(await effectivePattern('PRODUCT', scope.country.id), scope.country.slug)}
       />
 
       <ProductCountryPricing

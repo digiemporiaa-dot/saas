@@ -8,6 +8,7 @@ import { BlogCategoryManager } from '@/components/admin/blog/category-manager';
 import type { CategoryRow } from '@/components/admin/category-tree-manager';
 import { Card } from '@/components/ui/card';
 import { buttonClasses } from '@/components/ui/button';
+import { effectivePattern } from '@/lib/urls/hints';
 
 export const metadata: Metadata = { title: 'Blog categories' };
 export const dynamic = 'force-dynamic';
@@ -95,6 +96,7 @@ export default async function BlogCategories() {
           rows={categories}
           canEdit={userCan(user, 'blog.edit')}
           canDelete={userCan(user, 'blog.delete')}
+          urlPattern={await effectivePattern('BLOG_CATEGORY', null)}
         />
       </Card>
     </div>

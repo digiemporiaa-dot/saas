@@ -7,7 +7,7 @@ import {
   redirectLookupPaths,
   isSelfRedirect,
 } from '@/lib/seo/redirect-paths';
-import { liveRoutePath } from '@/lib/urls/live';
+import { liveRoutePath, previousRouterAddressFor, previousRouterPath } from '@/lib/urls/live';
 import { afterResponse, countRedirectHit, recordNotFound } from '@/lib/urls/health';
 import type { UrlContentType } from '@/lib/urls/types';
 import type { CountryContext } from '@/lib/country/types';
@@ -42,12 +42,17 @@ export async function findRedirect(
   if (!rule) return null;
 
   let destination: string | null = rule.destination;
+  let permanent = rule.type === 'PERMANENT';
   if (rule.targetEntityId && rule.targetCountryId && rule.targetType) {
-    destination = await liveRoutePath(
-      rule.targetType as UrlContentType,
-      rule.targetEntityId,
-      rule.targetCountryId,
-    );
+    const type = rule.targetType as UrlContentType;
+    // Where the content is served now — by the previous router, which is the
+    // one answering whenever this module is reached.
+    destination = await previousRouterPath(type, rule.targetEntityId, rule.targetCountryId);
+    // Content the registry has moved lives here only until the registry is
+    // switched back on, so the redirect is temporary for now: a permanent one
+    // would be cached, and would outlive the rollback.
+    const registered = await liveRoutePath(type, rule.targetEntityId, rule.targetCountryId);
+    if (destination && registered && registered !== destination) permanent = false;
   }
   if (!destination || isSelfRedirect(rule.source, destination)) return null;
 
@@ -55,7 +60,7 @@ export async function findRedirect(
   const id = rule.id;
   afterResponse(() => countRedirectHit(id));
 
-  return { destination, permanent: rule.type === 'PERMANENT' };
+  return { destination, permanent };
 }
 
 /**
@@ -80,6 +85,10 @@ export async function redirectOrNotFound(
     if (target.permanent) permanentRedirect(target.destination);
     redirect(target.destination);
   }
+
+  // An address the registry gave out before it was switched off.
+  const previous = await previousRouterAddressFor(full);
+  if (previous) redirect(previous);
 
   let from: string | null = null;
   try {

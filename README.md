@@ -27,6 +27,7 @@ information.
 - [Deploying to Microsoft Azure](#deploying-to-microsoft-azure)
 - [File storage: local, S3 and Cloudflare R2](#file-storage-local-s3-and-cloudflare-r2)
 - [Backup and restore](#backup-and-restore)
+- [URLs, slugs and redirects](#urls-slugs-and-redirects)
 - [Forms](#forms)
 - [Email and SMTP](#email-and-smtp)
 - [Marketing and tracking](#marketing-and-tracking)
@@ -176,6 +177,7 @@ openssl rand -base64 32   # ENCRYPTION_KEY
 | `npm run db:seed` | Seed roles, permissions, the admin and demo content |
 | `npm run db:studio` | Prisma Studio |
 | `npm run db:rehearse` | Rehearse pending migrations against a restored production dump |
+| `npm run urls:backfill` | Register every public address in the URL registry (`-- --dry-run` to report without writing) |
 | `./scripts/smoke.sh` | Boot the production build and run the HTTP smoke suite |
 
 ---
@@ -478,6 +480,36 @@ default.
 
 Full setup, the Coolify volume and cron configuration, retention rules and
 troubleshooting: **[docs/BACKUP-RESTORE.md](docs/BACKUP-RESTORE.md)**.
+
+---
+
+## URLs, slugs and redirects
+
+Every public address belongs to exactly one thing — a page, a product in one
+market, an article, a redirect — recorded in the **URL registry** and managed in
+**Admin → SEO → Slug & URL Manager**:
+
+- move `/products/dropbox` to `/dropbox` for every product with one pattern, or
+  for one market only (`/ae/products/dropbox` → `/ae/dropbox`);
+- give one page or product its own address (`/software/dropbox-business`);
+- move the blog (`/blog/article` → `/insights/article`);
+- bulk changes and CSV import/export, each previewed before anything moves;
+- automatic permanent redirects from every address that has been public,
+  straight to the content — never through a chain — with query strings kept;
+- conflicts, a full history with restore, and URL Health (404s, broken
+  redirects, broken internal links).
+
+The registry ships switched off, so upgrading changes nothing. To adopt it:
+deploy, run the scan (`npm run urls:backfill -- --dry-run` to rehearse it),
+review Conflicts, then switch it on in the manager. Switching it off again is
+the rollback.
+
+Requests on the bare domain are redirected to the configured `www` host (or the
+other way round), keeping path and query; set `CANONICAL_HOST_REDIRECT=false`
+if a proxy already does it.
+
+Full reference — how an address is decided, rollout, recovery, permissions and
+limitations: **[docs/URL-REGISTRY.md](docs/URL-REGISTRY.md)**.
 
 ---
 

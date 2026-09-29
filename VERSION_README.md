@@ -1,6 +1,6 @@
 # Versioning
 
-**Current release:** `1.1.0` — released 2026-09-16
+**Current release:** `1.2.0` — released 2026-09-29
 
 Everything about how this application is versioned: where the number lives, how
 Settings reads it, how to move it, and what it is *not*.
@@ -164,30 +164,36 @@ been published; version `0` is a real, valid version and not a draft. See
 
 ## This release
 
-**1.1.0 — 2026-09-16.** Full detail in [CHANGELOG.md](./CHANGELOG.md).
+**1.2.0 — 2026-09-29.** Full detail in [CHANGELOG.md](./CHANGELOG.md).
 
-- Public forms submit again on a site with no consent notice published — they
-  were rejecting every submission.
-- One consent tick box per form, with enquiry, marketing and Terms still
-  recorded separately from what was actually displayed.
-- Marketing wording may be left empty, and is then hidden completely.
-- Marketing can no longer be bundled into a required tick box.
-- Publishing a country notice no longer deactivates other markets' notices.
-- Admin → Settings → Application information.
+- **Slug & URL Manager** (Admin → SEO) and the **URL registry**: one owner per
+  public address, custom addresses, global and per-market URL patterns,
+  automatic permanent redirects without chains, bulk changes and CSV, conflicts,
+  history with restore, and URL Health. Ships switched off; see
+  [docs/URL-REGISTRY.md](./docs/URL-REGISTRY.md) for the rollout.
+- The bare domain redirects to the site address (`www`), keeping path and
+  query.
+- The market noindex switch, market sitemaps and per-market product deletion
+  fixes listed under 1.2.0 in the changelog.
+
+Upgrading: deploy (the one migration, `20260929120000_url_registry`, is
+additive and runs on start), then in Slug & URL Manager run the scan, review
+Conflicts and switch the registry on. Until it is switched on the site is
+served exactly as by 1.1.x.
 
 ### Verification
 
 | Check | Result |
 |---|---|
-| `npm test` | 912 passed, 61 files |
+| `npm test` | 1,324 passed. 2 failures that also fail on the previous release's commit, unchanged: `tests/integration/settings.test.ts` cannot load (it imports a `.tsx` file vitest cannot parse), and `cms-upgrade` "keeps products when their brand is deleted" |
 | `npm run typecheck` | clean |
 | `npm run lint` | clean |
-| `npm run build` | succeeded; version and build commit inlined into the output |
-| Browser — no notice published | one tick box; submits; evidence records version 0 |
-| Browser — notice published | submits; evidence records the published version |
-| Browser — box unticked | refused with its own message, inputs kept, button released, no lead |
-| Browser — marketing wording cleared | nothing rendered, no empty elements left behind |
-| Browser — marketing on a required box | dropped from display; recorded `marketingPresented = false` |
-| Browser — Settings | reads 1.1.0, the release date and the build commit; no editable control |
-| Browser — 320/375/768px | no horizontal overflow; keyboard focus and Space work |
-| Migration | additive; applied to a database with existing data, nothing rewritten |
+| `npm run build` | succeeded |
+| Upgrade rehearsal | a pre-registry database restored, migrated, UAE filled with `market:clone`: 40 public addresses identical before and after the scan and switch-on — status, `Location`, canonical, hreflang, robots — except a wrong-case address, which now redirects to the canonical spelling instead of answering 404; sitemaps identical |
+| Scan | dry run wrote nothing; the scan registered 30 addresses with no collisions; a second scan registered 0 |
+| Browser — the four examples, through the UI | `/products/x` → `/x` (global pattern), `/ae/products/x` → `/ae/x` (UAE pattern), `/x` → `/software/dropbox-business` (custom address), `/blog/x` → `/insights/x` (blog pattern): every old address answers one 308 to the current one, UTMs kept |
+| Links, canonical, hreflang, JSON-LD, switcher, sitemaps | all use the new addresses; the UAE equivalent of a product with a custom Indian address is found by identity |
+| Drafts | 404, not in the sitemap, address reserved |
+| Switching off | old addresses serve again; registry addresses answer 307 to them; links and canonicals revert; switching on restores everything |
+| Bare domain | `dropboxreseller.com/pricing?utm_source=x` → 308 `https://www.dropboxreseller.com/pricing?utm_source=x`; health probes and other hosts untouched; `CANONICAL_HOST_REDIRECT=false` turns it off |
+| Browser — 390 and 768 px | every tab and the edit drawer without horizontal overflow |

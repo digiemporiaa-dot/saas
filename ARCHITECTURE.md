@@ -469,6 +469,34 @@ Redirects are checked only when a request would otherwise 404 — the lookup cos
 nothing on the happy path. Saving a redirect walks the existing chain and
 refuses anything that would close a loop.
 
+### Public addresses: the URL registry
+
+Every public address is owned by exactly one thing, recorded in `UrlRoute`
+(`pathKey` unique): content by `(entityId, countryId)`, or a redirect rule.
+Content identity and public path are separate, so every link is built from the
+id (`lib/urls/links.ts`) and any address can change without breaking one.
+
+```
+request ──▶ public route (catch-all or /products, /blog/…)
+              │
+              ▼
+        resolvePublic(path)        lib/urls/resolve.ts
+              │  registry on:  one lookup of pathKey
+              │     CONTENT   → render that content by id (404 unless live)
+              │     REDIRECT  → 308/307 before rendering, query kept
+              │     none      → 404, recorded for URL Health
+              │  registry off: the previous slug-based rules, unchanged
+              ▼
+        surface renders by id
+```
+
+Addresses are decided by custom address → market pattern → global pattern →
+built-in default, and written only under one PostgreSQL advisory lock with
+optimistic versions. Each server holds the registry in memory and rebuilds it
+when `UrlSettings.version` changes, which costs one primary-key read per
+request. The registry ships switched off; switching it off again is the
+rollback. Full reference: [docs/URL-REGISTRY.md](docs/URL-REGISTRY.md).
+
 ---
 
 ## Branding at runtime

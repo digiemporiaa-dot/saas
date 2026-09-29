@@ -143,6 +143,7 @@ export function ProductForm({
   formIdBySlug,
   mode,
   seoMarket = null,
+  urlHint = '/products/…',
 }: {
   initial: ProductFormValues;
   categories: Array<{ id: string; name: string }>;
@@ -154,6 +155,8 @@ export function ProductForm({
    * page the SEO score describes. Null before the product exists.
    */
   seoMarket?: { id: string; name: string } | null;
+  /** Where products live, from the URL pattern the site serves now. */
+  urlHint?: string;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -332,7 +335,7 @@ export function ProductForm({
               </Field>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="URL" htmlFor="slug" error={errors.slug} hint="/products/…">
+                <Field label="URL" htmlFor="slug" error={errors.slug} hint={urlHint}>
                   <Input
                     id="slug"
                     value={values.slug}

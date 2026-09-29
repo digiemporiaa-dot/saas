@@ -1,9 +1,13 @@
 import 'server-only';
 import { prisma } from '@/lib/db/prisma';
+import { listCountries } from '@/lib/country/registry';
 import { publishedPageWhere } from '@/lib/services/pages';
 import { publishedPostWhere } from '@/lib/services/blog';
 import { publishedProductWhere } from '@/lib/services/products';
-import type { UrlContentType } from './types';
+import { loadContentInfo } from './content';
+import { fillPattern, joinMarket, pathKey } from './path';
+import { entityKey } from './snapshot';
+import { DEFAULT_PATTERNS, ROOT_ONLY_TYPES, isPageType, type UrlContentType } from './types';
 
 /**
  * Whether content is public, by the same rules its own page applies.
@@ -63,3 +67,62 @@ export async function isLive(type: UrlContentType, entityId: string, countryId: 
   }
 }
 
+
+// ---------------------------------------------------------------------------
+// While the registry is switched off
+// ---------------------------------------------------------------------------
+
+/**
+ * Where the previous router serves content — `/products/<slug>`,
+ * `/blog/<slug>`, a page at its own path — or null unless it is public.
+ *
+ * Only used while the registry is switched off, which is the rollback: the
+ * previous router serves content at these addresses whatever the registry
+ * says, so that is where a redirect to the content has to go.
+ */
+export async function previousRouterPath(
+  type: UrlContentType,
+  entityId: string,
+  countryId: string,
+): Promise<string | null> {
+  if (!(await isLive(type, entityId, countryId))) return null;
+  const countries = await listCountries();
+  const root = countries.find((country) => country.isDefault) ?? countries[0];
+  const market = ROOT_ONLY_TYPES.has(type) ? root : countries.find((country) => country.id === countryId);
+  if (!root || !market) return null;
+  if (type === 'BLOG_ARCHIVE') return joinMarket(root.slug, DEFAULT_PATTERNS.BLOG_ARCHIVE);
+  const info = (await loadContentInfo([{ type, entityId, countryId }], root.id)).get(entityKey(entityId, countryId));
+  if (!info) return null;
+  return isPageType(type)
+    ? joinMarket(market.slug, `/${info.pageSlug ?? info.slug}`)
+    : joinMarket(market.slug, fillPattern(DEFAULT_PATTERNS[type], info.slug));
+}
+
+/**
+ * While the registry is switched off, where an address it gave out has gone.
+ *
+ * Addresses the registry handed out — `/dropbox` for a product the previous
+ * router serves at `/products/dropbox` — would otherwise answer 404 for as
+ * long as it stays off, although the content is still there. They lead to
+ * the content's address under the previous router instead. Callers send them
+ * there with a temporary redirect: switching the registry back on makes them
+ * the real addresses again, and a cached permanent redirect would outlive that.
+ */
+export async function previousRouterAddressFor(path: string): Promise<string | null> {
+  const key = pathKey(path);
+  if (!key) return null;
+  const claim = await prisma.urlRoute.findUnique({ where: { pathKey: key }, include: { redirect: true } });
+  const target =
+    claim?.kind === 'CONTENT' && claim.type && claim.entityId
+      ? { type: claim.type as UrlContentType, entityId: claim.entityId, countryId: claim.countryId }
+      : claim?.redirect?.isActive && claim.redirect.targetType && claim.redirect.targetEntityId && claim.redirect.targetCountryId
+        ? {
+            type: claim.redirect.targetType as UrlContentType,
+            entityId: claim.redirect.targetEntityId,
+            countryId: claim.redirect.targetCountryId,
+          }
+        : null;
+  if (!target) return null;
+  const destination = await previousRouterPath(target.type, target.entityId, target.countryId);
+  return destination && pathKey(destination) !== key ? destination : null;
+}

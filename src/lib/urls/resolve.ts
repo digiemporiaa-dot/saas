@@ -167,7 +167,7 @@ async function retiredBlogPrefix(
   const rest = pathKey(stripMarket(market.slug, key));
   if (!rest || rest === '/') return;
   const root = countries.find((country) => country.isDefault);
-  const claim = await prisma.urlRoute.findUnique({ where: { pathKey: rest } });
+  const claim = await prisma.urlRoute.findUnique({ where: { pathKey: rest }, include: { redirect: true } });
   if (
     claim?.kind === 'CONTENT' &&
     claim.type &&
@@ -175,6 +175,19 @@ async function retiredBlogPrefix(
     claim.countryId === root?.id
   ) {
     permanentRedirect(withForwardedQuery(claim.path, new URLSearchParams(search)));
+  }
+  // The root address itself has moved since (`/blog/x` → `/insights/x`): go
+  // straight to where the article lives now, not through a second redirect.
+  const rule = claim?.redirect;
+  if (
+    rule?.isActive &&
+    rule.targetType &&
+    rule.targetEntityId &&
+    rule.targetCountryId === root?.id &&
+    ROOT_ONLY_TYPES.has(rule.targetType as UrlContentType)
+  ) {
+    const destination = await liveRoutePath(rule.targetType as UrlContentType, rule.targetEntityId, rule.targetCountryId);
+    if (destination) permanentRedirect(withForwardedQuery(destination, new URLSearchParams(search)));
   }
 }
 

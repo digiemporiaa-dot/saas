@@ -46,3 +46,38 @@ export function siteAddressMismatch(siteUrl: string, requestHost: string | null)
     suggested: `${configured.protocol}//${requestHost}`,
   };
 }
+
+/**
+ * Where a request on the site's other spelling belongs.
+ *
+ * Redirect rules match paths, never hosts, so "send https://example.com to
+ * https://www.example.com" cannot be written as one. It does not need to be:
+ * the site address in the environment already says which spelling is
+ * canonical, and a request that arrives on its twin — the same domain with or
+ * without `www.` — is sent there, same path, same query, with a permanent 308.
+ *
+ * Only that exact twin is redirected. Any other host (a container's internal
+ * name, a health probe's IP, a preview domain) is left alone, so this can
+ * never lock anybody out of the site.
+ */
+export function canonicalHostRedirect(
+  siteUrl: string,
+  requestHost: string | null,
+  pathAndQuery: string,
+): string | null {
+  if (!requestHost) return null;
+  let configured: URL;
+  try {
+    configured = new URL(siteUrl);
+  } catch {
+    return null;
+  }
+  const want = configured.hostname.toLowerCase();
+  const got = requestHost.replace(/:\d+$/, '').toLowerCase();
+  if (!want || got === want) return null;
+  // A local or bare-IP site address has no public twin to speak of.
+  if (want === 'localhost' || want.endsWith('.localhost') || /^[\d.]+$|^\[/.test(want)) return null;
+  const twin = want.startsWith('www.') ? want.slice(4) : `www.${want}`;
+  if (got !== twin) return null;
+  return `${configured.origin}${pathAndQuery.startsWith('/') ? pathAndQuery : `/${pathAndQuery}`}`;
+}
