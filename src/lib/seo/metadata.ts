@@ -91,10 +91,13 @@ export async function buildMetadata(input: SeoInput): Promise<Metadata> {
 
   /*
    * Three independent switches, any one of which is enough: the whole site, the
-   * market, or this page. The market-level one is a meta tag and header rather
-   * than a robots.txt rule on purpose — a page a crawler is blocked from
-   * fetching never has its noindex read, so blocking would achieve the
-   * opposite of what it looks like.
+   * market, or this page. The market switch is read from this page's own
+   * market — never another's — and a market with no settings row is indexable.
+   * It is a meta tag rather than a robots.txt rule on purpose: a page a crawler
+   * is blocked from fetching never has its noindex read, so blocking would
+   * achieve the opposite of what it looks like. No X-Robots-Tag header is sent
+   * for public pages; only /admin and the sign-in screen get one, from
+   * next.config.mjs.
    */
   const noIndex =
     seo.noIndexSite || Boolean(local.noIndexCountry) || Boolean(input.noIndex);

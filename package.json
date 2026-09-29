@@ -25,6 +25,7 @@
     "seed:prod": "node prisma/seed.mjs",
     "verify:production": "node scripts/verify-production.mjs",
     "db:rehearse": "node scripts/rehearse-migration.mjs",
+    "check:indexing": "node scripts/check-indexing.mjs",
     "market:clone": "node scripts/clone-market.mjs",
     "release": "node scripts/release.mjs"
   },

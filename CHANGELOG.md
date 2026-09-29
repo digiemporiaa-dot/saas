@@ -12,6 +12,30 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ### Fixed
 
+- **A market's "Ask search engines not to index this market" switch sprang
+  back on, and every page of the market sent noindex.** Two causes, both in
+  saving the market's settings:
+  - the form sends every value as text, and `z.coerce.boolean()` read
+    `"false"` as true, so every save switched the market to noindex and out
+    of the sitemaps (fixed in the entry below; now covered by tests);
+  - the form refused values the application itself had stored: the
+    multi-country migration copies the site's default title (up to 240
+    characters) and email (up to 200) into the root market, where the form
+    allowed only 200 and 160. The whole save was rejected with "Please correct
+    the highlighted fields" and nothing highlighted, so the switches stayed on.
+    The limits now match the global settings, and a refused save names the
+    field, shows the message beside it and moves to it.
+- **A market asked not to be indexed was still listed in the sitemaps**, and
+  the blog — served from the root market — stayed listed when the root market
+  was excluded or noindexed. Sitemaps now list only markets that are neither,
+  hreflang alternates skip them too, and the site-wide noindex switch withholds
+  every market.
+- **The settings screen said the market noindex is also sent as an
+  `X-Robots-Tag` header.** It never was: public pages carry it as a robots meta
+  tag, and only `/admin` and the sign-in screen send the header. The text now
+  says what happens. `npm run check:indexing -- https://your-domain / /ae`
+  reports both, plus robots.txt and the sitemaps, for any deployed site.
+
 - **"Off" switches in country settings and country pricing saved as "on".**
   `z.coerce.boolean()` reads any non-empty string as true, so a form posting
   `"false"` for *Hide this country from search engines*, *Leave this country

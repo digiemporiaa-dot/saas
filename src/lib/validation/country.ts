@@ -15,7 +15,7 @@ import { primaryKeywordShape, rejectDuplicateKeywords } from '@/lib/seo/keywords
 const optional = (max: number) =>
   z
     .string()
-    .max(max)
+    .max(max, `Use ${max} characters or fewer.`)
     .optional()
     .nullable()
     .transform((value) => (value?.trim() ? value.trim() : null));
@@ -84,6 +84,14 @@ export const countrySchema = z.object({
 
 export type CountryInput = z.infer<typeof countrySchema>;
 
+/*
+ * Every limit here is at least the limit of the global setting the same value
+ * can come from. The multi-country migration and the seed copy the site's
+ * email, default title and the rest into the root market's row, and a market
+ * row holding a value this schema refuses can never be saved again — not even
+ * to switch its crawler settings off, which is how "Ask search engines not to
+ * index this market" came to spring back on after every save.
+ */
 export const countrySettingsSchema = z.object({
   // --- crawler rules --------------------------------------------------------
   // Free text, one path per line. The compiler in lib/seo/robots.ts is what
@@ -98,8 +106,9 @@ export const countrySettingsSchema = z.object({
   salesPhone: optional(40),
   supportPhone: optional(40),
   whatsappNumber: optional(40),
-  salesEmail: optional(160),
-  supportEmail: optional(160),
+  // WebsiteSettings.contactEmail allows 200.
+  salesEmail: optional(200),
+  supportEmail: optional(200),
   addressLine1: optional(200),
   addressLine2: optional(200),
   city: optional(120),
@@ -112,7 +121,8 @@ export const countrySettingsSchema = z.object({
   headerCtaLabel: optional(60),
   headerCtaUrl: optional(300),
   salesCtaText: optional(200),
-  defaultTitle: optional(200),
+  // SeoSettings.defaultTitle allows 240.
+  defaultTitle: optional(240),
   titleTemplate: optional(120),
   defaultDescription: optional(400),
   defaultOgImageUrl: optional(500),

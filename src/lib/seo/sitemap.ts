@@ -2,7 +2,8 @@ import 'server-only';
 import { prisma } from '@/lib/db/prisma';
 import { publishedPageWhere } from '@/lib/services/pages';
 import { publishedPostWhere } from '@/lib/services/blog';
-import { listIndexableCountries } from '@/lib/country/registry';
+import { getDefaultCountry, listIndexableCountries } from '@/lib/country/registry';
+import { getSeoSettings } from '@/lib/services/settings';
 import { countryPath } from '@/lib/country/routing';
 import { siteUrl } from '@/lib/env';
 import type { CountryContext } from '@/lib/country/types';
@@ -20,6 +21,28 @@ import type { CountryContext } from '@/lib/country/types';
  * sync therefore stays out until someone publishes it, which is the point of
  * importing as a draft.
  */
+
+/**
+ * The markets a sitemap may list.
+ *
+ * Active and published, and neither left out of the sitemaps nor asked not to
+ * be indexed in their settings. A market that sends noindex on every page and
+ * lists those pages in a sitemap is telling search engines two opposite
+ * things. The whole site's noindex switch withholds every market.
+ */
+export async function listSitemapCountries(): Promise<CountryContext[]> {
+  const [countries, withheld, seo] = await Promise.all([
+    listIndexableCountries(),
+    prisma.countrySettings.findMany({
+      where: { OR: [{ excludeFromSitemap: true }, { noIndexCountry: true }] },
+      select: { countryId: true },
+    }),
+    getSeoSettings(),
+  ]);
+  if (seo.noIndexSite) return [];
+  const skip = new Set(withheld.map((row) => row.countryId));
+  return countries.filter((country) => !skip.has(country.id));
+}
 
 /** The protocol's ceiling. Split beyond this rather than emit an invalid file. */
 export const MAX_URLS_PER_SITEMAP = 45_000;
@@ -102,6 +125,11 @@ export async function countryUrls(country: CountryContext): Promise<SitemapUrl[]
  */
 export async function blogUrls(): Promise<SitemapUrl[]> {
   const origin = base();
+  // The blog is served from the root market, so it is listed only when that
+  // market is: its noindex and its sitemap switch cover the blog too.
+  const [root, listed] = await Promise.all([getDefaultCountry(), listSitemapCountries()]);
+  if (!listed.some((country) => country.id === root.id)) return [];
+
   const [settings, posts, categories, tags] = await Promise.all([
     prisma.blogSettings.findUnique({ where: { id: 'singleton' }, select: { noIndex: true } }),
     prisma.blogPost.findMany({
@@ -175,7 +203,9 @@ export async function withAlternates(
   country: CountryContext,
   urls: SitemapUrl[],
 ): Promise<SitemapUrl[]> {
-  const countries = await listIndexableCountries();
+  // A market withheld from the sitemaps is not announced as an alternate
+  // either: it is asking not to be indexed, or not to be listed.
+  const countries = await listSitemapCountries();
   if (countries.length < 2) return urls;
 
   const origin = base();
@@ -263,20 +293,14 @@ export function renderIndex(children: readonly SitemapChild[]): string {
  * Every child sitemap the index should list.
  *
  * A market with nothing published contributes no sitemap rather than an empty
- * one, and a market excluded in its settings contributes none at all.
+ * one, and a market withheld in its settings contributes none at all.
  */
 export async function sitemapChildren(): Promise<SitemapChild[]> {
-  const countries = await listIndexableCountries();
-  const excluded = await prisma.countrySettings.findMany({
-    where: { excludeFromSitemap: true },
-    select: { countryId: true },
-  });
-  const skip = new Set(excluded.map((row) => row.countryId));
+  const countries = await listSitemapCountries();
 
   const children: SitemapChild[] = [];
 
   for (const country of countries) {
-    if (skip.has(country.id)) continue;
     const urls = await countryUrls(country);
     if (urls.length === 0) continue;
 
@@ -318,15 +342,9 @@ export async function childUrls(name: string): Promise<SitemapUrl[] | null> {
   const page = match?.[2] ? Number(match[2]) - 1 : 0;
   const slug = slugPart === 'root' ? '' : slugPart;
 
-  const countries = await listIndexableCountries();
+  const countries = await listSitemapCountries();
   const country = countries.find((candidate) => candidate.slug === slug);
   if (!country) return null;
-
-  const settings = await prisma.countrySettings.findUnique({
-    where: { countryId: country.id },
-    select: { excludeFromSitemap: true },
-  });
-  if (settings?.excludeFromSitemap) return null;
 
   const all = await withAlternates(country, await countryUrls(country));
   const slice = all.slice(page * MAX_URLS_PER_SITEMAP, (page + 1) * MAX_URLS_PER_SITEMAP);
