@@ -39,7 +39,7 @@ export async function listAuditTargets(
   const [pages, pageSections, markets, productSections, posts] = await Promise.all([
     prisma.page.findMany({
       where: { deletedAt: null, ...countryWhere },
-      select: { id: true, countryId: true, updatedAt: true },
+      select: { id: true, countryId: true, updatedAt: true, city: { select: { updatedAt: true } } },
     }),
     prisma.pageSection.groupBy({
       by: ['pageId'],
@@ -72,8 +72,12 @@ export async function listAuditTargets(
       entityType: 'PAGE',
       entityId: page.id,
       countryId: page.countryId,
-      contentUpdatedAt: latest(page.updatedAt, sections?._max.updatedAt),
-      contentFingerprint: `${time(page.updatedAt)}|${sections?._count._all ?? 0}|${time(sections?._max.updatedAt)}`,
+      contentUpdatedAt: latest(page.updatedAt, sections?._max.updatedAt, page.city?.updatedAt),
+      // A city page also inherits from its city, so a change to the city moves
+      // it. Pages outside a city keep exactly the fingerprint they had.
+      contentFingerprint:
+        `${time(page.updatedAt)}|${sections?._count._all ?? 0}|${time(sections?._max.updatedAt)}` +
+        (page.city ? `|city:${time(page.city.updatedAt)}` : ''),
     });
   }
 

@@ -10,6 +10,40 @@ This project uses [semantic versioning](https://semver.org): MAJOR.MINOR.PATCH.
 
 ## [Unreleased]
 
+### Added
+
+- **Cities** (Admin → Locations → Cities, `/admin/cities`): local address
+  spaces inside a market — `/delhi` in the root market, `/ae/dubai` in the UAE.
+  Country stays the market; a city holds a slug, an optional region, contact
+  details and search defaults; its landing page and every other page in it
+  are ordinary pages built in the Page Builder.
+  - **One owner per address, still.** The URL registry files a page under a
+    city from its address and refuses anything else in a city's space; a
+    city's slug is refused while anything else holds its address or content
+    beneath it, with the address and its owner named. No per-city routes.
+  - **Status**: an inactive city's pages answer 404 until it is switched back
+    on, and nothing is deleted; an unpublished, noindexed or excluded city's
+    pages leave the sitemap.
+  - **Search and contact details** fall back Page → City → Country → Global,
+    for the public page and SEO Intelligence alike, which gains a City filter.
+  - **Deleting** is refused while a city has pages, with the count and an
+    offer to deactivate instead.
+- **City Page Generator** (Admin → Locations → City Page Generator): copies a
+  page into many cities — `dropbox-plus` becomes `/delhi/dropbox-plus` — with
+  a preview of every address and what already holds it, placeholders such as
+  `{{city.name}}` filled once, one transaction per city, and a summary of
+  created, skipped and failed pages. Existing pages are never overwritten, and
+  generated pages are independent: nothing syncs them with their source.
+- Migration `20260930120000_cities`: additive only. Existing pages get
+  `cityId = NULL` and behave exactly as before.
+
+### Changed
+
+- Syncing or cloning a market leaves city pages out, since a city belongs to
+  one market. Deleting a market also deletes its cities, and says so.
+- The Pages list has a City filter and a city badge, and the page editor says
+  which city a page belongs to and where it was generated from.
+
 ### Fixed
 
 - **A deleted brand or product category still showed on product pages**, in

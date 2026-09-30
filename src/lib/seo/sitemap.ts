@@ -1,6 +1,6 @@
 import 'server-only';
 import { prisma } from '@/lib/db/prisma';
-import { publishedPageWhere } from '@/lib/services/pages';
+import { listedPageWhere } from '@/lib/services/pages';
 import { publishedPostWhere } from '@/lib/services/blog';
 import { getDefaultCountry, listIndexableCountries } from '@/lib/country/registry';
 import { getSeoSettings } from '@/lib/services/settings';
@@ -100,7 +100,7 @@ export async function countryUrls(country: CountryContext): Promise<EntityUrl[]>
   const origin = base();
   const [pages, products] = await Promise.all([
     prisma.page.findMany({
-      where: { ...publishedPageWhere(), noIndex: false, countryId: country.id },
+      where: { ...listedPageWhere(), countryId: country.id },
       select: { id: true, slug: true, groupKey: true, updatedAt: true, isHomepage: true },
     }),
     prisma.productCountry.findMany({
@@ -226,7 +226,7 @@ export async function withAlternates(
   const listed = new Set(countries.map((candidate) => candidate.id));
   const [pages, products] = await Promise.all([
     prisma.page.findMany({
-      where: { ...publishedPageWhere(), noIndex: false, countryId: { in: [...listed] } },
+      where: { ...listedPageWhere(), countryId: { in: [...listed] } },
       select: { id: true, slug: true, countryId: true, groupKey: true },
     }),
     prisma.productCountry.findMany({

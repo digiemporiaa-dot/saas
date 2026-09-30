@@ -315,6 +315,8 @@ model Country {
   seoAudits            SeoAudit[]
   urlRoutes            UrlRoute[]
   urlPatterns          UrlPattern[]
+  cities               City[]
+  cityPageBatches      CityPageBatch[]
 
   @@index([isActive, sortOrder])
   @@index([isActive, isPublished])
@@ -722,6 +724,25 @@ model Page {
   landingCategoryId String?
   landingBrandId    String?
 
+  /// The city whose address space the page lives in. Set by the URL registry
+  /// whenever the page is given an address, from the first segment of its
+  /// path — `delhi/dropbox-plus` in a market with a Delhi city is one of
+  /// Delhi's pages — and null for every other page, which includes every page
+  /// that existed before cities did. The migration adds a trigger that refuses
+  /// a city from another market.
+  cityId         String?
+  /// The page at the city's own address (`/delhi`): its landing page. At most
+  /// one live one per city, enforced by a partial unique index.
+  isCityHomepage Boolean @default(false)
+
+  /// Where the City Page Generator copied this page from, in which run, and
+  /// when. Provenance only: a generated page is independent from the moment it
+  /// exists — nothing is ever copied from the source again, and editing either
+  /// page never changes the other.
+  generatedFromPageId String?
+  generationBatchId   String?
+  generatedAt         DateTime?
+
   country         Country           @relation(fields: [countryId], references: [id], onDelete: Restrict)
   category        PageCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   ogImage         Media?            @relation("PageOgImage", fields: [ogImageId], references: [id], onDelete: SetNull)
@@ -732,10 +753,18 @@ model Page {
   leads           Lead[]            @relation("LeadLandingPage")
   popups          PopupPageTarget[]
   navigationItems NavigationItem[]
+  city            City?             @relation(fields: [cityId], references: [id], onDelete: Restrict)
+  generatedFrom   Page?             @relation("PageGeneratedFrom", fields: [generatedFromPageId], references: [id], onDelete: SetNull)
+  generatedPages  Page[]            @relation("PageGeneratedFrom")
+  generationBatch CityPageBatch?    @relation("CityPageBatchPages", fields: [generationBatchId], references: [id], onDelete: SetNull)
+  cityPageBatches CityPageBatch[]   @relation("CityPageBatchSource")
 
   @@unique([countryId, slug])
   @@unique([countryId, landingCategoryId])
   @@unique([countryId, landingBrandId])
+  @@index([cityId])
+  @@index([generatedFromPageId])
+  @@index([generationBatchId])
   @@index([groupKey])
   @@index([slug])
   @@index([countryId])
@@ -764,6 +793,99 @@ model PageSection {
   page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, sortOrder])
+}
+
+// ---------------------------------------------------------------------------
+// LOCATIONS — CITIES
+// ---------------------------------------------------------------------------
+
+/// A city in one market: a local address space inside the market's own.
+///
+/// The market stays the market — currency, pricing, settings. A city owns the
+/// first segment of addresses in its market: Delhi in the root market owns
+/// `/delhi` and everything beneath it, Dubai in the UAE owns `/ae/dubai/...`,
+/// and the URL registry refuses anything but the city's own pages there. The
+/// pages themselves are ordinary CMS pages — the landing page at `/delhi` and
+/// a generated `/delhi/dropbox-plus` are built in the Page Builder like any
+/// other. The city holds settings and metadata, never content.
+model City {
+  id        String  @id @default(cuid())
+  countryId String
+  name      String
+  /// One URL segment, unique within the market: "delhi", "new-delhi".
+  slug      String
+  /// State, emirate or province. Optional free text; nothing requires it.
+  region    String?
+
+  /// An inactive city stops resolving publicly: every page in its address
+  /// space answers 404 until it is switched back on. Nothing is deleted.
+  isActive    Boolean @default(true)
+  /// Ready for search engines, as it is for a market: an unpublished city's
+  /// pages are served to anyone with the link and stay out of the sitemap.
+  isPublished Boolean @default(true)
+  sortOrder   Int     @default(0)
+
+  // Local business details. Blank falls back to the market's, then the site's.
+  salesPhone     String?
+  whatsappNumber String?
+  salesEmail     String?
+  address        String? @db.Text
+  postalCode     String?
+  /// Stored as text, like the market's own coordinates.
+  latitude       String?
+  longitude      String?
+
+  // Search defaults for the city's landing page, used where the page's own
+  // fields are blank.
+  seoTitle           String?
+  seoDescription     String? @db.Text
+  primaryKeyword1    String?
+  primaryKeyword2    String?
+  primaryKeyword3    String?
+  /// Sends noindex for every page in the city.
+  noIndex            Boolean @default(false)
+  /// Keeps every page in the city out of the sitemap without noindexing it.
+  excludeFromSitemap Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  country Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  pages   Page[]
+
+  @@unique([countryId, slug])
+  @@index([countryId])
+  @@index([countryId, isActive])
+  @@index([countryId, isPublished])
+}
+
+/// One run of the City Page Generator: which page was copied into which of a
+/// market's cities, by whom, and what came of each city. History only —
+/// nothing here is read to decide what any page shows.
+model CityPageBatch {
+  id           String  @id @default(cuid())
+  countryId    String
+  /// Null once the source page has been deleted for good; its title stays.
+  sourcePageId String?
+  sourceTitle  String
+  sourceSlug   String
+  created      Int     @default(0)
+  skipped      Int     @default(0)
+  failed       Int     @default(0)
+  /// One entry per city: { cityId, city, path, outcome, pageId?, reason? }.
+  results      Json    @default("[]")
+  actorId      String?
+  actorEmail   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  country    Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  sourcePage Page?   @relation("CityPageBatchSource", fields: [sourcePageId], references: [id], onDelete: SetNull)
+  pages      Page[]  @relation("CityPageBatchPages")
+
+  @@index([countryId, createdAt])
+  @@index([sourcePageId])
 }
 
 // ---------------------------------------------------------------------------

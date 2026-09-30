@@ -35,6 +35,7 @@ information.
 - [Security notes](#security-notes)
 - [Troubleshooting](#troubleshooting)
 - [Countries](docs/MULTI-COUNTRY.md)
+- [Cities](docs/CITIES.md)
 - [Versioning and releases](VERSION_README.md)
 - [Changelog](CHANGELOG.md)
 
@@ -50,6 +51,13 @@ information.
   pricing and SEO all read the `Country` table, so no route, component or
   deployment changes. Full reference:
   **[docs/MULTI-COUNTRY.md](docs/MULTI-COUNTRY.md)**.
+
+**Cities inside a market**
+- Local landing pages at `/delhi` and `/delhi/dropbox-plus` (or `/ae/dubai/...`
+  in a prefixed market), each an ordinary page built in the Page Builder. The
+  City Page Generator copies a page into many cities at once, filling
+  `{{city.name}}`-style placeholders; every copy is independent from the
+  moment it exists. Full reference: **[docs/CITIES.md](docs/CITIES.md)**.
 
 **Public website**
 - Every page — the homepage included — is a database row built from ordered CMS

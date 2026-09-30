@@ -119,7 +119,8 @@ const publishedState = (sourceStatus, sourcePublishedAt) =>
 
 async function clonePages(from, to) {
   const pages = await prisma.page.findMany({
-    where: { countryId: from.id, deletedAt: null },
+    // City pages belong to their city, and a city to one market: not cloned.
+    where: { countryId: from.id, deletedAt: null, cityId: null },
     include: { sections: { orderBy: { sortOrder: 'asc' } } },
     orderBy: { createdAt: 'asc' },
   });

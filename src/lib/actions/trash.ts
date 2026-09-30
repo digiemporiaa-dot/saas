@@ -171,7 +171,9 @@ async function putBack(
       await prisma.$transaction(async (tx) => {
         await tx.page.update({
           where: { id },
-          data: { deletedAt: null, status: 'DRAFT', slug, updatedById: user.id },
+          // Not a landing page until the registry says so from its address:
+          // the city may have a new one by now.
+          data: { deletedAt: null, status: 'DRAFT', slug, isCityHomepage: false, updatedById: user.id },
         });
         await syncRoutes(tx, [{ type: 'PAGE', entityId: id, countryId: countryId ?? '' }], {
           actor: user,

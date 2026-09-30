@@ -9,6 +9,7 @@ How this platform is put together, and why. For setup and operations, see
 
 - [Shape of the system](#shape-of-the-system)
 - [Countries](#countries)
+- [Cities](#cities)
 - [Request flow](#request-flow)
 - [Directory layout](#directory-layout)
 - [Data model](#data-model)
@@ -88,6 +89,32 @@ the media library, product identity, taxonomies, staff, roles and permissions.
 
 Full reference, including the migration and how to add a market:
 [docs/MULTI-COUNTRY.md](docs/MULTI-COUNTRY.md).
+
+---
+
+## Cities
+
+Country is the market; a **City** is a local address space inside one market;
+**Page** is the content. A city owns the first segment of its market's
+addresses (`/delhi`, `/ae/dubai`), and its landing page and every other page
+in it are ordinary `Page` rows edited in the Page Builder — there is no second
+CMS, no per-city route and no second conflict system:
+
+- **Addresses** — the URL registry files a page under a city from its address
+  (`placeContent`) and refuses anything else in a city's space; a city's slug
+  is checked against the registry before it is given (`src/lib/urls/cities.ts`).
+- **Liveness** — `publishedPageWhere()` serves a city page only while its city
+  is active; `listedPageWhere()` adds the city's publication, noindex and
+  sitemap switches for the sitemap.
+- **Search and contact details** — resolved Page → City → Country → Global at
+  render time by `src/lib/cities/seo.ts` and `src/lib/cities/local.ts`, for the
+  public page and SEO Intelligence alike.
+- **Generator** — copies a page into many cities, one transaction per city,
+  filling `{{city.name}}`-style placeholders once. Generated pages keep
+  provenance (`generatedFromPageId`, `generationBatchId`, `generatedAt`) and
+  nothing ever syncs them.
+
+Full reference: [docs/CITIES.md](docs/CITIES.md).
 
 ---
 

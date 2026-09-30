@@ -34,6 +34,8 @@ export type ContentInfo = {
   editHref: string;
   /** Pages only: the page's own slug, which is its path within its market. */
   pageSlug?: string;
+  /** Pages only: the city whose address space the page is in. */
+  city?: { id: string; name: string } | null;
 };
 
 type PatternSource = Pick<UrlSnapshot, 'patterns'> | null;
@@ -114,6 +116,7 @@ export async function listRegistrableContent(scope: Scope, db: Db = prisma): Pro
             landingBrandId: true,
             landingCategory: { select: { slug: true } },
             landingBrand: { select: { slug: true } },
+            city: { select: { id: true, name: true } },
           },
         })
       : [],
@@ -166,6 +169,7 @@ export async function listRegistrableContent(scope: Scope, db: Db = prisma): Pro
       wasPublished: everPublished(page.status, page.publishedAt, now),
       editHref: `/admin/pages/${page.id}`,
       pageSlug: page.slug,
+      city: page.city,
     });
   }
 
@@ -281,6 +285,7 @@ export async function loadContentInfo(
             landingBrandId: true,
             landingCategory: { select: { slug: true } },
             landingBrand: { select: { slug: true } },
+            city: { select: { id: true, name: true } },
           },
         })
       : [],
@@ -343,6 +348,7 @@ export async function loadContentInfo(
       wasPublished: everPublished(page.status, page.publishedAt, now),
       editHref: `/admin/pages/${page.id}`,
       pageSlug: page.slug,
+      city: page.city,
     });
   }
   for (const row of products) {

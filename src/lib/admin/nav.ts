@@ -108,6 +108,26 @@ export const ADMIN_NAV: AdminNavModule[] = [
     ],
   },
   {
+    id: 'locations',
+    label: 'Locations',
+    icon: 'map-pin',
+    items: [
+      {
+        label: 'Cities',
+        href: '/admin/cities',
+        permission: 'pages.view',
+        description: 'Local address spaces inside each market, such as /delhi',
+        notMatches: ['/admin/cities/generator'],
+      },
+      {
+        label: 'City Page Generator',
+        href: '/admin/cities/generator',
+        permission: 'pages.create',
+        description: 'Copy a page into many cities at once',
+      },
+    ],
+  },
+  {
     id: 'products',
     label: 'Products',
     icon: 'package',

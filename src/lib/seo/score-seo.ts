@@ -784,7 +784,12 @@ export const SEO_CHECKS: readonly SeoCheck[] = [
       if (keywords.length === 0) {
         return warn(0.2, 'No primary keywords set, so keyword placement cannot be checked.', 'Add up to three primary keywords in the SEO section — the searches this page should answer.');
       }
-      const source = doc.meta.keywordsSource === 'shared' ? ' (the product’s shared keywords)' : '';
+      const source =
+        doc.meta.keywordsSource === 'shared'
+          ? ' (the product’s shared keywords)'
+          : doc.meta.keywordsSource === 'city'
+            ? ' (the city’s keywords)'
+            : '';
       return pass(`Primary keywords${source}: ${keywords.map((keyword) => quote(keyword)).join(', ')}.`);
     },
   },
@@ -816,7 +821,9 @@ function noIndexMessage(doc: SeoDocument): string {
         ? 'the blog archive is set to noindex'
         : reasons.includes('shared')
           ? 'the shared product is set to noindex'
-          : 'this page is set to noindex';
+          : reasons.includes('city') && !reasons.includes('entity')
+            ? 'its city is set to noindex in Locations → Cities'
+            : 'this page is set to noindex';
   return `Intentionally excluded from search engines: ${why}. It is not scored down for it.`;
 }
 

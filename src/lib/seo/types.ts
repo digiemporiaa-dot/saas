@@ -210,7 +210,7 @@ export type SeoDocument = {
     };
     keywords: string[];
     /** Whose keywords apply: this record's, a product's shared ones, or none. */
-    keywordsSource: 'own' | 'shared' | 'none';
+    keywordsSource: 'own' | 'shared' | 'city' | 'none';
     /** A market that overrides the shared SEO fields, named for messages. */
     overrides?: Array<'title' | 'description' | 'canonical' | 'keywords'>;
   };
@@ -219,7 +219,7 @@ export type SeoDocument = {
     noIndex: boolean;
     noFollow: boolean;
     /** Why it is noindex, when it is. Every one of these is deliberate. */
-    noIndexReasons: Array<'entity' | 'shared' | 'market' | 'site' | 'blog'>;
+    noIndexReasons: Array<'entity' | 'shared' | 'city' | 'market' | 'site' | 'blog'>;
     inSitemap: boolean;
     /** Why a live, indexable URL is missing from the sitemap. */
     sitemapExclusion: string | null;

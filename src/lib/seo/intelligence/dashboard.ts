@@ -73,6 +73,8 @@ export type AuditFilters = {
   index?: IndexFilter;
   issue?: IssueFilter;
   q?: string;
+  /** Only these pages: a city's, resolved by the caller from a city it has checked access to. */
+  pageIds?: readonly string[];
 };
 
 export const AUDIT_SORTS = ['overall', 'seo', 'aeo', 'geo', 'issues', 'updated', 'title'] as const;
@@ -138,6 +140,7 @@ export function auditWhere(filters: AuditFilters): Prisma.SeoAuditWhereInput {
       ],
     });
   }
+  if (filters.pageIds) and.push({ entityType: 'PAGE', entityId: { in: [...filters.pageIds] } });
   if (and.length > 0) where.AND = and;
   return where;
 }

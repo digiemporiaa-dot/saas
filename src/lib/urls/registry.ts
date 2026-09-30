@@ -76,12 +76,14 @@ export async function bumpRegistryVersion(tx: Tx): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export type OwnerSummary = {
-  kind: 'content' | 'redirect';
+  kind: 'content' | 'redirect' | 'city';
   path: string;
   type?: UrlContentType;
   entityId?: string;
   countryId: string;
   redirectId?: string;
+  /** For a city: the city whose address space the path is in. */
+  cityId?: string;
   /** Human description, filled in by callers that load labels. */
   description: string;
 };
@@ -118,6 +120,53 @@ function ownerOf(claim: ClaimRow): OwnerSummary {
 export type Availability =
   | { ok: true; release: ClaimRow | null }
   | { ok: false; owner: OwnerSummary };
+
+// ---------------------------------------------------------------------------
+// Cities
+// ---------------------------------------------------------------------------
+
+export type CityRef = { id: string; name: string; slug: string; countryId: string };
+
+/**
+ * The city whose address space a market-relative path is in: the one whose
+ * slug is the path's first segment, in the same market. Cities in other
+ * markets never matter — Delhi in India owns `/delhi`, not `/ae/delhi`.
+ */
+export async function cityOfPath(
+  db: Tx | typeof prisma,
+  countryId: string,
+  relativePath: string,
+): Promise<CityRef | null> {
+  const first = segmentsOf(relativePath)[0]?.toLowerCase();
+  if (!first) return null;
+  return db.city.findUnique({
+    where: { countryId_slug: { countryId, slug: first } },
+    select: { id: true, name: true, slug: true, countryId: true },
+  });
+}
+
+/** The city a full public path (market prefix included) falls in, with its market's prefix. */
+async function cityOfKey(
+  db: Tx | typeof prisma,
+  key: string,
+  countryId: string,
+): Promise<{ city: CityRef; marketSlug: string } | null> {
+  const market = await db.country.findUnique({ where: { id: countryId }, select: { slug: true } });
+  if (!market) return null;
+  const city = await cityOfPath(db, countryId, stripMarket(market.slug, key));
+  return city ? { city, marketSlug: market.slug } : null;
+}
+
+function cityOwner(city: CityRef, marketSlug: string): OwnerSummary {
+  const root = joinMarket(marketSlug, `/${city.slug}`);
+  return {
+    kind: 'city',
+    path: root,
+    countryId: city.countryId,
+    cityId: city.id,
+    description: `the city ${city.name} (only its own pages can live at ${root} and beneath it)`,
+  };
+}
 
 /**
  * Whether the content behind a route still exists and can have an address.
@@ -175,30 +224,41 @@ async function claimIsStale(db: Tx | typeof prisma, claim: ClaimRow): Promise<bo
 export async function checkAvailability(
   tx: Tx | typeof prisma,
   key: string,
-  claimant: { entityId: string; countryId: string },
+  claimant: { entityId: string; countryId: string; type?: UrlContentType },
 ): Promise<Availability> {
   const claim = await findClaim(tx, key);
-  if (!claim) return { ok: true, release: null };
-
-  if (claim.kind === 'CONTENT') {
-    if (claim.entityId === claimant.entityId && claim.countryId === claimant.countryId) {
-      return { ok: true, release: null };
-    }
-    if (await claimIsStale(tx, claim)) return { ok: true, release: claim };
-    return { ok: false, owner: ownerOf(claim) };
+  if (claim?.kind === 'CONTENT' && claim.entityId === claimant.entityId && claim.countryId === claimant.countryId) {
+    return { ok: true, release: null };
   }
 
-  const redirect = claim.redirect;
-  if (
-    redirect &&
-    redirect.origin === 'AUTOMATIC' &&
-    redirect.targetEntityId === claimant.entityId &&
-    redirect.targetCountryId === claimant.countryId
-  ) {
-    return { ok: true, release: claim };
+  let release: ClaimRow | null = null;
+  if (claim?.kind === 'CONTENT') {
+    if (!(await claimIsStale(tx, claim))) return { ok: false, owner: ownerOf(claim) };
+    release = claim;
+  } else if (claim) {
+    const redirect = claim.redirect;
+    const givesWay =
+      (redirect &&
+        redirect.origin === 'AUTOMATIC' &&
+        redirect.targetEntityId === claimant.entityId &&
+        redirect.targetCountryId === claimant.countryId) ||
+      redirect?.allMarkets;
+    if (!givesWay) return { ok: false, owner: ownerOf(claim) };
+    release = claim;
   }
-  if (redirect?.allMarkets) return { ok: true, release: claim };
-  return { ok: false, owner: ownerOf(claim) };
+
+  /*
+   * A city's address space is its own pages' alone. A page placed there joins
+   * the city (see `placeContent`); anything else — a product, an article, a
+   * category or brand landing page — is refused, even at a free address.
+   * Only checked when the caller says what the claimant is.
+   */
+  if (claimant.type && claimant.type !== 'PAGE') {
+    const inCity = await cityOfKey(tx, key, claimant.countryId);
+    if (inCity) return { ok: false, owner: cityOwner(inCity.city, inCity.marketSlug) };
+  }
+
+  return { ok: true, release };
 }
 
 /**
@@ -302,6 +362,8 @@ export async function placeContent(tx: Tx, input: PlaceInput): Promise<PlaceResu
     existing.mode === input.mode &&
     existing.type === input.type
   ) {
+    // The address stands; only the page's city is brought in line with it.
+    if (isPageType(input.type)) await linkPageToCity(tx, input, path, { slug: false });
     return {
       ok: true,
       changed: false,
@@ -352,13 +414,9 @@ export async function placeContent(tx: Tx, input: PlaceInput): Promise<PlaceResu
         },
       });
 
-  // A page's slug is its path within its market; keep the two identical.
-  if (isPageType(input.type)) {
-    await tx.page.update({
-      where: { id: input.entityId },
-      data: { slug: segmentsOf(stripMarket(input.marketSlug, path)).join('/') },
-    });
-  }
+  // A page's slug is its path within its market; keep the two identical, and
+  // the page's city with them.
+  if (isPageType(input.type)) await linkPageToCity(tx, input, path, { slug: true });
 
   let redirectId: string | null = null;
   if (existing && existing.pathKey !== key) {
@@ -412,6 +470,46 @@ export async function placeContent(tx: Tx, input: PlaceInput): Promise<PlaceResu
     routeId: route.id,
     version: route.version,
   };
+}
+
+/**
+ * Keeps a page's slug, city and landing-page flag in step with its address.
+ *
+ * A page whose first segment is a city's slug in its market is one of that
+ * city's pages, and the one at the city's own address is its landing page;
+ * every other page belongs to no city. Deriving this from the address, here
+ * where every address change passes, means a page moved into or out of a city
+ * by any route — the page form, the Slug Manager, a bulk change, a restore —
+ * is always filed correctly. Written only when something differs.
+ */
+async function linkPageToCity(
+  tx: Tx,
+  input: Pick<PlaceInput, 'type' | 'entityId' | 'countryId' | 'marketSlug'>,
+  path: string,
+  options: { slug: boolean },
+): Promise<void> {
+  const segments = segmentsOf(stripMarket(input.marketSlug, path));
+  const slug = segments.join('/');
+  // Category and brand landing pages are refused inside a city, so only a
+  // plain page can be in one.
+  const city = input.type === 'PAGE' ? await cityOfPath(tx, input.countryId, slug) : null;
+  const filing = { cityId: city?.id ?? null, isCityHomepage: Boolean(city) && segments.length === 1 };
+  const page = await tx.page.findUnique({
+    where: { id: input.entityId },
+    select: { slug: true, cityId: true, isCityHomepage: true },
+  });
+  const slugDiffers = options.slug && page?.slug !== slug;
+  if (
+    !page ||
+    slugDiffers ||
+    page.cityId !== filing.cityId ||
+    page.isCityHomepage !== filing.isCityHomepage
+  ) {
+    await tx.page.update({
+      where: { id: input.entityId },
+      data: options.slug ? { slug, ...filing } : filing,
+    });
+  }
 }
 
 async function writeAutomaticRedirect(
@@ -541,7 +639,13 @@ export async function prefixConflict(
     },
     select: { path: true },
   });
-  return clash?.path ?? null;
+  if (clash) return clash.path;
+  // A root-market city owns its segment even before it has a page.
+  const city = await db.city.findUnique({
+    where: { countryId_slug: { countryId: rootCountryId, slug: prefix.toLowerCase() } },
+    select: { name: true },
+  });
+  return city ? `${key} (the city ${city.name})` : null;
 }
 
 /**

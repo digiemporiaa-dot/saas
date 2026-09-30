@@ -685,7 +685,9 @@ function retractCreated(log: SyncLogEntry[], sourceId: string): void {
 
 async function syncPages(ctx: Ctx, log: SyncLogEntry[]): Promise<void> {
   const pages = await prisma.page.findMany({
-    where: { countryId: ctx.source.id, deletedAt: null },
+    // A city belongs to one market, and so do its pages: they are never
+    // copied into another market, where no such city exists.
+    where: { countryId: ctx.source.id, deletedAt: null, cityId: null },
     include: { sections: { orderBy: { sortOrder: 'asc' } } },
   });
   if (pages.length === 0) return;

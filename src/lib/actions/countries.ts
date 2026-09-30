@@ -295,7 +295,7 @@ export async function setCountryActive(
  * shown is what is actually deleted.
  */
 async function countryContents(countryId: string): Promise<CountryContents> {
-  const [pages, posts, menus, leads, pricing, popups, forms] = await Promise.all([
+  const [pages, posts, menus, leads, pricing, popups, forms, cities] = await Promise.all([
     prisma.page.count({ where: { countryId } }),
     prisma.blogPost.count({ where: { countryId } }),
     prisma.navigation.count({ where: { countryId } }),
@@ -303,8 +303,9 @@ async function countryContents(countryId: string): Promise<CountryContents> {
     prisma.productCountry.count({ where: { countryId } }),
     prisma.popup.count({ where: { countryId } }),
     prisma.form.count({ where: { countryId } }),
+    prisma.city.count({ where: { countryId } }),
   ]);
-  return { pages, posts, menus, leads, pricing, popups, forms };
+  return { pages, posts, menus, leads, pricing, popups, forms, cities };
 }
 
 /**
@@ -345,7 +346,9 @@ export async function deleteCountry(
     /*
      * Order matters: leads point at pages and articles, so they go first, and
      * the market itself goes last. Everything else that belongs to a market —
-     * its settings, navigation items, sections, pricing — already cascades.
+     * its settings, navigation items, sections, pricing, cities — already
+     * cascades. A city's pages are market pages and go with the rest here,
+     * before the cities they belong to.
      */
     await prisma.$transaction(async (tx) => {
       await tx.lead.deleteMany({ where: { countryId } });

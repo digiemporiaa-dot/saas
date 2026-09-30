@@ -190,6 +190,25 @@ everything else is refused with the reason:
 A request for an address that is not valid at all (bad encoding, traversal)
 answers 404 rather than being interpreted as something else.
 
+### City address spaces
+
+A city owns the first segment of addresses in its market — `/delhi` and
+everything beneath it, `/ae/dubai/...` — and the registry enforces it:
+
+- a page placed there is filed under the city (`Page.cityId`), and the page at
+  the city's own address becomes its landing page; a page moved out leaves
+  the city. `placeContent` derives this from the address, so every route that
+  changes an address files pages correctly;
+- anything else — a product, an article, a category or brand landing page — is
+  refused there, even at a free address, with the city named as the owner;
+- a city's slug is refused while anything that is not the city's holds its
+  address or content beneath it, and while it is a system route, a market
+  prefix or a content type's own address space (`/products`, `/blog`, …);
+- a new market prefix cannot take a root-market city's slug.
+
+Redirects beneath a city's address are left alone. The manager marks city
+pages (“City: Delhi”). Full reference: [CITIES.md](CITIES.md).
+
 ---
 
 ## The manager, tab by tab

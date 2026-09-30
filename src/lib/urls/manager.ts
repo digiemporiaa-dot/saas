@@ -63,6 +63,8 @@ export type UrlRow = {
   version: number | null;
   editHref: string;
   canEdit: boolean;
+  /** The city whose address space a page is in, so city-owned addresses stand out. */
+  city: { id: string; name: string } | null;
 };
 
 export type UrlListQuery = {
@@ -140,6 +142,7 @@ function toRow(
     version: route?.version ?? null,
     editHref: info.editHref,
     canEdit: userCanEditType(user, info.type),
+    city: info.city ?? null,
   };
 }
 
@@ -397,6 +400,8 @@ export async function checkContentPath(
         description = describeOwner(info);
         editHref = info.editHref;
       }
+    } else if (owner.kind === 'city' && owner.cityId) {
+      editHref = `/admin/cities/${owner.cityId}`;
     }
     return {
       ok: false,

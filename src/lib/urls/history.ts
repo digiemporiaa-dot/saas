@@ -164,7 +164,11 @@ export async function previewRestore(user: SessionUser, historyId: string): Prom
     where: { entityId_countryId: { entityId: entry.entityId, countryId: entry.countryId } },
   });
   const key = pathKey(entry.oldPath)!;
-  const availability = await checkAvailability(prisma, key, { entityId: entry.entityId, countryId: entry.countryId });
+  const availability = await checkAvailability(prisma, key, {
+    entityId: entry.entityId,
+    countryId: entry.countryId,
+    type: entry.type as UrlContentType,
+  });
   if (!availability.ok) {
     return { ok: false, error: `${entry.oldPath} now belongs to ${availability.owner.description}, so it cannot be restored.` };
   }

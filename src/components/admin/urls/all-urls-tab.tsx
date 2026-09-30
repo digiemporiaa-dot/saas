@@ -281,6 +281,7 @@ export function AllUrlsTab() {
                             </button>
                             <span className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-muted">
                               <Badge tone="neutral">{row.typeLabel}</Badge>
+                              {row.city ? <Badge tone="info">City: {row.city.name}</Badge> : null}
                               {overview.markets.length > 1 ? <span>{row.countryName}</span> : null}
                             </span>
                           </div>
@@ -352,6 +353,7 @@ export function AllUrlsTab() {
                       <PathText path={row.path} className="mt-1 block" />
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         <Badge tone="neutral">{row.typeLabel}</Badge>
+                        {row.city ? <Badge tone="info">City: {row.city.name}</Badge> : null}
                         <StateBadge state={row.state} />
                         <ModeBadge mode={row.mode} />
                         {overview.markets.length > 1 ? <Badge tone="info">{row.countryCode}</Badge> : null}

@@ -23,7 +23,7 @@ import { isPageType, type UrlContentType } from './types';
 export type ConflictReason = ScanCollision['reason'] | 'free';
 
 export type ConflictOwner = {
-  kind: 'content' | 'redirect';
+  kind: 'content' | 'redirect' | 'city';
   description: string;
   path: string;
   editHref: string | null;
@@ -91,7 +91,11 @@ export async function conflictReport(user: SessionUser): Promise<ConflictReport>
       });
       continue;
     }
-    const availability = await checkAvailability(prisma, key, { entityId: row.entityId, countryId: row.countryId });
+    const availability = await checkAvailability(prisma, key, {
+      entityId: row.entityId,
+      countryId: row.countryId,
+      type: row.type,
+    });
     if (!availability.ok) {
       const owner = availability.owner;
       if (owner.kind === 'content' && owner.type && owner.entityId) {
@@ -102,7 +106,12 @@ export async function conflictReport(user: SessionUser): Promise<ConflictReport>
         wanted,
         reason: 'taken',
         detail: `Already used by ${owner.description}.`,
-        owner: { kind: owner.kind, description: owner.description, path: owner.path, editHref: null },
+        owner: {
+          kind: owner.kind,
+          description: owner.description,
+          path: owner.path,
+          editHref: owner.kind === 'city' && owner.cityId ? `/admin/cities/${owner.cityId}` : null,
+        },
       });
       continue;
     }

@@ -524,6 +524,9 @@ export async function deletePage(pageId: string): Promise<ActionResult> {
           deletedAt: new Date(),
           status: 'ARCHIVED',
           slug: `${page.slug}-deleted-${Date.now()}`,
+          // A deleted page is nobody's landing page; restoring it files it
+          // again from the address it gets back.
+          isCityHomepage: false,
         },
       });
       await releaseRoutes(tx, [{ type: 'PAGE', entityId: pageId, countryId: page.countryId, label: page.title }], {
@@ -808,6 +811,7 @@ export async function bulkPageAction(input: unknown): Promise<ActionResult> {
               deletedAt: new Date(),
               status: 'ARCHIVED',
               slug: `${page.slug}-deleted-${Date.now()}`,
+              isCityHomepage: false,
             },
           });
         }

@@ -106,11 +106,12 @@ export function renderCanonical(
 export function noIndexReasons(
   ctx: SeoContext,
   local: CountrySettingsView,
-  flags: { entity?: boolean; shared?: boolean; blog?: boolean },
+  flags: { entity?: boolean; shared?: boolean; blog?: boolean; city?: boolean },
 ): SeoDocument['robots']['noIndexReasons'] {
   const reasons: SeoDocument['robots']['noIndexReasons'] = [];
   if (flags.entity) reasons.push('entity');
   if (flags.shared) reasons.push('shared');
+  if (flags.city) reasons.push('city');
   if (flags.blog) reasons.push('blog');
   if (local.noIndexCountry) reasons.push('market');
   if (ctx.seo.noIndexSite) reasons.push('site');
@@ -143,6 +144,17 @@ export function robotsOf(
  * Why a market's live page is not in its sitemap, mirroring `countryUrls`:
  * sitemaps switched off, the market inactive or unpublished, or excluded.
  */
+/** Why a city keeps its pages out of the sitemap, when it does. The market's reasons come first. */
+export function citySitemapExclusion(
+  city: { name: string; isActive: boolean; isPublished: boolean; excludeFromSitemap: boolean } | null,
+): string | null {
+  if (!city) return null;
+  if (!city.isActive) return `the city ${city.name} is switched off`;
+  if (!city.isPublished) return `the city ${city.name} is not published yet`;
+  if (city.excludeFromSitemap) return `the city ${city.name} is excluded from the sitemap in Locations → Cities`;
+  return null;
+}
+
 export function marketSitemapExclusion(ctx: SeoContext, country: CountryContext): string | null {
   if (!ctx.seo.sitemapEnabled) return 'sitemaps are switched off in Admin → SEO';
   if (!country.isActive) return `the ${country.name} market is switched off`;

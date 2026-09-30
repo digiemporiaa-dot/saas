@@ -1,7 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/db/prisma';
 import { listActiveCountries } from '@/lib/country/registry';
-import { publishedPageWhere } from '@/lib/services/pages';
+import { indexablePageWhere, publishedPageWhere } from '@/lib/services/pages';
 import { pageHref, productHref } from './links';
 
 /**
@@ -49,8 +49,7 @@ export async function pageAlternates(
   const [rows, countries] = await Promise.all([
     prisma.page.findMany({
       where: {
-        ...publishedPageWhere(),
-        ...(indexableOnly ? { noIndex: false } : {}),
+        ...(indexableOnly ? indexablePageWhere() : publishedPageWhere()),
         // Pages grouped since the registry's first scan are matched by group;
         // anything not yet grouped falls back to the old rule, the same slug.
         ...(page.groupKey ? { groupKey: page.groupKey } : { slug: page.slug }),

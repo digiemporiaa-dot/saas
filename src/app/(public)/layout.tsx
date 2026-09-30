@@ -21,6 +21,8 @@ import { siteJsonLd } from "@/lib/seo/page-schema";
 import { getCurrentUser } from "@/lib/auth/guards";
 import { resolveCountryPath } from "@/lib/country/registry";
 import { getCountrySettings } from "@/lib/country/settings";
+import { getActiveCityAt } from "@/lib/services/cities";
+import { withCityDetails } from "@/lib/cities/local";
 import { resolveMarketOptions } from "@/lib/country/switch";
 import { countryPath, contentSlug, countryHref } from "@/lib/country/routing";
 import type { CountryContext } from "@/lib/country/types";
@@ -51,9 +53,11 @@ export default async function PublicLayout({
   // (blog, products) always show both.
   const chrome = await resolveChrome(country, path, urls.enabled);
 
-  const [site, local, nav, markets, popups, tracking, scripts, cookieStore] = await Promise.all([
+  const [site, marketLocal, city, nav, markets, popups, tracking, scripts, cookieStore] = await Promise.all([
     getWebsiteSettings(),
     getCountrySettings(country),
+    // Inside a city, its own contact details come first: city → market → site.
+    getActiveCityAt(country.id, contentSlug(path)),
     getPrimaryNavigation(country),
     resolveMarketOptions(country, path),
     prisma.popup.findMany({
@@ -84,6 +88,8 @@ export default async function PublicLayout({
     prisma.trackingScript.findMany({ where: { isActive: true } }),
     cookies(),
   ]);
+
+  const local = withCityDetails(marketLocal, city);
 
   const consentGranted =
     !tracking.consentRequired || cookieStore.get("tracking_consent")?.value === "granted";

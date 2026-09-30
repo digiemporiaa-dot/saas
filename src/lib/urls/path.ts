@@ -28,6 +28,11 @@ const SEGMENT = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;
 /** The placeholder a pattern's slug goes in. */
 export const SLUG_TOKEN = '{slug}';
 
+/** Whether one path segment follows the rules: lower-case letters, digits and single inner hyphens. */
+export function isValidSegment(segment: string): boolean {
+  return segment.length <= MAX_SEGMENT_LENGTH && SEGMENT.test(segment);
+}
+
 /** Characters a visitor can type that a URL path may not contain. */
 const FORBIDDEN = /[\s?#%\\<>"'`^{}|[\]\u0000-\u001f\u007f]/;
 

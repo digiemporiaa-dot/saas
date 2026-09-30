@@ -43,6 +43,8 @@ import {
 import { OVERALL_WEIGHTS } from '@/lib/seo/score-overall';
 import { SEO_PAGE_KINDS } from '@/lib/seo/types';
 import { formatDate, formatNumber } from '@/lib/utils/format';
+import { prisma } from '@/lib/db/prisma';
+import { listCityOptions } from '@/lib/services/cities';
 import { cn } from '@/lib/utils/cn';
 
 export const metadata: Metadata = { title: 'SEO Intelligence' };
@@ -59,6 +61,7 @@ type Params = {
   score?: string;
   index?: string;
   issue?: string;
+  city?: string;
   sort?: string;
   dir?: string;
   page?: string;
@@ -80,7 +83,18 @@ export default async function SeoIntelligence({
   const accessibleIds = countries.map((country) => country.id);
   const countryIds = chosen ? [chosen.id] : accessibleIds;
 
-  const filters = parseAuditFilters(params, countryIds);
+  // A city narrows the list to its pages. The city must be in a market in
+  // view; an id for any other is ignored rather than trusted.
+  const cities = await listCityOptions(countryIds);
+  const city = params.city ? cities.find((option) => option.id === params.city) : undefined;
+  const cityPages = city
+    ? await prisma.page.findMany({ where: { cityId: city.id, deletedAt: null }, select: { id: true } })
+    : null;
+
+  const filters = {
+    ...parseAuditFilters(params, countryIds),
+    ...(cityPages ? { pageIds: cityPages.map((row) => row.id) } : {}),
+  };
   const sort = oneOf(params.sort, AUDIT_SORTS);
   const dir = params.dir === 'asc' || params.dir === 'desc' ? params.dir : undefined;
   const page = Math.max(1, Number(params.page) || 1);
@@ -120,6 +134,22 @@ export default async function SeoIntelligence({
             options: countries.map((country) => ({
               label: country.isActive ? country.name : `${country.name} (inactive)`,
               value: country.id,
+            })),
+          },
+        ]
+      : []),
+    ...(cities.length > 0
+      ? [
+          {
+            name: 'city',
+            label: 'City',
+            allLabel: 'Any city',
+            options: cities.map((option) => ({
+              label:
+                multiCountry && !chosen
+                  ? `${option.name} (${countries.find((country) => country.id === option.countryId)?.code ?? ''})`
+                  : option.name,
+              value: option.id,
             })),
           },
         ]
@@ -173,7 +203,7 @@ export default async function SeoIntelligence({
   ];
 
   const filtered = Boolean(
-    params.q || params.type || params.status || params.score || params.index || params.issue,
+    params.q || params.type || params.status || params.score || params.index || params.issue || city,
   );
   const link = (extra: Record<string, string>) => {
     const search = new URLSearchParams();

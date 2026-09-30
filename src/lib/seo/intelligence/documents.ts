@@ -1,7 +1,7 @@
 import 'server-only';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db/prisma';
-import { publishedPageWhere } from '@/lib/services/pages';
+import { indexablePageWhere, publishedPageWhere } from '@/lib/services/pages';
 import { publishedPostWhere } from '@/lib/services/blog';
 import { synthesiseProductSections } from '@/lib/cms/product-defaults';
 import { parseBlockContent } from '@/lib/cms/blocks';
@@ -42,10 +42,13 @@ import {
   type ProductMarketDraft,
 } from '@/lib/seo/drafts';
 import type { SeoDocument } from '@/lib/seo/types';
+import { cityPageSeo } from '@/lib/cities/seo';
+import { withCityDetails } from '@/lib/cities/local';
 import type { SeoContext } from './context';
 import {
   absolute,
   alternatesOf,
+  citySitemapExclusion,
   countryRef,
   entityOf,
   isPublished,
@@ -181,11 +184,11 @@ export async function buildPageDocuments(
   // by slug where they have not yet.
   const slugs = [...new Set(pages.map((page) => page.slug))];
   const groups = [...new Set(pages.map((page) => page.groupKey).filter((key): key is string => Boolean(key)))];
-  const [liveRows, media] = await Promise.all([
+  const cityIds = [...new Set(pages.map((page) => page.cityId).filter((id): id is string => Boolean(id)))];
+  const [liveRows, media, cities] = await Promise.all([
     prisma.page.findMany({
       where: {
-        ...publishedPageWhere(),
-        noIndex: false,
+        ...indexablePageWhere(),
         OR: [{ slug: { in: slugs } }, ...(groups.length > 0 ? [{ groupKey: { in: groups } }] : [])],
       },
       select: { id: true, slug: true, countryId: true, groupKey: true },
@@ -197,21 +200,28 @@ export async function buildPageDocuments(
         ...sectionMediaIds(page.sections.map(toSection)),
       ]),
     ),
+    cityIds.length > 0 ? prisma.city.findMany({ where: { id: { in: cityIds } } }) : [],
   ]);
+  const cityOf = new Map(cities.map((city) => [city.id, city]));
 
   return pages.map((page) => {
     const country = marketOf(ctx, page.countryId);
-    const local = localOf(ctx, country);
+    // Inside a city, the city's details and search defaults come first —
+    // resolved by the same functions the public page uses.
+    const city = page.cityId ? (cityOf.get(page.cityId) ?? null) : null;
+    const local = withCityDetails(localOf(ctx, country), city);
+    const citySeo = cityPageSeo(page, city);
     const slug = page.isHomepage ? '' : page.slug;
     const path = marketPath(country, slug);
     const published = isPublished(page.status, page.publishedAt);
     const sections = page.sections.map(toSection);
 
-    const title = renderTitle(ctx, local, { seo: [page.seoTitle], fallback: [page.title] });
-    const description = renderDescription(local, { seo: [page.seoDescription], fallback: [] });
-    const keywords = primaryKeywords(page);
-    const reasons = noIndexReasons(ctx, local, { entity: page.noIndex });
-    const exclusion = marketSitemapExclusion(ctx, country);
+    const title = renderTitle(ctx, local, { seo: [page.seoTitle, citySeo.cityTitle], fallback: [page.title] });
+    const description = renderDescription(local, { seo: [page.seoDescription, citySeo.cityDescription], fallback: [] });
+    const keywords = citySeo.keywords;
+    const reasons = noIndexReasons(ctx, local, { entity: page.noIndex, city: Boolean(city?.noIndex) });
+    const exclusion = marketSitemapExclusion(ctx, country) ?? citySitemapExclusion(city);
+    const cityOff = Boolean(city && !city.isActive);
 
     // hreflang: the markets where an indexable page with this slug is live,
     // this page's own draft state standing in for its saved one.
@@ -220,7 +230,7 @@ export async function buildPageDocuments(
         .filter((row) => (page.groupKey ? row.groupKey === page.groupKey : row.slug === page.slug) && row.id !== page.id)
         .map((row) => row.countryId),
     );
-    if (published && !page.noIndex) liveIn.add(page.countryId);
+    if (published && !citySeo.noIndex && !cityOff) liveIn.add(page.countryId);
 
     return {
       entityType: 'PAGE',
@@ -234,9 +244,14 @@ export async function buildPageDocuments(
       editPath: editPathFor('PAGE', page.id),
       status: {
         value: page.status,
-        live: published && country.isActive,
+        live: published && country.isActive && !cityOff,
         publishedAt: page.publishedAt?.toISOString() ?? null,
-        notServedReason: published && !country.isActive ? `the ${country.name} market is switched off.` : null,
+        notServedReason:
+          published && !country.isActive
+            ? `the ${country.name} market is switched off.`
+            : published && cityOff
+              ? `the city ${city!.name} is switched off.`
+              : null,
       },
       updatedAt: page.updatedAt.toISOString(),
       meta: {
@@ -244,12 +259,12 @@ export async function buildPageDocuments(
         ...description,
         canonical: renderCanonical(ctx, country, page.canonicalUrl, path),
         keywords,
-        keywordsSource: keywords.length > 0 ? 'own' : 'none',
+        keywordsSource: keywords.length === 0 ? 'none' : citySeo.inherited.keywords ? 'city' : 'own',
       },
       robots: robotsOf(ctx, path, {
         reasons,
         noFollow: page.noFollow,
-        inSitemap: published && !page.noIndex && !exclusion,
+        inSitemap: published && !citySeo.noIndex && !exclusion,
         sitemapExclusion: exclusion,
       }),
       social: socialOf(ctx, local, {
